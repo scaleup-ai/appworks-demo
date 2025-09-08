@@ -1,19 +1,32 @@
-import React, { useState } from "react";
-import { useDispatch } from "react-redux";
-import { login } from "../store/authSlice";
+import React from "react";
+import { startXeroAuth, getXeroAuthUrl } from "../apis/xero";
 
 const LoginForm: React.FC = () => {
-  const dispatch = useDispatch();
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Redirect the browser to the backend Xero auth route so the server can
-    // issue a 302 redirect to Xero's consent URL. Use Vite env if provided,
-    // otherwise use a relative path which will work when backend is proxied.
-    const apiBase = (import.meta as any).env?.VITE_API_BASE_URL || "";
-    const base = apiBase.replace(/\/$/, "");
-    const authUrl = `${base}/api/v1/xero/auth`;
-    window.location.href = authUrl;
+
+    try {
+      const resp = await startXeroAuth();
+
+      // Try to use the Location header the backend may return (302 -> Xero consent URL)
+      const location =
+        (resp && (resp.headers as any)?.location) ||
+        (resp && (resp.headers as any)?.Location);
+      if (location) {
+        window.location.href = location;
+        return;
+      }
+
+      // Fallback: navigate directly to the backend auth URL (uses canonical API base)
+      window.location.href = getXeroAuthUrl();
+    } catch (err) {
+      // Minimal error handling for dev: surface basic info
+      // eslint-disable-next-line no-console
+      console.error("Failed to start Xero auth", err);
+      try {
+        window.alert("Failed to start Xero auth. See console for details.");
+      } catch {}
+    }
   };
 
   return (

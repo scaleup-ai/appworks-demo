@@ -9,7 +9,12 @@ import { logout } from '../store/authSlice'
 // - Refresh endpoint is POST `${baseURL}/auth/refresh` and accepts { refreshToken }
 //   returning { accessToken, refreshToken? }. Update endpoint if your backend differs.
 
+// Prefer Vite env; fall back to the (HTTP) service host used by the demo backend.
 const baseURL = (import.meta as any).env?.VITE_API_BASE_URL || 'https://service.scaleupai.tech'
+
+// Export a canonical API base so other helpers/components can construct
+// URLs for full-browser navigations (useful for OAuth redirects).
+export const API_BASE_URL = baseURL
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL,

@@ -1,4 +1,5 @@
 import axiosClient from './axios-client'
+import { API_BASE_URL } from './axios-client'
 
 // Minimal Xero API client based on provided OpenAPI subset.
 // This file provides small, typed helpers for the endpoints used by the app.
@@ -30,6 +31,11 @@ export async function startXeroAuth(): Promise<import('axios').AxiosResponse> {
   // will normally handle it when hitting the backend directly. For programmatic use,
   // return the full axios response so the caller can look at headers.location.
   return axiosClient.get('/api/v1/xero/auth', { validateStatus: () => true })
+}
+
+export function getXeroAuthUrl(): string {
+  const base = (API_BASE_URL || '').replace(/\/$/, '')
+  return `${base}/api/v1/xero/auth`
 }
 
 export async function handleOAuthRedirect(query: { code?: string; state?: string }) {
