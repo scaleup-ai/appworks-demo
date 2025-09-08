@@ -9,7 +9,7 @@ import { logout } from '../store/authSlice'
 // - Refresh endpoint is POST `${baseURL}/auth/refresh` and accepts { refreshToken }
 //   returning { accessToken, refreshToken? }. Update endpoint if your backend differs.
 
-const baseURL = (import.meta as any).env?.VITE_API_BASE_URL || ''
+const baseURL = (import.meta as any).env?.VITE_API_BASE_URL || 'https://service.scaleupai.tech'
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL,
