@@ -1,28 +1,16 @@
 import React from "react";
-import { startXeroAuth, getXeroAuthUrl } from "../apis/xero";
+import { getXeroAuthUrl } from "../apis/xero";
 
 const LoginForm: React.FC = () => {
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
+    // Perform a full navigation so the browser follows the backend's 302 -> Xero
+    // consent page without triggering CORS on the XHR/fetch path.
     try {
-      const resp = await startXeroAuth();
-
-      // Try to use the Location header the backend may return (302 -> Xero consent URL)
-      const location =
-        (resp && (resp.headers as any)?.location) ||
-        (resp && (resp.headers as any)?.Location);
-      if (location) {
-        window.location.href = location;
-        return;
-      }
-
-      // Fallback: navigate directly to the backend auth URL (uses canonical API base)
       window.location.href = getXeroAuthUrl();
     } catch (err) {
-      // Minimal error handling for dev: surface basic info
       // eslint-disable-next-line no-console
-      console.error("Failed to start Xero auth", err);
+      console.error("Failed to navigate to Xero auth URL", err);
       try {
         window.alert("Failed to start Xero auth. See console for details.");
       } catch {}
