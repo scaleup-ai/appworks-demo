@@ -1,0 +1,1 @@
+curl -sS https://service.scaleupai.tech/api/v1/demo/openapi.yaml -o openapi.yaml

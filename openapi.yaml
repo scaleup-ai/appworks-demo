@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Scaleup AI - Xero Routes (subset)
+  version: "1.0.0"
+  description: Minimal OpenAPI spec for the Xero integration endpoints used by a React login flow.
+
+servers:
+  - url: http://service.scaleupai.tech/
+    description: Local dev (default port used by src/index.ts)
+
+paths:
+  /api/v1/xero/creds:
+    get:
+      summary: Set Xero credentials (query parameters; no POST body)
+      description: |
+        Accepts clientId, clientSecret and redirectUri via query string and initializes
+        the in-memory Xero client. Intended for dev/test usage only (or use env vars).
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: clientSecret
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: redirectUri
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Credentials set successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        "400":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missing Xero credentials. Provide via query parameters or set TEST_XERO_CLIENT_ID/TEST_XERO_CLIENT_SECRET/XERO_REDIRECT_URI in env."
+
+  /api/v1/xero/auth:
+    get:
+      summary: Start Xero OAuth2 login (redirect to consent)
+      description: |
+        Initiates OAuth2 consent flow. If credentials are not initialized this route
+        will attempt to bootstrap from test env vars; otherwise returns 400.
+      responses:
+        "302":
+          description: Redirect to Xero consent URL
+          headers:
+            Location:
+              description: Xero consent URL
+              schema:
+                type: string
+        "400":
+          description: Missing credentials
+          content:
+            text/plain:
+              schema:
+                type: string
+        "500":
+          description: Server/OAuth error
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/v1/xero/oauth2/redirect:
+    get:
+      summary: OAuth2 callback endpoint
+      description: Callback endpoint Xero redirects to after user consent. Handles code/state and continues auth flow.
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Callback handled (HTML or redirect)
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          description: Credentials not set or invalid callback
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/v1/xero/integration:
+    get:
+      summary: Integration status UI
+      description: Renders an integration status page (EJS view). Requires initialized Xero controller.
+      responses:
+        "200":
+          description: HTML status page
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          description: Credentials not set
+          content:
+            text/plain:
+              schema:
+                type: string
+
+components: {}
