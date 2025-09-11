@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { getXeroAuthUrl } from "../apis/xero";
+import { getXeroAuthUrl } from "../apis/xero.api";
 import handleXeroRedirect from "../utils/xeroRedirectHandler";
 
 const LoginForm: React.FC = () => {

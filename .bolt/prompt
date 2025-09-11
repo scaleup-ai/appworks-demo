@@ -1,1 +1,2 @@
 - GET /api/v1/demo/openapi.yaml will now return the OpenAPI YAML for the Xero routes
+- the code base already follows a consistent naming convention and structure for files and folders so you better fucking well follow it if you're adding new stuff

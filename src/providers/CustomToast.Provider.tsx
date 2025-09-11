@@ -1,18 +1,15 @@
 import React from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "./store/store";
-import LoginForm from "./pages/login/Login.page";
-import SuccessScreen from "./pages/auth/Success.page";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const App: React.FC = () => {
-  const isAuthenticated = useSelector(
-    (state: RootState) => state.auth.isAuthenticated
-  );
-
+export const CustomToastProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
   return (
     <>
+      {children}
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -24,9 +21,8 @@ const App: React.FC = () => {
         draggable
         pauseOnHover
       />
-      {isAuthenticated ? <SuccessScreen /> : <LoginForm />}
     </>
   );
 };
 
-export default App;
+export default CustomToastProvider;
