@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import Nav from "../../components/Nav";
 
 const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
   children,
@@ -39,33 +40,8 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
             </div>
 
             <nav className="items-center hidden gap-4 md:flex">
-              <Link to="/" className={navLinkClass("/")}>
-                Home
-              </Link>
-              <Link to="/dashboard" className={navLinkClass("/dashboard")}>
-                Dashboard
-              </Link>
-              <Link to="/collections" className={navLinkClass("/collections")}>
-                Collections
-              </Link>
-              <Link to="/payments" className={navLinkClass("/payments")}>
-                Payments
-              </Link>
-              <button
-                onClick={() =>
-                  import("../../apis/xero.api").then(
-                    ({ getXeroAuthUrl, capturePostAuthRedirect }) => {
-                      try {
-                        capturePostAuthRedirect();
-                      } catch {}
-                      window.location.href = getXeroAuthUrl();
-                    }
-                  )
-                }
-                className="text-sm font-medium text-blue-600"
-              >
-                Sign in
-              </button>
+              {/* Dynamic nav rendered from routes */}
+              <Nav />
             </nav>
 
             <div className="flex items-center md:hidden">
@@ -82,37 +58,10 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
           </div>
         </div>
 
-        {/* Mobile menu */}
         {open && (
           <div className="bg-white border-t md:hidden">
             <div className="flex flex-col gap-2 px-4 py-3">
-              <Link to="/" className={navLinkClass("/")}>
-                Home
-              </Link>
-              <Link to="/dashboard" className={navLinkClass("/dashboard")}>
-                Dashboard
-              </Link>
-              <Link to="/collections" className={navLinkClass("/collections")}>
-                Collections
-              </Link>
-              <Link to="/payments" className={navLinkClass("/payments")}>
-                Payments
-              </Link>
-              <button
-                onClick={() =>
-                  import("../../apis/xero.api").then(
-                    ({ getXeroAuthUrl, capturePostAuthRedirect }) => {
-                      try {
-                        capturePostAuthRedirect();
-                      } catch {}
-                      window.location.href = getXeroAuthUrl();
-                    }
-                  )
-                }
-                className="text-sm font-medium text-blue-600"
-              >
-                Sign in
-              </button>
+              <Nav mobile onLinkClick={() => setOpen(false)} />
             </div>
           </div>
         )}
