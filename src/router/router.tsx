@@ -9,7 +9,7 @@ import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
 import AuthProtected from "./logic/AuthProtected.route-logic";
 
-const ROOT_PATH = (() => {
+export const ROOT_PATH = (() => {
   const envBase = (import.meta.env.BASE_URL as string) || "/";
   if (envBase.startsWith("/")) return envBase;
   try {
