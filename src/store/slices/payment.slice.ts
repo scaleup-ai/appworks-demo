@@ -18,7 +18,7 @@ const paymentSlice = createSlice({
   initialState,
   reducers: {
     // Reconcile payment actions
-    reconcilePaymentStart: (state) => {
+    reconcilePaymentStart: (state, action: PayloadAction<any | undefined>) => {
       state.isLoading = true;
       state.error = null;
     },
