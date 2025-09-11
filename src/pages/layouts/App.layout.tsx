@@ -74,22 +74,9 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
                 onClick={() => setOpen((v) => !v)}
                 className="p-2 text-gray-600 rounded-md hover:bg-gray-100"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-6 h-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d={
-                      open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"
-                    }
-                  />
-                </svg>
+                <span className="inline-flex items-center justify-center w-6 h-6 text-lg">
+                  {open ? "✖" : "☰"}
+                </span>
               </button>
             </div>
           </div>
@@ -141,22 +128,6 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
         <div className="flex flex-col items-center justify-between gap-4 px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8 md:flex-row">
           <div className="text-sm text-gray-600">
             © {new Date().getFullYear()} Scaleupai
-          </div>
-          <div className="flex items-center gap-4 text-sm">
-            <Link to="/privacy" className="text-gray-600 hover:text-gray-900">
-              Privacy
-            </Link>
-            <Link to="/terms" className="text-gray-600 hover:text-gray-900">
-              Terms
-            </Link>
-            <a
-              href="https://github.com/scaleup-ai/appworks-demo"
-              target="_blank"
-              rel="noreferrer"
-              className="text-gray-600 hover:text-gray-900"
-            >
-              Source
-            </a>
           </div>
         </div>
       </footer>
