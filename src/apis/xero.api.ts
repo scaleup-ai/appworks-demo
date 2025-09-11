@@ -1,5 +1,6 @@
 import axiosClient from './axios-client'
 import { API_BASE_URL } from './axios-client'
+import { XeroTokenRequest, XeroTokenSet } from '../types/api.types'
 
 // Minimal Xero API client based on provided OpenAPI subset.
 // This file provides small, typed helpers for the endpoints used by the app.
@@ -48,10 +49,22 @@ export async function getIntegrationStatus() {
   return resp
 }
 
+export async function saveXeroToken(request: XeroTokenRequest): Promise<void> {
+  const response = await axiosClient.post('/api/v1/xero/token', request);
+  return response.data;
+}
+
+export async function getXeroToken(clientId: string, tenantId: string): Promise<XeroTokenSet> {
+  const response = await axiosClient.get<XeroTokenSet>(`/api/v1/xero/token/${clientId}/${tenantId}`);
+  return response.data;
+}
+
 export default {
   setXeroCreds,
   startXeroAuth,
   handleOAuthRedirect,
   getIntegrationStatus,
   getXeroAuthUrl,
+  saveXeroToken,
+  getXeroToken,
 }
