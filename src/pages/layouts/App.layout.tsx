@@ -1,11 +1,23 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
   children,
   title,
 }) => {
   const [open, setOpen] = useState(false);
+  const location = useLocation();
+
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const navLinkClass = (path: string) => 
+    `text-sm transition-colors duration-200 ${
+      isActive(path) 
+        ? 'text-blue-600 font-medium' 
+        : 'text-gray-700 hover:text-blue-600'
+    }`;
 
   return (
     <div className="flex flex-col min-h-screen text-gray-900 bg-gray-50">
@@ -27,21 +39,27 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
             <nav className="items-center hidden gap-4 md:flex">
               <Link
                 to="/"
-                className="text-sm text-gray-700 hover:text-blue-600"
+                className={navLinkClass("/")}
               >
                 Home
               </Link>
               <Link
-                to="/demo"
-                className="text-sm text-gray-700 hover:text-blue-600"
+                to="/dashboard"
+                className={navLinkClass("/dashboard")}
               >
-                Demo
+                Dashboard
               </Link>
               <Link
-                to="/docs"
-                className="text-sm text-gray-700 hover:text-blue-600"
+                to="/collections"
+                className={navLinkClass("/collections")}
               >
-                Docs
+                Collections
+              </Link>
+              <Link
+                to="/payments"
+                className={navLinkClass("/payments")}
+              >
+                Payments
               </Link>
               <Link to="/login" className="text-sm font-medium text-blue-600">
                 Sign in
@@ -79,16 +97,19 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
         {open && (
           <div className="bg-white border-t md:hidden">
             <div className="flex flex-col gap-2 px-4 py-3">
-              <Link to="/" className="text-sm text-gray-700">
+              <Link to="/" className={navLinkClass("/")}>
                 Home
               </Link>
-              <Link to="/demo" className="text-sm text-gray-700">
-                Demo
+              <Link to="/dashboard" className={navLinkClass("/dashboard")}>
+                Dashboard
               </Link>
-              <Link to="/docs" className="text-sm text-gray-700">
-                Docs
+              <Link to="/collections" className={navLinkClass("/collections")}>
+                Collections
               </Link>
-              <Link to="/login" className="text-sm text-blue-600">
+              <Link to="/payments" className={navLinkClass("/payments")}>
+                Payments
+              </Link>
+              <Link to="/login" className="text-sm font-medium text-blue-600">
                 Sign in
               </Link>
             </div>
