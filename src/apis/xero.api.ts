@@ -2,6 +2,17 @@ import axiosClient from './axios-client'
 import { API_SERVICE_BASE_URL } from './axios-client'
 import { XeroTokenRequest, XeroTokenSet } from '../types/api.types'
 
+// Define routes enum locally per requirement
+export enum XeroApiRoutesLocal {
+  BASE = '/api/v1/xero',
+  CREDS = '/api/v1/xero/creds',
+  AUTH = '/api/v1/xero/auth',
+  OAUTH2_REDIRECT = '/api/v1/xero/oauth2/redirect',
+  INTEGRATION = '/api/v1/xero/integration',
+  TOKEN = '/api/v1/xero/token',
+  TOKEN_BY_IDS = '/api/v1/xero/token/{clientId}/{tenantId}',
+}
+
 // Minimal Xero API client based on provided OpenAPI subset.
 // This file provides small, typed helpers for the endpoints used by the app.
 
@@ -15,7 +26,7 @@ export async function setXeroCreds(params: {
   clientSecret: string
   redirectUri: string
 }): Promise<SetCredsResponse> {
-  const resp = await axiosClient.get<SetCredsResponse>('/api/v1/xero/creds', {
+  const resp = await axiosClient.get<SetCredsResponse>(XeroApiRoutesLocal.CREDS, {
     params,
     headers: { 'Content-Type': 'application/json' },
   })
@@ -31,12 +42,12 @@ export async function startXeroAuth(): Promise<import('axios').AxiosResponse> {
   // This endpoint issues a 302 redirect. We don't follow redirects here; the browser
   // will normally handle it when hitting the backend directly. For programmatic use,
   // return the full axios response so the caller can look at headers.location.
-  return axiosClient.get('/api/v1/xero/auth', { validateStatus: () => true })
+  return axiosClient.get(XeroApiRoutesLocal.AUTH, { validateStatus: () => true })
 }
 
 export function getXeroAuthUrl(): string {
   const base = (API_SERVICE_BASE_URL || '').replace(/\/$/, '')
-  return `${base}/api/v1/xero/auth`
+  return `${base}${XeroApiRoutesLocal.AUTH}`
 }
 
 // Store the intended post-auth redirect path in sessionStorage so the app
@@ -65,22 +76,23 @@ export function readAndClearPostAuthRedirect(): string | null {
 }
 
 export async function handleOAuthRedirect(query: { code?: string; state?: string }) {
-  const resp = await axiosClient.get('/api/v1/xero/oauth2/redirect', { params: query, validateStatus: () => true })
+  const resp = await axiosClient.get(XeroApiRoutesLocal.OAUTH2_REDIRECT, { params: query, validateStatus: () => true })
   return resp
 }
 
 export async function getIntegrationStatus() {
-  const resp = await axiosClient.get('/api/v1/xero/integration', { validateStatus: () => true })
+  const resp = await axiosClient.get(XeroApiRoutesLocal.INTEGRATION, { validateStatus: () => true })
   return resp
 }
 
 export async function saveXeroToken(request: XeroTokenRequest): Promise<void> {
-  const response = await axiosClient.post('/api/v1/xero/token', request);
+  const response = await axiosClient.post(XeroApiRoutesLocal.TOKEN, request);
   return response.data;
 }
 
 export async function getXeroToken(clientId: string, tenantId: string): Promise<XeroTokenSet> {
-  const response = await axiosClient.get<XeroTokenSet>(`/api/v1/xero/token/${clientId}/${tenantId}`);
+  const path = XeroApiRoutesLocal.TOKEN_BY_IDS.replace('{clientId}', encodeURIComponent(clientId)).replace('{tenantId}', encodeURIComponent(tenantId));
+  const response = await axiosClient.get<XeroTokenSet>(path);
   return response.data;
 }
 
