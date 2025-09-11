@@ -14,48 +14,44 @@ const Nav: React.FC<NavProps> = ({
 }) => {
   const linkClass = mobile ? "block text-sm py-2" : "text-sm px-3";
 
+  const handleLinkClick = () => {
+    // single, explicit place to invoke the optional callback
+    try {
+      onLinkClick?.();
+    } catch {}
+  };
+
+  const startXeroAuth = async () => {
+    try {
+      const { getXeroAuthUrl, capturePostAuthRedirect } = await import(
+        "../apis/xero.api"
+      );
+      try {
+        capturePostAuthRedirect();
+      } catch {}
+      window.location.href = getXeroAuthUrl();
+    } catch {
+      // noop
+    }
+  };
+
   return (
     <div className={className + " flex items-center gap-4"}>
-      <Link
-        to="/"
-        onClick={() => onLinkClick && onLinkClick()}
-        className={linkClass}
-      >
+      <Link to="/" onClick={handleLinkClick} className={linkClass}>
         Home
       </Link>
-      <Link
-        to="/dashboard"
-        onClick={() => onLinkClick && onLinkClick()}
-        className={linkClass}
-      >
+      <Link to="/dashboard" onClick={handleLinkClick} className={linkClass}>
         Dashboard
       </Link>
-      <Link
-        to="/collections"
-        onClick={() => onLinkClick && onLinkClick()}
-        className={linkClass}
-      >
+      <Link to="/collections" onClick={handleLinkClick} className={linkClass}>
         Collections
       </Link>
-      <Link
-        to="/payments"
-        onClick={() => onLinkClick && onLinkClick()}
-        className={linkClass}
-      >
+      <Link to="/payments" onClick={handleLinkClick} className={linkClass}>
         Payments
       </Link>
 
       <button
-        onClick={() =>
-          import("../apis/xero.api").then(
-            ({ getXeroAuthUrl, capturePostAuthRedirect }) => {
-              try {
-                capturePostAuthRedirect();
-              } catch {}
-              window.location.href = getXeroAuthUrl();
-            }
-          )
-        }
+        onClick={startXeroAuth}
         className={
           mobile
             ? "text-sm font-medium text-blue-600 mt-2"

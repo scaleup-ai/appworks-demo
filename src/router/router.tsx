@@ -112,29 +112,37 @@ export const routes: ExtendedRouteObject[] = [
 ];
 
 const applyRouterMiddleware = (route: ExtendedRouteObject): RouteObject => {
-  // Compose wrappers: global wrappers first, then any per-route wrappers.
+  // Create the base element for this route. If the route needs per-route
+  // logic (like auth checks), apply that first to the raw element. Then
+  // apply global wrappers around the entire result. This ordering ensures
+  // global handlers (e.g., RedirectHandler) mount before auth guards so
+  // they can set short-lived state (like session flags) used by guards.
   const originalElement = route.routeObject.element as ReactElement | undefined;
-  const wrappers = [...GLOBAL_ROUTE_WRAPPERS, ...(route.wrappers ?? [])];
-  const redirectWrapped = wrapElement(originalElement, wrappers);
 
-  // Per-route logic wrappers (e.g., auth checks) applied here.
+  // Apply per-route logic first
+  let elementWithLogic: ReactElement | undefined = originalElement;
   switch (route.logicType) {
-    case ROUTE_LOGIC_TYPE.AUTH_CHECK: {
-      return {
-        ...route.routeObject,
-        element: (
-          <AuthProtectedRouteLogic>
-            {redirectWrapped as ReactElement}
-          </AuthProtectedRouteLogic>
-        ),
-      };
-    }
+    case ROUTE_LOGIC_TYPE.AUTH_CHECK:
+      elementWithLogic = (
+        <AuthProtectedRouteLogic>
+          {originalElement as ReactElement}
+        </AuthProtectedRouteLogic>
+      );
+      break;
     default:
-      return {
-        ...route.routeObject,
-        element: redirectWrapped as ReactElement,
-      };
+      elementWithLogic = originalElement;
+      break;
   }
+
+  // Now apply global wrappers (RedirectHandler, etc.) around the whole
+  // element that already contains per-route logic.
+  const wrappers = [...GLOBAL_ROUTE_WRAPPERS, ...(route.wrappers ?? [])];
+  const wrapped = wrapElement(elementWithLogic, wrappers);
+
+  return {
+    ...route.routeObject,
+    element: wrapped as ReactElement,
+  };
 };
 
 export const browserRouter = createBrowserRouter(
