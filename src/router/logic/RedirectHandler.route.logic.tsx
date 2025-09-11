@@ -17,6 +17,7 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [processing, setProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -50,18 +51,19 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
 
           // If backend handled the callback OK, navigate to the stored post-auth
           // redirect (if any), else fall back to the state param. On failure,
-          // send the user back to the Xero auth start so they can retry.
+          // surface an error and let the user choose to retry so we don't
+          // automatically send them back into the OAuth loop.
           const stored = readAndClearPostAuthRedirect();
           if (ok) {
             const target = stored || state || "/";
             navigate(target, { replace: true });
           } else {
-            window.location.href = getXeroAuthUrl();
+            if (mounted) setErrorMessage("Xero authentication failed. You can retry below.");
           }
         } catch (err) {
           if (!mounted) return;
-          // On error, start Xero auth so the user can retry (full-page nav).
-          window.location.href = getXeroAuthUrl();
+          // Don't auto-redirect to Xero on error — show a retry UI instead.
+          if (mounted) setErrorMessage("An error occurred while processing the Xero callback. Retry to continue.");
         } finally {
           try {
             sessionStorage.removeItem("xero_processing");
@@ -87,6 +89,40 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
         className="fixed inset-0 flex items-center justify-center bg-white"
       >
         <LoadingSpinner size="lg" />
+      </div>
+    );
+
+  if (errorMessage)
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center p-6 bg-white">
+        <div className="max-w-lg text-center">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Authentication issue</h2>
+          <p className="mb-6 text-sm text-gray-700">{errorMessage}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => {
+                try {
+                  // start Xero auth explicitly on user action
+                  window.location.href = getXeroAuthUrl();
+                } catch {
+                  // noop
+                }
+              }}
+              className="px-5 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              Retry Connect
+            </button>
+            <button
+              onClick={() => {
+                setErrorMessage(null);
+                navigate("/", { replace: true });
+              }}
+              className="px-4 py-3 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Return home
+            </button>
+          </div>
+        </div>
       </div>
     );
 

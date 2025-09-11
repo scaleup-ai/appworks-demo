@@ -105,8 +105,11 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
 // then the main app routes.
 export const routes: ExtendedRouteObject[] = [
   ...utilityRoutes,
-  ...lameRoutes.map((r) => ({ ...r, logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK })), // Hide lame routes from nav
-  ...mainAppRoutes,
+  ...lameRoutes, // Hide lame routes from nav
+  ...mainAppRoutes.map((r) => ({
+    ...r,
+    logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
+  })),
 ];
 
 const applyRouterMiddleware = (route: ExtendedRouteObject): RouteObject => {
