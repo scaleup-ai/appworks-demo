@@ -9,8 +9,8 @@ import { login } from '../store/authSlice'
  * This function is intentionally small and takes the app's dispatch so it
  * can be called from components without importing the store directly.
  */
-export default async function handleXeroRedirect(dispatch: AppDispatch) {
-  if (typeof window === 'undefined') return
+export default async function handleXeroRedirect(dispatch: AppDispatch): Promise<boolean> {
+  if (typeof window === 'undefined') return false
 
   try {
     const url = new URL(window.location.href)
@@ -18,7 +18,7 @@ export default async function handleXeroRedirect(dispatch: AppDispatch) {
     const state = url.searchParams.get('state')
 
     // Nothing to do if we didn't receive an authorization code
-    if (!code) return
+    if (!code) return false
 
     // Call backend to finish the OAuth flow (backend may exchange code for tokens)
     const resp = await handleOAuthRedirect({ code, state: state || undefined })
@@ -33,20 +33,24 @@ export default async function handleXeroRedirect(dispatch: AppDispatch) {
         const clean = window.location.pathname + window.location.hash
         window.history.replaceState(null, '', clean)
       } catch { }
-    } else {
-      // Backend returned non-2xx. Log and optionally show a message.
-      // Keep the query params so developers can inspect them if needed.
-      // eslint-disable-next-line no-console
-      console.error('Xero redirect handling failed', resp)
-      try {
-        window.alert('Xero authentication failed — see console for details.')
-      } catch { }
+
+      return true
     }
+
+    // Backend returned non-2xx. Log and optionally show a message.
+    // eslint-disable-next-line no-console
+    console.error('Xero redirect handling failed', resp)
+    try {
+      window.alert('Xero authentication failed — see console for details.')
+    } catch { }
+
+    return false
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('Error processing Xero redirect', err)
     try {
       window.alert('Error processing Xero redirect — see console for details.')
     } catch { }
+    return false
   }
 }

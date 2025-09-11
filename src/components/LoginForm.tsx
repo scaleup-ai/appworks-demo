@@ -1,15 +1,29 @@
 import React, { useEffect } from "react";
-import { useDispatch } from 'react-redux'
+import { useDispatch } from "react-redux";
 import { getXeroAuthUrl } from "../apis/xero";
-import handleXeroRedirect from '../utils/xeroRedirectHandler'
+import handleXeroRedirect from "../utils/xeroRedirectHandler";
 
 const LoginForm: React.FC = () => {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    // Check for OAuth redirect params when the component mounts
-    void handleXeroRedirect(dispatch as any)
-  }, [dispatch])
+    // Check for OAuth redirect params when the component mounts. Use an
+    // async IIFE so we can await the handler and avoid unhandled promise
+    // rejections seen previously.
+    (async () => {
+      try {
+        const ok = await handleXeroRedirect(dispatch as any);
+        // future: show a toast or navigate on success
+        if (ok) {
+          // eslint-disable-next-line no-console
+          console.log("Xero auth completed successfully");
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Unhandled error handling Xero redirect", err);
+      }
+    })();
+  }, [dispatch]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
