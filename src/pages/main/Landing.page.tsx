@@ -1,39 +1,47 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import AppLayout from "../layouts/App.layout";
+import { ROOT_PATH } from "../../router/router";
 
 export const LandingPage: React.FC = () => {
   return (
     <AppLayout title="Home">
-      <section className="max-w-3xl mx-auto text-center py-16">
-        <h1 className="text-4xl font-extrabold text-gray-900 mb-4">
+      <section className="max-w-3xl py-16 mx-auto text-center">
+        <h1 className="mb-4 text-4xl font-extrabold text-gray-900">
           Connect Xero in seconds
         </h1>
-        <p className="text-lg text-gray-600 mb-8">
+        <p className="mb-8 text-lg text-gray-600">
           This demo shows a minimal Xero OAuth flow. Click the button below to
           start the authentication process and connect your Xero organisation.
         </p>
 
         <div className="flex items-center justify-center gap-4">
-          <a
-            href="/cheonglol/login"
-            className="inline-block px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700"
-          >
-            Connect Xero
-          </a>
+          {(() => {
+            const prefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
+            const loginPath = prefix + "/login";
+            return (
+              <Link
+                to={loginPath}
+                className="inline-block px-6 py-3 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+              >
+                Connect Xero
+              </Link>
+            );
+          })()}
 
           <a
             href="https://developer.xero.com/"
             target="_blank"
             rel="noreferrer"
-            className="inline-block px-6 py-3 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+            className="inline-block px-6 py-3 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
           >
             Learn about Xero APIs
           </a>
         </div>
 
-        <div className="mt-12 text-left bg-white p-6 rounded shadow-sm">
-          <h3 className="font-semibold mb-2">How it works</h3>
-          <ol className="list-decimal list-inside text-sm text-gray-700">
+        <div className="p-6 mt-12 text-left bg-white rounded shadow-sm">
+          <h3 className="mb-2 font-semibold">How it works</h3>
+          <ol className="text-sm text-gray-700 list-decimal list-inside">
             <li>
               Click Connect Xero — you'll be redirected to Xero to consent.
             </li>

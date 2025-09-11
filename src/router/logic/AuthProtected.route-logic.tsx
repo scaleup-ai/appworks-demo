@@ -1,9 +1,9 @@
 import type { ReactElement } from "react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
-import { RootState } from "../../store/store";
 import { getIntegrationStatus } from "../../apis/xero.api";
+import { RootState } from "../../store/store";
 import { ROOT_PATH } from "../router";
 
 const AuthProtected = ({ children }: { children: ReactElement }) => {

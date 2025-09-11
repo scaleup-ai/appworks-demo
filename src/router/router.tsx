@@ -11,13 +11,8 @@ import AuthProtected from "./logic/AuthProtected.route-logic";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
-export const ROOT_PATH = (import.meta.env.BASE_URL as string) || "/";
-
-// Helper: build a path relative to ROOT_PATH (which may be "/" or "/app/")
-const withRoot = (segment: string) => {
-  const prefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
-  return prefix + "/" + segment.replace(/(^\/+|\/+$)/g, "");
-};
+export const ROOT_PATH =
+  (import.meta.env.BASE_URL as string).replace(/\/+$/g, "") || "/";
 
 enum ROUTE_LOGIC_TYPE {
   AUTH_CHECK = "AUTH_CHECK",
@@ -45,7 +40,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Login",
     logicType: undefined,
     routeObject: {
-      path: withRoot("login"),
+      path: `${ROOT_PATH}/login`,
       element: <LoginPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -54,7 +49,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Success",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: withRoot("success"),
+      path: `${ROOT_PATH}/success`,
       element: <SuccessPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -63,7 +58,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Dashboard",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: withRoot("dashboard"),
+      path: `${ROOT_PATH}/dashboard`,
       element: <DashboardPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -72,7 +67,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Collections",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: withRoot("collections"),
+      path: `${ROOT_PATH}/collections`,
       element: <CollectionsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -81,7 +76,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Payments",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: withRoot("payments"),
+      path: `${ROOT_PATH}/payments`,
       element: <PaymentsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
