@@ -26,18 +26,22 @@ export default async function handleXeroRedirect(dispatch: AppDispatch): Promise
       // single dispatch: complete login & mark redirect handled
       dispatch(completeLoginFromRedirect('xero') as any)
 
-      // clean URL (ignore replace errors)
-      window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+      // clean URL (ignore replace errors such as cross-origin history issues)
+      try {
+        window.history.replaceState(null, '', window.location.pathname + window.location.hash)
+      } catch (e) {
+        // ignore - some hosts or embedded contexts may reject replaceState
+      }
       return true
     }
 
-  // backend returned non-2xx — surface a concise toast with available message
-  const msg = response?.data?.message || response?.statusText || 'Xero authentication failed.'
-  showToast(`Xero authentication failed: ${msg}`, { type: 'error' })
+    // backend returned non-2xx — surface a concise toast with available message
+    const msg = response?.data?.message || response?.statusText || 'Xero authentication failed.'
+    showToast(`Xero authentication failed: ${msg}`, { type: 'error' })
     return false
   } catch (err) {
-  const message = (err as any)?.message || String(err)
-  showToast(`Error processing Xero redirect: ${message}`, { type: 'error' })
+    const message = (err as any)?.message || String(err)
+    showToast(`Error processing Xero redirect: ${message}`, { type: 'error' })
     return false
   }
 }

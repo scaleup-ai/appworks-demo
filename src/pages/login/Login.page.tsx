@@ -8,7 +8,18 @@ const LoginPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   useEffect(() => {
-    void handleXeroRedirect(dispatch as any);
+    let mounted = true;
+    (async () => {
+      try {
+        if (!mounted) return;
+        await handleXeroRedirect(dispatch as any);
+      } catch {
+        // handler already shows toast on error
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, [dispatch]);
 
   const handleSubmit = (e: React.FormEvent) => {

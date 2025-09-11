@@ -9,8 +9,20 @@ import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
 import AuthProtected from "./logic/AuthProtected.route-logic";
 
-// Use Vite environment variable for the base path. Falls back to '/'.
-export const ROOT_PATH = (import.meta.env.BASE_URL as string) || "/";
+const ROOT_PATH = (() => {
+  const envBase = (import.meta.env.BASE_URL as string) || "/";
+  if (envBase.startsWith("/")) return envBase;
+  try {
+    return (
+      new URL(
+        envBase,
+        typeof window !== "undefined" ? window.location.origin : undefined
+      ).pathname || "/"
+    );
+  } catch {
+    return "/";
+  }
+})();
 
 enum ROUTE_LOGIC_TYPE {
   AUTH_CHECK = "AUTH_CHECK",
