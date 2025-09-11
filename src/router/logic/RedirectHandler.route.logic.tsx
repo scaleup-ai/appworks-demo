@@ -5,6 +5,7 @@ import {
   handleOAuthRedirect,
   readAndClearPostAuthRedirect,
 } from "../../apis/xero.api";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { ROOT_PATH } from "../router";
 
 // A small route-level redirect handler. It receives the route element as
@@ -70,8 +71,17 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
     };
   }, [location.pathname, location.search, location.hash, navigate]);
 
-  // While processing the OAuth callback, render nothing (or a spinner if desired).
-  if (processing) return <div />;
+  // While processing the OAuth callback, render a full-viewport centered spinner.
+  if (processing)
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed inset-0 flex items-center justify-center bg-white"
+      >
+        <LoadingSpinner size="lg" />
+      </div>
+    );
 
   return children;
 };

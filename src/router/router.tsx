@@ -64,6 +64,19 @@ export const routes: ExtendedRouteObject[] = [
       errorElement: <ErrorBoundaryPage />,
     },
   },
+  // Frontend route used only to mount the global RedirectHandler when the
+  // OAuth provider redirects the browser to a frontend callback path such as
+  // /xero/oauth2/redirect. The element can be empty because the handler will
+  // immediately process the URL and navigate away.
+  {
+    title: "Xero OAuth Callback",
+    logicType: undefined,
+    routeObject: {
+      path: `${ROOT_PATH}/xero/oauth2/redirect`,
+      element: <div />, // intentionally blank; RedirectHandler will act
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
   {
     title: "Success",
     routeObject: {
