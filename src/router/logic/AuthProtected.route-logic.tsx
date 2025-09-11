@@ -6,7 +6,7 @@ import { getIntegrationStatus } from "../../apis/xero.api";
 import { RootState } from "../../store/store";
 import { ROOT_PATH } from "../router";
 
-const AuthProtected = ({ children }: { children: ReactElement }) => {
+const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
   const [checking, setChecking] = useState(false);
   const [integrated, setIntegrated] = useState<boolean | null>(null);
@@ -53,4 +53,4 @@ const AuthProtected = ({ children }: { children: ReactElement }) => {
   return <Navigate to={loginPath} replace />;
 };
 
-export default AuthProtected;
+export default AuthProtectedRouteLogic;

@@ -1,5 +1,5 @@
 import axiosClient from './axios-client'
-import { API_BASE_URL } from './axios-client'
+import { API_SERVICE_BASE_URL } from './axios-client'
 import { XeroTokenRequest, XeroTokenSet } from '../types/api.types'
 
 // Minimal Xero API client based on provided OpenAPI subset.
@@ -35,8 +35,33 @@ export async function startXeroAuth(): Promise<import('axios').AxiosResponse> {
 }
 
 export function getXeroAuthUrl(): string {
-  const base = (API_BASE_URL || '').replace(/\/$/, '')
+  const base = (API_SERVICE_BASE_URL || '').replace(/\/$/, '')
   return `${base}/api/v1/xero/auth`
+}
+
+// Store the intended post-auth redirect path in sessionStorage so the app
+// can return the user to the page they were trying to access.
+export function capturePostAuthRedirect(redirectPath?: string) {
+  try {
+    const path =
+      redirectPath ??
+      (typeof window !== 'undefined'
+        ? window.location.pathname + window.location.search + window.location.hash
+        : '/');
+    sessionStorage.setItem('xero_post_auth_redirect', path);
+  } catch (err) {
+    // ignore storage errors
+  }
+}
+
+export function readAndClearPostAuthRedirect(): string | null {
+  try {
+    const v = sessionStorage.getItem('xero_post_auth_redirect');
+    if (v) sessionStorage.removeItem('xero_post_auth_redirect');
+    return v;
+  } catch (err) {
+    return null;
+  }
 }
 
 export async function handleOAuthRedirect(query: { code?: string; state?: string }) {
@@ -65,6 +90,8 @@ export default {
   handleOAuthRedirect,
   getIntegrationStatus,
   getXeroAuthUrl,
+  capturePostAuthRedirect,
+  readAndClearPostAuthRedirect,
   saveXeroToken,
   getXeroToken,
 }

@@ -10,10 +10,10 @@ import { logout } from '../store/authSlice'
 //   returning { accessToken, refreshToken? }. Update endpoint if your backend differs.
 
 // Prefer Vite env; fall back to the (HTTP) service host used by the demo backend.
-export const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'https://service.scaleupai.tech'
+export const API_SERVICE_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || 'https://service.scaleupai.tech'
 
 const axiosClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_SERVICE_BASE_URL,
   timeout: 10000,
   headers: {
     Accept: 'application/json',
@@ -78,7 +78,7 @@ async function refreshAccessToken(): Promise<string> {
 
   // Use plain axios (not axiosClient) to avoid interceptors and baseURL recursion
   const resp = await axios.post(
-    `${API_BASE_URL}/auth/refresh`,
+    `${API_SERVICE_BASE_URL}/auth/refresh`,
     { refreshToken },
     { headers: { 'Content-Type': 'application/json' } }
   )
