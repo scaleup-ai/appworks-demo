@@ -127,4 +127,163 @@ paths:
               schema:
                 type: string
 
+  # Receivables Autopilot - Receivable-related endpoints added for demo/testing
+
+  /api/v1/xero/token:
+    post:
+      summary: Persist a Xero token set
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                tenantId:
+                  type: string
+                tokenSet:
+                  type: object
+                  properties:
+                    refresh_token:
+                      type: string
+                    access_token:
+                      type: string
+                    expires_at:
+                      type: string
+                    scope:
+                      oneOf:
+                        - type: string
+                        - type: array
+                          items:
+                            type: string
+      responses:
+        "204":
+          description: Persisted
+        "400":
+          description: Bad request
+
+  /api/v1/xero/token/{clientId}/{tenantId}:
+    get:
+      summary: Fetch persisted Xero token for client and tenant
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Token found
+          content:
+            application/json:
+              schema:
+                type: object
+        "404":
+          description: Not found
+
+  /api/v1/email/draft:
+    post:
+      summary: Generate an email draft for an invoice reminder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoiceId:
+                  type: string
+                amount:
+                  type: number
+                dueDate:
+                  type: string
+                stage:
+                  type: string
+                customerName:
+                  type: string
+      responses:
+        "200":
+          description: Draft generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subject:
+                    type: string
+                  bodyText:
+                    type: string
+                  bodyHtml:
+                    type: string
+
+  /api/v1/collections/start:
+    post:
+      summary: Start the Collections Reminder background scanner
+      responses:
+        "204":
+          description: Started
+
+  /api/v1/collections/stop:
+    post:
+      summary: Stop the Collections Reminder background scanner
+      responses:
+        "204":
+          description: Stopped
+
+  /api/v1/collections/scan:
+    post:
+      summary: Trigger a one-off collections scan (on-demand)
+      responses:
+        "202":
+          description: Scan triggered
+
+  /api/v1/collections/scheduled:
+    get:
+      summary: List persisted REMINDER.SCHEDULED events
+      responses:
+        "200":
+          description: Array of scheduled reminders
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+
+  /api/v1/payments/reconcile:
+    post:
+      summary: Attempt to reconcile an incoming payment to an invoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                paymentId:
+                  type: string
+                amount:
+                  type: number
+                reference:
+                  type: string
+      responses:
+        "200":
+          description: Reconciliation result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matched:
+                    type: boolean
+                  invoiceId:
+                    type: string
+
 components: {}

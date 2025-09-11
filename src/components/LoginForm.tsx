@@ -1,7 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useDispatch } from 'react-redux'
 import { getXeroAuthUrl } from "../apis/xero";
+import handleXeroRedirect from '../utils/xeroRedirectHandler'
 
 const LoginForm: React.FC = () => {
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    // Check for OAuth redirect params when the component mounts
+    void handleXeroRedirect(dispatch as any)
+  }, [dispatch])
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Perform a full navigation so the browser follows the backend's 302 -> Xero
@@ -18,8 +27,8 @@ const LoginForm: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex items-center justify-center min-h-screen px-4 bg-gray-50">
+      <div className="w-full max-w-md space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold text-gray-900">Sign in to Xero</h2>
           <p className="mt-2 text-sm text-gray-600">
@@ -27,11 +36,11 @@ const LoginForm: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white py-8 px-6 shadow-sm rounded-lg border">
+        <div className="px-6 py-8 bg-white border rounded-lg shadow-sm">
           <form className="space-y-6" onSubmit={handleSubmit}>
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white transition-colors bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Sign in to Xero
             </button>
