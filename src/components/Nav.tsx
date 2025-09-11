@@ -1,6 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { routes, ROOT_PATH } from "../router/router";
+import { Link } from "react-router-dom";
 
 interface NavProps {
   className?: string;
@@ -13,49 +12,39 @@ const Nav: React.FC<NavProps> = ({
   mobile = false,
   onLinkClick,
 }) => {
-  const location = useLocation();
-
-  const isActive = (path: string) => {
-    return (
-      location.pathname === path || location.pathname.startsWith(path + "/")
-    );
-  };
-
-  const navLinkClass = (path: string) =>
-    `text-sm transition-colors duration-200 ${
-      isActive(path)
-        ? "text-blue-600 font-medium"
-        : "text-gray-700 hover:text-blue-600"
-    }`;
-
-  // Filter out utility routes (like the OAuth callback) and any hidden routes
-  const visible = routes.filter((r) => {
-    const p = (r.routeObject?.path ?? "").toString();
-    if (!p) return false;
-    if (p.includes("/xero/oauth2/redirect")) return false;
-    if (r.hidden) return false;
-    return true;
-  });
+  const linkClass = mobile ? "block text-sm py-2" : "text-sm px-3";
 
   return (
-    <div className={className}>
-      {visible.map((r, idx) => {
-        const path = (r.routeObject.path as string) || ROOT_PATH;
-        // Skip entries that are clearly not meant for nav
-        if (!r.title) return null;
-        return (
-          <Link
-            key={idx}
-            to={path}
-            onClick={() => onLinkClick && onLinkClick()}
-            className={navLinkClass(path)}
-          >
-            {r.title}
-          </Link>
-        );
-      })}
+    <div className={className + " flex items-center gap-4"}>
+      <Link
+        to="/"
+        onClick={() => onLinkClick && onLinkClick()}
+        className={linkClass}
+      >
+        Home
+      </Link>
+      <Link
+        to="/dashboard"
+        onClick={() => onLinkClick && onLinkClick()}
+        className={linkClass}
+      >
+        Dashboard
+      </Link>
+      <Link
+        to="/collections"
+        onClick={() => onLinkClick && onLinkClick()}
+        className={linkClass}
+      >
+        Collections
+      </Link>
+      <Link
+        to="/payments"
+        onClick={() => onLinkClick && onLinkClick()}
+        className={linkClass}
+      >
+        Payments
+      </Link>
 
-      {/* Sign in / Connect Xero action (kept in nav for convenience) */}
       <button
         onClick={() =>
           import("../apis/xero.api").then(

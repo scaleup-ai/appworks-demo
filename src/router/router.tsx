@@ -27,8 +27,7 @@ const wrapElement = (
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
-export const ROOT_PATH =
-  (import.meta.env.BASE_URL as string).replace(/\/+$/g, "") || "/";
+export const ROOT_PATH = (import.meta.env.BASE_URL as string) || "/";
 
 enum ROUTE_LOGIC_TYPE {
   AUTH_CHECK = "AUTH_CHECK",

@@ -7,7 +7,6 @@ import {
   getXeroAuthUrl,
 } from "../../apis/xero.api";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { ROOT_PATH } from "../router";
 
 // A small route-level redirect handler. It receives the route element as
 // children and can perform client-side checks (query params, hashes, etc.)
@@ -58,12 +57,18 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
             const target = stored || state || "/";
             navigate(target, { replace: true });
           } else {
-            if (mounted) setErrorMessage("Xero authentication failed. You can retry below.");
+            if (mounted)
+              setErrorMessage(
+                "Xero authentication failed. You can retry below."
+              );
           }
         } catch (err) {
           if (!mounted) return;
           // Don't auto-redirect to Xero on error — show a retry UI instead.
-          if (mounted) setErrorMessage("An error occurred while processing the Xero callback. Retry to continue.");
+          if (mounted)
+            setErrorMessage(
+              "An error occurred while processing the Xero callback. Retry to continue."
+            );
         } finally {
           try {
             sessionStorage.removeItem("xero_processing");
@@ -96,7 +101,9 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center p-6 bg-white">
         <div className="max-w-lg text-center">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">Authentication issue</h2>
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">
+            Authentication issue
+          </h2>
           <p className="mb-6 text-sm text-gray-700">{errorMessage}</p>
           <div className="flex items-center justify-center gap-3">
             <button
