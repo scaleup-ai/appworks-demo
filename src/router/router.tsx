@@ -9,20 +9,15 @@ import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
 import AuthProtected from "./logic/AuthProtected.route-logic";
 
-export const ROOT_PATH = (() => {
-  const envBase = (import.meta.env.BASE_URL as string) || "/";
-  if (envBase.startsWith("/")) return envBase;
-  try {
-    return (
-      new URL(
-        envBase,
-        typeof window !== "undefined" ? window.location.origin : undefined
-      ).pathname || "/"
-    );
-  } catch {
-    return "/";
-  }
-})();
+// Use the Vite BASE_URL directly as the router root. Rely on the environment
+// to control the base path — less logic, as requested.
+export const ROOT_PATH = (import.meta.env.BASE_URL as string) || "/";
+
+// Helper: build a path relative to ROOT_PATH (which may be "/" or "/app/")
+const withRoot = (segment: string) => {
+  const prefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
+  return prefix + "/" + segment.replace(/(^\/+|\/+$)/g, "");
+};
 
 enum ROUTE_LOGIC_TYPE {
   AUTH_CHECK = "AUTH_CHECK",
@@ -41,7 +36,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Home",
     logicType: undefined,
     routeObject: {
-      path: `${ROOT_PATH}/`,
+      path: ROOT_PATH,
       element: <LandingPage />,
       errorElement: <ErrorBoundaryPage />, // Applies to all
     },
@@ -50,7 +45,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Login",
     logicType: undefined,
     routeObject: {
-      path: `${ROOT_PATH}/login`,
+      path: withRoot("login"),
       element: <LoginPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -59,7 +54,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Success",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: `${ROOT_PATH}/success`,
+      path: withRoot("success"),
       element: <SuccessPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -68,7 +63,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Dashboard",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: `${ROOT_PATH}/dashboard`,
+      path: withRoot("dashboard"),
       element: <DashboardPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -77,7 +72,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Collections",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: `${ROOT_PATH}/collections`,
+      path: withRoot("collections"),
       element: <CollectionsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -86,7 +81,7 @@ export const routes: ExtendedRouteObject[] = [
     title: "Payments",
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
     routeObject: {
-      path: `${ROOT_PATH}/payments`,
+      path: withRoot("payments"),
       element: <PaymentsPage />,
       errorElement: <ErrorBoundaryPage />,
     },

@@ -47,7 +47,10 @@ const AuthProtected = ({ children }: { children: ReactElement }) => {
   // If integration check passed, allow access. Otherwise redirect to login.
   if (integrated) return children;
 
-  return <Navigate to={`${ROOT_PATH}/login`} replace />;
+  // Build a path relative to the app root (ROOT_PATH may be "/" or "/app/")
+  const rootPrefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
+  const loginPath = rootPrefix + "/login";
+  return <Navigate to={loginPath} replace />;
 };
 
 export default AuthProtected;
