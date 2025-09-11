@@ -23,7 +23,7 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
     // Example: https://scaleupai.tech/api/v1/xero/oauth2/redirect?code=...&state=...
     try {
       const href = window.location.href || "";
-      const callbackPath = "/api/v1/xero/oauth2/redirect";
+      const callbackPath = "/xero/oauth2/redirect";
       if (!href.includes(callbackPath)) return;
 
       const url = new URL(href);
