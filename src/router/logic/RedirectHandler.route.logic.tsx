@@ -35,6 +35,11 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
       // Avoid double-processing
       if (!mounted) return;
 
+      // mark that we're processing a callback so other route guards don't
+      // immediately redirect back to Xero and cause a loop.
+      try {
+        sessionStorage.setItem("xero_processing", "1");
+      } catch {}
       setProcessing(true);
       (async () => {
         try {
@@ -58,6 +63,9 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
           // On error, start Xero auth so the user can retry (full-page nav).
           window.location.href = getXeroAuthUrl();
         } finally {
+          try {
+            sessionStorage.removeItem("xero_processing");
+          } catch {}
           if (mounted) setProcessing(false);
         }
       })();

@@ -51,6 +51,23 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
   // If integration check passed, allow access. Otherwise start Xero auth.
   if (integrated) return children;
 
+  // If a redirect callback is currently being processed, don't start a new
+  // auth flow (avoids an immediate loop where redirect handler and this
+  // guard race to start Xero). We detect this via a short-lived session flag
+  // or by checking the current URL for the callback path.
+  try {
+    const processing =
+      (typeof window !== "undefined" &&
+        (sessionStorage.getItem("xero_processing") === "1" ||
+          window.location.href.includes("/xero/oauth2/redirect"))) ||
+      false;
+
+    if (processing) {
+      // let the redirect handler finish; render a minimal placeholder
+      return <div />;
+    }
+  } catch {}
+
   try {
     capturePostAuthRedirect();
   } catch {}

@@ -18,11 +18,14 @@ export const LandingPage: React.FC = () => {
     <AppLayout title="Home">
       <section className="max-w-3xl py-16 mx-auto text-center">
         <h1 className="mb-4 text-4xl font-extrabold text-gray-900">
-          Connect Xero in seconds
+          Scaleupai — early preview
         </h1>
         <p className="mb-8 text-lg text-gray-600">
-          This demo shows a minimal Xero OAuth flow. Click the button below to
-          start the authentication process and connect your Xero organisation.
+          Scaleupai is an early preview that connects to your Xero organisation
+          to surface invoices, payments, and collections data so you can
+          automate receivables workflows and get a simple dashboard view of cash
+          collection activity. Click Connect Xero to start a quick end-to-end
+          flow.
         </p>
 
         <div className="flex items-center justify-center gap-4">
@@ -66,8 +69,9 @@ export const LandingPage: React.FC = () => {
               Xero returns a code to the backend which exchanges it for tokens.
             </li>
             <li>
-              The app detects the successful integration and shows the success
-              screen.
+              Scaleupai syncs basic accounting data (invoices, payments) and
+              surfaces it in the dashboard so you can review collections and
+              payment status.
             </li>
           </ol>
         </div>
