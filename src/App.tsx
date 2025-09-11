@@ -1,10 +1,10 @@
 import React from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "./store/store";
-import LoginForm from "./pages/login/Login.page";
-import SuccessScreen from "./pages/auth/Success.page";
+import { RouterProvider } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { browserRouter } from "./router/router";
+import { RootState } from "./store/store";
 
 const App: React.FC = () => {
   const isAuthenticated = useSelector(
@@ -24,7 +24,7 @@ const App: React.FC = () => {
         draggable
         pauseOnHover
       />
-      {isAuthenticated ? <SuccessScreen /> : <LoginForm />}
+      <RouterProvider router={browserRouter} />
     </>
   );
 };
