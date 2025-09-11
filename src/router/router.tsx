@@ -60,16 +60,21 @@ const utilityRoutes: ExtendedRouteObject[] = [
   },
 ];
 
-export const mainAppRoutes: ExtendedRouteObject[] = [
+/**
+ * Routes that do not require authentication.
+ */
+export const lameRoutes: ExtendedRouteObject[] = [
   {
     title: "Home",
-    logicType: undefined,
     routeObject: {
       path: ROOT_PATH,
       element: <LandingPage />,
       errorElement: <ErrorBoundaryPage />, // Applies to all
     },
   },
+];
+
+export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Dashboard",
     routeObject: {
@@ -100,6 +105,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
 // then the main app routes.
 export const routes: ExtendedRouteObject[] = [
   ...utilityRoutes,
+  ...lameRoutes.map((r) => ({ ...r, logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK })), // Hide lame routes from nav
   ...mainAppRoutes,
 ];
 
