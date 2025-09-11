@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   handleOAuthRedirect,
   readAndClearPostAuthRedirect,
+  getXeroAuthUrl,
 } from "../../apis/xero.api";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { ROOT_PATH } from "../router";
@@ -43,21 +44,19 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
           const ok = resp && resp.status >= 200 && resp.status < 300;
 
           // If backend handled the callback OK, navigate to the stored post-auth
-          // redirect (if any), else fall back to state param or /success.
-          const rootPrefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
-          const loginPath = `${rootPrefix}/login`;
-
+          // redirect (if any), else fall back to the state param. On failure,
+          // send the user back to the Xero auth start so they can retry.
           const stored = readAndClearPostAuthRedirect();
           if (ok) {
-            const target = stored || state || `${rootPrefix}/success`;
+            const target = stored || state || "/";
             navigate(target, { replace: true });
           } else {
-            navigate(loginPath, { replace: true });
+            window.location.href = getXeroAuthUrl();
           }
         } catch (err) {
           if (!mounted) return;
-          const rootPrefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
-          navigate(`${rootPrefix}/login`, { replace: true });
+          // On error, start Xero auth so the user can retry (full-page nav).
+          window.location.href = getXeroAuthUrl();
         } finally {
           if (mounted) setProcessing(false);
         }

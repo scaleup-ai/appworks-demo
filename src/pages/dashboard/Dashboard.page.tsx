@@ -84,7 +84,16 @@ const DashboardPage: React.FC = () => {
               className="w-full justify-start"
               variant="ghost"
               size="sm"
-              onClick={() => (window.location.href = "/login")}
+              onClick={() =>
+                import("../../apis/xero.api").then(
+                  ({ getXeroAuthUrl, capturePostAuthRedirect }) => {
+                    try {
+                      capturePostAuthRedirect();
+                    } catch {}
+                    window.location.href = getXeroAuthUrl();
+                  }
+                )
+              }
             >
               Xero Settings
             </Button>

@@ -9,14 +9,16 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
   const location = useLocation();
 
   const isActive = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
+    return (
+      location.pathname === path || location.pathname.startsWith(path + "/")
+    );
   };
 
-  const navLinkClass = (path: string) => 
+  const navLinkClass = (path: string) =>
     `text-sm transition-colors duration-200 ${
-      isActive(path) 
-        ? 'text-blue-600 font-medium' 
-        : 'text-gray-700 hover:text-blue-600'
+      isActive(path)
+        ? "text-blue-600 font-medium"
+        : "text-gray-700 hover:text-blue-600"
     }`;
 
   return (
@@ -27,9 +29,9 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
             <div className="flex items-center gap-4">
               <Link to="/" className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-8 h-8 font-bold text-white bg-blue-600 rounded-md">
-                  AW
+                  SU
                 </div>
-                <div className="text-sm font-semibold">AppWorks Demo</div>
+                <div className="text-sm font-semibold">Scaleupai</div>
               </Link>
               {title ? (
                 <span className="text-sm text-gray-500">— {title}</span>
@@ -37,33 +39,33 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
             </div>
 
             <nav className="items-center hidden gap-4 md:flex">
-              <Link
-                to="/"
-                className={navLinkClass("/")}
-              >
+              <Link to="/" className={navLinkClass("/")}>
                 Home
               </Link>
-              <Link
-                to="/dashboard"
-                className={navLinkClass("/dashboard")}
-              >
+              <Link to="/dashboard" className={navLinkClass("/dashboard")}>
                 Dashboard
               </Link>
-              <Link
-                to="/collections"
-                className={navLinkClass("/collections")}
-              >
+              <Link to="/collections" className={navLinkClass("/collections")}>
                 Collections
               </Link>
-              <Link
-                to="/payments"
-                className={navLinkClass("/payments")}
-              >
+              <Link to="/payments" className={navLinkClass("/payments")}>
                 Payments
               </Link>
-              <Link to="/login" className="text-sm font-medium text-blue-600">
+              <button
+                onClick={() =>
+                  import("../../apis/xero.api").then(
+                    ({ getXeroAuthUrl, capturePostAuthRedirect }) => {
+                      try {
+                        capturePostAuthRedirect();
+                      } catch {}
+                      window.location.href = getXeroAuthUrl();
+                    }
+                  )
+                }
+                className="text-sm font-medium text-blue-600"
+              >
                 Sign in
-              </Link>
+              </button>
             </nav>
 
             <div className="flex items-center md:hidden">
@@ -109,9 +111,21 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
               <Link to="/payments" className={navLinkClass("/payments")}>
                 Payments
               </Link>
-              <Link to="/login" className="text-sm font-medium text-blue-600">
+              <button
+                onClick={() =>
+                  import("../../apis/xero.api").then(
+                    ({ getXeroAuthUrl, capturePostAuthRedirect }) => {
+                      try {
+                        capturePostAuthRedirect();
+                      } catch {}
+                      window.location.href = getXeroAuthUrl();
+                    }
+                  )
+                }
+                className="text-sm font-medium text-blue-600"
+              >
                 Sign in
-              </Link>
+              </button>
             </div>
           </div>
         )}
@@ -126,7 +140,7 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({
       <footer className="bg-white border-t">
         <div className="flex flex-col items-center justify-between gap-4 px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8 md:flex-row">
           <div className="text-sm text-gray-600">
-            © {new Date().getFullYear()} AppWorks Demo
+            © {new Date().getFullYear()} Scaleupai
           </div>
           <div className="flex items-center gap-4 text-sm">
             <Link to="/privacy" className="text-gray-600 hover:text-gray-900">

@@ -2,8 +2,7 @@ import type { ReactElement, ComponentType } from "react";
 import { createBrowserRouter, RouteObject } from "react-router-dom";
 import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/main/Landing.page";
-import LoginPage from "../pages/login/Login.page";
-import SuccessPage from "../pages/auth/Success.page";
+// Login and Success pages removed — the app requires Xero auth immediately.
 import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
@@ -45,7 +44,23 @@ export interface ExtendedRouteObject {
   category?: string;
 }
 
-export const routes: ExtendedRouteObject[] = [
+const utilityRoutes: ExtendedRouteObject[] = [
+  // Frontend route used only to mount the global RedirectHandler when the
+  // OAuth provider redirects the browser to a frontend callback path such as
+  // /xero/oauth2/redirect. The element can be empty because the handler will
+  // immediately process the URL and navigate away.
+  {
+    title: "Xero OAuth Callback Handler",
+    logicType: undefined,
+    routeObject: {
+      path: `${ROOT_PATH}/xero/oauth2/redirect`,
+      element: <div />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
+];
+
+export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Home",
     logicType: undefined,
@@ -53,36 +68,6 @@ export const routes: ExtendedRouteObject[] = [
       path: ROOT_PATH,
       element: <LandingPage />,
       errorElement: <ErrorBoundaryPage />, // Applies to all
-    },
-  },
-  {
-    title: "Login",
-    logicType: undefined,
-    routeObject: {
-      path: `${ROOT_PATH}/login`,
-      element: <LoginPage />,
-      errorElement: <ErrorBoundaryPage />,
-    },
-  },
-  // Frontend route used only to mount the global RedirectHandler when the
-  // OAuth provider redirects the browser to a frontend callback path such as
-  // /xero/oauth2/redirect. The element can be empty because the handler will
-  // immediately process the URL and navigate away.
-  {
-    title: "Xero OAuth Callback",
-    logicType: undefined,
-    routeObject: {
-      path: `${ROOT_PATH}/xero/oauth2/redirect`,
-      element: <div />, // intentionally blank; RedirectHandler will act
-      errorElement: <ErrorBoundaryPage />,
-    },
-  },
-  {
-    title: "Success",
-    routeObject: {
-      path: `${ROOT_PATH}/success`,
-      element: <SuccessPage />,
-      errorElement: <ErrorBoundaryPage />,
     },
   },
   {
@@ -109,6 +94,13 @@ export const routes: ExtendedRouteObject[] = [
       errorElement: <ErrorBoundaryPage />,
     },
   },
+];
+
+// Compose the final routes list: utility routes first (so callback is mounted),
+// then the main app routes.
+export const routes: ExtendedRouteObject[] = [
+  ...utilityRoutes,
+  ...mainAppRoutes,
 ];
 
 const applyRouterMiddleware = (route: ExtendedRouteObject): RouteObject => {

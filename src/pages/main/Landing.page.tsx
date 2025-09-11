@@ -1,9 +1,19 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/store";
 import AppLayout from "../layouts/App.layout";
 import { ROOT_PATH } from "../../router/router";
 
 export const LandingPage: React.FC = () => {
+  const navigate = useNavigate();
+  const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate(`${(ROOT_PATH || "/").replace(/\/+$|\/$/g, "")}/dashboard`);
+    }
+  }, [isAuthenticated, navigate]);
   return (
     <AppLayout title="Home">
       <section className="max-w-3xl py-16 mx-auto text-center">
@@ -17,15 +27,22 @@ export const LandingPage: React.FC = () => {
 
         <div className="flex items-center justify-center gap-4">
           {(() => {
-            const prefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
-            const loginPath = prefix + "/login";
             return (
-              <Link
-                to={loginPath}
+              <button
+                onClick={() =>
+                  import("../../apis/xero.api").then(
+                    ({ getXeroAuthUrl, capturePostAuthRedirect }) => {
+                      try {
+                        capturePostAuthRedirect();
+                      } catch {}
+                      window.location.href = getXeroAuthUrl();
+                    }
+                  )
+                }
                 className="inline-block px-6 py-3 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
               >
                 Connect Xero
-              </Link>
+              </button>
             );
           })()}
 

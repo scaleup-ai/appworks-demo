@@ -2,7 +2,11 @@ import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
-import { getIntegrationStatus } from "../../apis/xero.api";
+import {
+  getIntegrationStatus,
+  getXeroAuthUrl,
+  capturePostAuthRedirect,
+} from "../../apis/xero.api";
 import { RootState } from "../../store/store";
 import { ROOT_PATH } from "../router";
 
@@ -44,13 +48,14 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
 
   if (checking) return <div />;
 
-  // If integration check passed, allow access. Otherwise redirect to login.
+  // If integration check passed, allow access. Otherwise start Xero auth.
   if (integrated) return children;
 
-  // Build a path relative to the app root (ROOT_PATH may be "/" or "/app/")
-  const rootPrefix = (ROOT_PATH || "/").replace(/\/+$/g, "");
-  const loginPath = rootPrefix + "/login";
-  return <Navigate to={loginPath} replace />;
+  try {
+    capturePostAuthRedirect();
+  } catch {}
+  window.location.href = getXeroAuthUrl();
+  return <div />;
 };
 
 export default AuthProtectedRouteLogic;
