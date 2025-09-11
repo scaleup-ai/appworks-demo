@@ -7,7 +7,7 @@ export default defineConfig({
     // Allow dev hosts used during local development / tunneling
     allowedHosts: [
       'dev.scaleupai.tech',
-      'scaleup.ai.tech',
+      'scaleupai.tech',
       'service.scaleupai.tech'
     ],
   },

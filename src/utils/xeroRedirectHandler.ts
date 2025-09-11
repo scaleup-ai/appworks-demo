@@ -31,13 +31,13 @@ export default async function handleXeroRedirect(dispatch: AppDispatch): Promise
       return true
     }
 
-    // backend returned non-2xx
-    console.error('Xero redirect handling failed', response)
-    showToast('Xero authentication failed — see console for details.')
+  // backend returned non-2xx — surface a concise toast with available message
+  const msg = response?.data?.message || response?.statusText || 'Xero authentication failed.'
+  showToast(`Xero authentication failed: ${msg}`, { type: 'error' })
     return false
   } catch (err) {
-    console.error('Error processing Xero redirect', err)
-    showToast('Error processing Xero redirect — see console for details.')
+  const message = (err as any)?.message || String(err)
+  showToast(`Error processing Xero redirect: ${message}`, { type: 'error' })
     return false
   }
 }
