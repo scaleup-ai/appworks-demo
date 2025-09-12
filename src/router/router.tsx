@@ -110,12 +110,11 @@ const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
     ...globalWrappers,
   ];
 
-  if (route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK) {
-    wrappers.push(AuthProtectedRouteLogic);
-  }
-
   if (route.logicType === ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK) {
     wrappers.push(RedirectHandlerRouteLogic);
+  }
+  if (route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK) {
+    wrappers.push(AuthProtectedRouteLogic);
   }
 
   // Per-route wrappers applied after globals and logic-specific wrappers
