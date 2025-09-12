@@ -1,5 +1,5 @@
 import type { ReactElement, ComponentType } from "react";
-import { createBrowserRouter, RouteObject } from "react-router-dom";
+import { createBrowserRouter, RouteObject, Outlet } from "react-router-dom";
 import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/main/Landing.page";
 // Login and Success pages removed — the app requires Xero auth immediately.
@@ -7,23 +7,7 @@ import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
-import RedirectHandlerRouteLogic from "./logic/RedirectHandler.route.logic";
-
-// Add any route-level wrapper components here to have them applied to all
-// routes automatically. To add a new helper, import it above and append it
-// to this array — the wrapper will be applied in array order.
-const GLOBAL_ROUTE_WRAPPERS: Array<ComponentType<{ children: ReactElement }>> =
-  [RedirectHandlerRouteLogic];
-
-const wrapElement = (
-  element: ReactElement | undefined,
-  wrappers: Array<ComponentType<{ children: ReactElement }>>
-) => {
-  if (!element) return undefined;
-  return wrappers.reduce<ReactElement>((acc, Wrapper) => {
-    return <Wrapper>{acc}</Wrapper>;
-  }, element);
-};
+import RedirectHandlerRouteLogic from "./logic/RedirectHandler.route-logic";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
@@ -112,37 +96,30 @@ export const routes: ExtendedRouteObject[] = [
 ];
 
 const applyRouterMiddleware = (route: ExtendedRouteObject): RouteObject => {
-  // Create the base element for this route. If the route needs per-route
-  // logic (like auth checks), apply that first to the raw element. Then
-  // apply global wrappers around the entire result. This ordering ensures
-  // global handlers (e.g., RedirectHandler) mount before auth guards so
-  // they can set short-lived state (like session flags) used by guards.
-  const originalElement = route.routeObject.element as ReactElement | undefined;
+  const original = route.routeObject.element as ReactElement | undefined;
 
-  // Apply per-route logic first
-  let elementWithLogic: ReactElement | undefined = originalElement;
-  switch (route.logicType) {
-    case ROUTE_LOGIC_TYPE.AUTH_CHECK:
-      elementWithLogic = (
-        <AuthProtectedRouteLogic>
-          {originalElement as ReactElement}
-        </AuthProtectedRouteLogic>
-      );
-      break;
-    default:
-      elementWithLogic = originalElement;
-      break;
-  }
+  const withLogic =
+    route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK ? (
+      <AuthProtectedRouteLogic>
+        {original as ReactElement}
+      </AuthProtectedRouteLogic>
+    ) : (
+      original
+    );
 
-  // Now apply global wrappers (RedirectHandler, etc.) around the whole
-  // element that already contains per-route logic.
-  const wrappers = [...GLOBAL_ROUTE_WRAPPERS, ...(route.wrappers ?? [])];
-  const wrapped = wrapElement(elementWithLogic, wrappers);
+  const wrappers: Array<ComponentType<{ children: ReactElement }>> = [
+    RedirectHandlerRouteLogic,
+    ...(route.wrappers ?? []),
+  ];
 
-  return {
-    ...route.routeObject,
-    element: wrapped as ReactElement,
-  };
+  const wrapped = withLogic
+    ? wrappers.reduce<ReactElement>(
+        (acc, W) => <W>{acc}</W>,
+        withLogic as ReactElement
+      )
+    : undefined;
+
+  return { ...route.routeObject, element: wrapped as ReactElement };
 };
 
 export const browserRouter = createBrowserRouter(

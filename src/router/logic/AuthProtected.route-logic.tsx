@@ -1,41 +1,34 @@
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Navigate } from "react-router-dom";
-import {
-  getIntegrationStatus,
-  getXeroAuthUrl,
-  capturePostAuthRedirect,
-} from "../../apis/xero.api";
 import { RootState } from "../../store/store";
-import { ROOT_PATH } from "../router";
+import { capturePostAuthRedirect, getIntegrationStatus, getXeroAuthUrl } from "../../apis/xero.api";
 
+// Keep the public name the same so imports stay valid.
 const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
-  const [checking, setChecking] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [integrated, setIntegrated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // If already authenticated, no need to call backend
-    if (isAuthenticated) return;
-
     let mounted = true;
-    setChecking(true);
-    void (async () => {
+    if (isAuthenticated) {
+      setIntegrated(true);
+      setLoading(false);
+      return;
+    }
+
+    (async () => {
       try {
         const resp = await getIntegrationStatus();
         if (!mounted) return;
-        const ok =
-          resp &&
-          resp.status >= 200 &&
-          resp.status < 300 &&
-          resp.data?.integrationStatus?.success;
+        const ok = resp && resp.status >= 200 && resp.status < 300 && resp.data?.integrationStatus?.success;
         setIntegrated(Boolean(ok));
-      } catch (err) {
+      } catch (e) {
         if (!mounted) return;
         setIntegrated(false);
       } finally {
-        if (mounted) setChecking(false);
+        if (mounted) setLoading(false);
       }
     })();
 
@@ -44,34 +37,24 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
     };
   }, [isAuthenticated]);
 
-  if (isAuthenticated) return children;
-
-  if (checking) return <div />;
-
-  // If integration check passed, allow access. Otherwise start Xero auth.
+  if (loading) return <div />;
   if (integrated) return children;
 
-  // If a redirect callback is currently being processed, don't start a new
-  // auth flow (avoids an immediate loop where redirect handler and this
-  // guard race to start Xero). We detect this via a short-lived session flag
-  // or by checking the current URL for the callback path.
+  // If a redirect callback is being processed, don't start a new flow.
   try {
-    const processing =
-      (typeof window !== "undefined" &&
-        (sessionStorage.getItem("xero_processing") === "1" ||
-          window.location.href.includes("/xero/oauth2/redirect"))) ||
-      false;
-
-    if (processing) {
-      // let the redirect handler finish; render a minimal placeholder
-      return <div />;
-    }
+    const href = typeof window !== "undefined" ? window.location.href : "";
+    const processing = !!(typeof window !== "undefined" && sessionStorage.getItem("xero_processing") === "1");
+    if (processing || href.includes("/xero/oauth2/redirect")) return <div />;
   } catch {}
 
+  // Start full-page auth and capture the post-auth location.
   try {
     capturePostAuthRedirect();
   } catch {}
-  window.location.href = getXeroAuthUrl();
+  try {
+    window.location.href = getXeroAuthUrl();
+  } catch {}
+
   return <div />;
 };
 
