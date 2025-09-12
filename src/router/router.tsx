@@ -116,7 +116,10 @@ const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
   // Per-route wrappers applied after globals and logic-specific wrappers
   if (route.wrappers && route.wrappers.length) wrappers.push(...route.wrappers);
 
-  const wrapped = wrappers.reduce<ReactElement>(
+  // Apply wrappers so that earlier entries in `wrappers` become the outer
+  // components. Using reduceRight nests them in that order, which makes
+  // global wrappers (added first) wrap the route-specific wrappers.
+  const wrapped = wrappers.reduceRight<ReactElement>(
     (acc, W) => <W>{acc}</W>,
     route.routeObject.element as ReactElement
   );
