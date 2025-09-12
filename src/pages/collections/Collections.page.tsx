@@ -25,44 +25,72 @@ const CollectionsPage: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<string>("");
 
   useEffect(() => {
-    dispatch(getScheduledStart({
-      onError: (error) => showToast(`Failed to load reminders: ${error.message}`, { type: 'error' })
-    }));
+    dispatch(
+      getScheduledStart({
+        onError: (error: any) =>
+          showToast(`Failed to load reminders: ${error.message}`, {
+            type: "error",
+          }),
+      })
+    );
   }, [dispatch]);
 
   const handleStartCollections = () => {
-    dispatch(startCollectionsStart({
-      onSuccess: () => showToast("Collections started successfully", { type: 'success' }),
-      onError: (error) => showToast(`Failed to start collections: ${error.message}`, { type: 'error' })
-    }));
+    dispatch(
+      startCollectionsStart({
+        onSuccess: () =>
+          showToast("Collections started successfully", { type: "success" }),
+        onError: (error: any) =>
+          showToast(`Failed to start collections: ${error.message}`, {
+            type: "error",
+          }),
+      })
+    );
   };
 
   const handleStopCollections = () => {
-    dispatch(stopCollectionsStart({
-      onSuccess: () => showToast("Collections stopped successfully", { type: 'success' }),
-      onError: (error) => showToast(`Failed to stop collections: ${error.message}`, { type: 'error' })
-    }));
+    dispatch(
+      stopCollectionsStart({
+        onSuccess: () =>
+          showToast("Collections stopped successfully", { type: "success" }),
+        onError: (error: any) =>
+          showToast(`Failed to stop collections: ${error.message}`, {
+            type: "error",
+          }),
+      })
+    );
   };
 
   const handleTriggerScan = () => {
-    dispatch(triggerScanStart({
-      onSuccess: () => {
-        showToast("Scan triggered successfully", { type: 'success' });
-        // Refresh the list
-        dispatch(getScheduledStart({}));
-      },
-      onError: (error) => showToast(`Failed to trigger scan: ${error.message}`, { type: 'error' })
-    }));
+    dispatch(
+      triggerScanStart({
+        onSuccess: () => {
+          showToast("Scan triggered successfully", { type: "success" });
+          // Refresh the list
+          dispatch(getScheduledStart({}));
+        },
+        onError: (error: any) =>
+          showToast(`Failed to trigger scan: ${error.message}`, {
+            type: "error",
+          }),
+      })
+    );
   };
 
   const handleGenerateDraft = (invoiceId: string) => {
-    dispatch(generateDraftStart({
-      invoiceId,
-      stage: "overdue_stage_1",
-      customerName: "Customer",
-      onSuccess: () => showToast("Email draft generated successfully", { type: 'success' }),
-      onError: (error) => showToast(`Failed to generate draft: ${error.message}`, { type: 'error' })
-    }));
+    dispatch(
+      generateDraftStart({
+        invoiceId,
+        stage: "overdue_stage_1",
+        customerName: "Customer",
+        onSuccess: () =>
+          showToast("Email draft generated successfully", { type: "success" }),
+        onError: (error: any) =>
+          showToast(`Failed to generate draft: ${error.message}`, {
+            type: "error",
+          }),
+      })
+    );
   };
 
   return (
@@ -116,7 +144,9 @@ const CollectionsPage: React.FC = () => {
               />
             </div>
             <Button
-              onClick={() => selectedInvoice && handleGenerateDraft(selectedInvoice)}
+              onClick={() =>
+                selectedInvoice && handleGenerateDraft(selectedInvoice)
+              }
               disabled={!selectedInvoice}
               loading={emailLoading}
               size="sm"
@@ -150,9 +180,13 @@ const CollectionsPage: React.FC = () => {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  isRunning ? "bg-green-500" : "bg-red-500"
+                }`}
+              ></div>
               <span className="font-medium">
-                {isRunning ? 'Collections Running' : 'Collections Stopped'}
+                {isRunning ? "Collections Running" : "Collections Stopped"}
               </span>
             </div>
             <div className="text-sm text-gray-500">
@@ -171,28 +205,47 @@ const CollectionsPage: React.FC = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Invoice ID</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Stage</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Scheduled At</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">
+                      Invoice ID
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">
+                      Stage
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">
+                      Status
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">
+                      Scheduled At
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-900">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {scheduledReminders.map((reminder, index) => (
-                    <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="py-3 px-4 font-mono text-xs">{reminder.invoiceId}</td>
+                    <tr
+                      key={index}
+                      className="border-b border-gray-100 hover:bg-gray-50"
+                    >
+                      <td className="py-3 px-4 font-mono text-xs">
+                        {reminder.invoiceId}
+                      </td>
                       <td className="py-3 px-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                           {reminder.stage}
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          reminder.status === 'sent' ? 'bg-green-100 text-green-800' :
-                          reminder.status === 'failed' ? 'bg-red-100 text-red-800' :
-                          'bg-yellow-100 text-yellow-800'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            reminder.status === "sent"
+                              ? "bg-green-100 text-green-800"
+                              : reminder.status === "failed"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
                           {reminder.status}
                         </span>
                       </td>
@@ -201,7 +254,9 @@ const CollectionsPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-4">
                         <Button
-                          onClick={() => handleGenerateDraft(reminder.invoiceId)}
+                          onClick={() =>
+                            handleGenerateDraft(reminder.invoiceId)
+                          }
                           variant="ghost"
                           size="sm"
                         >
@@ -215,22 +270,20 @@ const CollectionsPage: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
+              <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center text-2xl">
+                📄
               </div>
               <p>No scheduled reminders</p>
-              <p className="text-xs mt-1">Trigger a scan to check for new invoices</p>
+              <p className="text-xs mt-1">
+                Trigger a scan to check for new invoices
+              </p>
             </div>
           )}
         </Card>
 
         {error && (
           <Card title="Error" className="border-red-200 bg-red-50">
-            <div className="text-red-700">
-              {error.message}
-            </div>
+            <div className="text-red-700">{error.message}</div>
           </Card>
         )}
       </div>

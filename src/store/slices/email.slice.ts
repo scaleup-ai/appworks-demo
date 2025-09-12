@@ -20,7 +20,7 @@ const emailSlice = createSlice({
   initialState,
   reducers: {
     // Generate draft actions
-    generateDraftStart: (state) => {
+    generateDraftStart: (state, action: PayloadAction<any | undefined>) => {
       state.isLoading = true;
       state.error = null;
     },

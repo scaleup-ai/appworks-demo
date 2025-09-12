@@ -59,6 +59,18 @@ paths:
       description: |
         Initiates OAuth2 consent flow. If credentials are not initialized this route
         will attempt to bootstrap from test env vars; otherwise returns 400.
+
+        Note to frontend implementers:
+          - Xero will redirect the user's browser to the public redirect URL
+            configured for the app: https://scaleupai.tech/xero/oauth2/redirect
+            with query parameters such as 'code' and 'state' after consent.
+          - The frontend should capture that redirect, extract 'code' and 'state',
+            then call the backend service endpoint (example host in this spec:
+            http://service.scaleupai.tech/api/v1/xero/oauth2/redirect) with the
+            same query parameters so the backend can complete the token exchange.
+          - In short: the browser redirect lands on the public redirect URL, the
+            frontend processes the returned query parameters, and then notifies
+            the backend to finish the OAuth flow (exchange code for tokens).
       responses:
         "302":
           description: Redirect to Xero consent URL
@@ -83,7 +95,20 @@ paths:
   /api/v1/xero/oauth2/redirect:
     get:
       summary: OAuth2 callback endpoint
-      description: Callback endpoint Xero redirects to after user consent. Handles code/state and continues auth flow.
+      description: |
+        Callback endpoint Xero redirects to after user consent. Handles code/state
+        and continues auth flow.
+
+        Frontend guidance:
+          - When Xero redirects the browser it will use the public redirect URL
+            (https://scaleupai.tech/xero/oauth2/redirect) and include 'code' and
+            'state' in the query string.
+          - The frontend should extract those values from the browser URL and
+            invoke the backend callback handler (GET /api/v1/xero/oauth2/redirect
+            on the backend host) with the same query parameters so the server can
+            exchange the code for tokens and persist them as appropriate.
+          - The backend may respond with HTML, a redirect, or JSON; the frontend
+            is responsible for handling the browser UX after it calls the backend.
       parameters:
         - name: code
           in: query
@@ -188,7 +213,7 @@ paths:
         "404":
           description: Not found
 
-  /api/v1/email/draft:
+  /api/v1/email-copywriter/draft:
     post:
       summary: Generate an email draft for an invoice reminder
       requestBody:
@@ -257,7 +282,7 @@ paths:
                 items:
                   type: object
 
-  /api/v1/payments/reconcile:
+  /api/v1/payment-reconciliation/payments/reconcile:
     post:
       summary: Attempt to reconcile an incoming payment to an invoice
       requestBody:

@@ -20,7 +20,7 @@ const collectionsSlice = createSlice({
   initialState,
   reducers: {
     // Start collections actions
-    startCollectionsStart: (state) => {
+    startCollectionsStart: (state, action: PayloadAction<any | undefined>) => {
       state.isLoading = true;
       state.error = null;
     },
@@ -35,7 +35,7 @@ const collectionsSlice = createSlice({
     },
 
     // Stop collections actions
-    stopCollectionsStart: (state) => {
+    stopCollectionsStart: (state, action: PayloadAction<any | undefined>) => {
       state.isLoading = true;
       state.error = null;
     },
@@ -50,7 +50,7 @@ const collectionsSlice = createSlice({
     },
 
     // Trigger scan actions
-    triggerScanStart: (state) => {
+    triggerScanStart: (state, action: PayloadAction<any | undefined>) => {
       state.isLoading = true;
       state.error = null;
     },
@@ -64,7 +64,7 @@ const collectionsSlice = createSlice({
     },
 
     // Get scheduled actions
-    getScheduledStart: (state) => {
+    getScheduledStart: (state, action: PayloadAction<any | undefined>) => {
       state.isLoading = true;
       state.error = null;
     },
