@@ -2,7 +2,11 @@ import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
-import { capturePostAuthRedirect, getIntegrationStatus, getXeroAuthUrl } from "../../apis/xero.api";
+import {
+  capturePostAuthRedirect,
+  getIntegrationStatus,
+  getXeroAuthUrl,
+} from "../../apis/xero.api";
 
 // Keep the public name the same so imports stay valid.
 const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
@@ -20,10 +24,12 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
 
     (async () => {
       try {
-        const resp = await getIntegrationStatus();
+        const status = await getIntegrationStatus();
         if (!mounted) return;
-        const ok = resp && resp.status >= 200 && resp.status < 300 && resp.data?.integrationStatus?.success;
-        setIntegrated(Boolean(ok));
+        // New API returns an IntegrationStatus object. Consider the integration
+        // present when `connected` is true.
+        const ok = Boolean(status && status.connected);
+        setIntegrated(ok);
       } catch (e) {
         if (!mounted) return;
         setIntegrated(false);
@@ -43,7 +49,10 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
   // If a redirect callback is being processed, don't start a new flow.
   try {
     const href = typeof window !== "undefined" ? window.location.href : "";
-    const processing = !!(typeof window !== "undefined" && sessionStorage.getItem("xero_processing") === "1");
+    const processing = !!(
+      typeof window !== "undefined" &&
+      sessionStorage.getItem("xero_processing") === "1"
+    );
     if (processing || href.includes("/xero/oauth2/redirect")) return <div />;
   } catch {}
 

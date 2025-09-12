@@ -2,6 +2,8 @@ import { CollectionsReminderEvent } from '../types/api.types';
 import axiosClient from './axios-client';
 
 export enum CollectionsApiRoutes {
+  // Deprecated: collections endpoints renamed/removed in OpenAPI. Keep constants
+  // so code will compile, but throw at runtime to force a migration.
   BASE = '/api/v1/collections',
   START = '/api/v1/collections/start',
   STOP = '/api/v1/collections/stop',
@@ -10,23 +12,19 @@ export enum CollectionsApiRoutes {
 }
 
 export async function startCollections(): Promise<void> {
-  const response = await axiosClient.post(CollectionsApiRoutes.START);
-  return response.data;
+  throw new Error('startCollections: collections API removed in OpenAPI update; migrate to the new Xero-backed flows')
 }
 
 export async function stopCollections(): Promise<void> {
-  const response = await axiosClient.post(CollectionsApiRoutes.STOP);
-  return response.data;
+  throw new Error('stopCollections: collections API removed in OpenAPI update; migrate to the new Xero-backed flows')
 }
 
 export async function triggerScan(): Promise<void> {
-  const response = await axiosClient.post(CollectionsApiRoutes.SCAN);
-  return response.data;
+  throw new Error('triggerScan: collections API removed in OpenAPI update; migrate to the new Xero-backed flows')
 }
 
 export async function getScheduledReminders(): Promise<CollectionsReminderEvent[]> {
-  const response = await axiosClient.get<CollectionsReminderEvent[]>(CollectionsApiRoutes.SCHEDULED);
-  return response.data;
+  throw new Error('getScheduledReminders: collections API removed in OpenAPI update; migrate to the new Xero-backed flows')
 }
 
 export default {

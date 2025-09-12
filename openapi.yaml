@@ -1,8 +1,11 @@
 openapi: 3.0.3
 info:
   title: Scaleup AI - Xero Routes (subset)
-  version: "1.0.0"
-  description: Minimal OpenAPI spec for the Xero integration endpoints used by a React login flow.
+  version: "1.1.0"
+  description: |
+    Richer OpenAPI spec for the Xero integration endpoints used by a React login flow.
+    This spec documents both server-redirect and SPA-managed flows, token lifecycle
+    endpoints, proxy endpoints, webhook contract, and standard error shapes.
 
 servers:
   - url: http://service.scaleupai.tech/
@@ -47,68 +50,55 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Missing Xero credentials. Provide via query parameters or set TEST_XERO_CLIENT_ID/TEST_XERO_CLIENT_SECRET/XERO_REDIRECT_URI in env."
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/xero/auth:
     get:
-      summary: Start Xero OAuth2 login (redirect to consent)
+      summary: Start Xero OAuth2 login (redirect to consent OR return consent URL JSON)
       description: |
-        Initiates OAuth2 consent flow. If credentials are not initialized this route
-        will attempt to bootstrap from test env vars; otherwise returns 400.
+        Initiates OAuth2 consent flow using the server's Xero app config. Two modes are supported:
+          - server-redirect (default): server responds with a 302 Location to Xero's consent URL
+          - json (SPA-managed): server returns a JSON object { url, state } so the SPA can open the URL
 
-        Note to frontend implementers:
-          - Xero will redirect the user's browser to the public redirect URL
-            configured for the app: https://scaleupai.tech/xero/oauth2/redirect
-            with query parameters such as 'code' and 'state' after consent.
-          - The frontend should capture that redirect, extract 'code' and 'state',
-            then call the backend service endpoint (example host in this spec:
-            http://service.scaleupai.tech/api/v1/xero/oauth2/redirect) with the
-            same query parameters so the backend can complete the token exchange.
-          - In short: the browser redirect lands on the public redirect URL, the
-            frontend processes the returned query parameters, and then notifies
-            the backend to finish the OAuth flow (exchange code for tokens).
+  Query parameter mode=json can be used by the frontend to request the JSON variant.
+      parameters:
+        - name: mode
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [redirect, json]
+            default: redirect
       responses:
         "302":
-          description: Redirect to Xero consent URL
+          description: Redirect to Xero consent URL (server-redirect flow)
           headers:
             Location:
               description: Xero consent URL
               schema:
                 type: string
+        "200":
+          description: JSON response with consent URL and server-generated state (SPA-managed flow)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsentUrlResponse'
         "400":
-          description: Missing credentials
+          description: Missing credentials or misconfiguration
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-        "500":
-          description: Server/OAuth error
-          content:
-            text/html:
-              schema:
-                type: string
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/xero/oauth2/redirect:
     get:
-      summary: OAuth2 callback endpoint
+      summary: OAuth2 callback endpoint (code + state)
       description: |
-        Callback endpoint Xero redirects to after user consent. Handles code/state
-        and continues auth flow.
-
-        Frontend guidance:
-          - When Xero redirects the browser it will use the public redirect URL
-            (https://scaleupai.tech/xero/oauth2/redirect) and include 'code' and
-            'state' in the query string.
-          - The frontend should extract those values from the browser URL and
-            invoke the backend callback handler (GET /api/v1/xero/oauth2/redirect
-            on the backend host) with the same query parameters so the server can
-            exchange the code for tokens and persist them as appropriate.
-          - The backend may respond with HTML, a redirect, or JSON; the frontend
-            is responsible for handling the browser UX after it calls the backend.
+        Callback endpoint Xero redirects to after user consent. Handles code and state and
+        exchanges the code for tokens using the server-side xero-node client. This endpoint
+        supports returning HTML redirecting the browser, or JSON if the frontend calls it
+        directly (SPA-managed flow). The backend will set a secure outcome cookie or return
+        a short-lived status token when appropriate.
       parameters:
         - name: code
           in: query
@@ -122,76 +112,69 @@ paths:
             type: string
       responses:
         "200":
-          description: Callback handled (HTML or redirect)
+          description: Callback handled (HTML, redirect or JSON depending on request)
           content:
             text/html:
               schema:
                 type: string
-        "400":
-          description: Credentials not set or invalid callback
-          content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  shortLivedToken:
+                    type: string
+                    description: Optional short-lived token the SPA can use to poll status
+        "400":
+          description: Invalid callback or state mismatch
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/xero/integration:
+  /api/v1/xero/integration/status:
     get:
-      summary: Integration status UI
-      description: Renders an integration status page (EJS view). Requires initialized Xero controller.
+      summary: Integration status (machine-friendly)
+      description: Returns minimal per-client/tenant integration status for the frontend to render UI
       responses:
         "200":
-          description: HTML status page
+          description: Integration status
           content:
-            text/html:
+            application/json:
               schema:
-                type: string
-        "400":
-          description: Credentials not set
+                $ref: '#/components/schemas/IntegrationStatus'
+        "401":
+          description: Not authorized to view status
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-
-  # Receivables Autopilot - Receivable-related endpoints added for demo/testing
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/xero/token:
     post:
       summary: Persist a Xero token set
+      description: Accepts a server-side token persistence request (used by internal tooling or test flows)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                clientId:
-                  type: string
-                tenantId:
-                  type: string
-                tokenSet:
-                  type: object
-                  properties:
-                    refresh_token:
-                      type: string
-                    access_token:
-                      type: string
-                    expires_at:
-                      type: string
-                    scope:
-                      oneOf:
-                        - type: string
-                        - type: array
-                          items:
-                            type: string
+              $ref: '#/components/schemas/TokenPersistRequest'
       responses:
         "204":
           description: Persisted
         "400":
           description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/v1/xero/token/{clientId}/{tenantId}:
     get:
-      summary: Fetch persisted Xero token for client and tenant
+      summary: Fetch persisted Xero token metadata for client and tenant (safe projection)
       parameters:
         - name: clientId
           in: path
@@ -205,17 +188,22 @@ paths:
             type: string
       responses:
         "200":
-          description: Token found
+          description: Token metadata found
           content:
             application/json:
               schema:
-                type: object
+                $ref: '#/components/schemas/TokenMetadataResponse'
         "404":
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/email-copywriter/draft:
+  /api/v1/xero/refresh:
     post:
-      summary: Generate an email draft for an invoice reminder
+      summary: Refresh a persisted token set
+      description: Use this to request a token refresh. The backend will call Xero and persist a new tokenSet.
       requestBody:
         required: true
         content:
@@ -223,92 +211,302 @@ paths:
             schema:
               type: object
               properties:
-                invoiceId:
+                clientId:
                   type: string
-                amount:
-                  type: number
-                dueDate:
-                  type: string
-                stage:
-                  type: string
-                customerName:
+                tenantId:
                   type: string
       responses:
         "200":
-          description: Draft generated
+          description: Refreshed token set
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  subject:
-                    type: string
-                  bodyText:
-                    type: string
-                  bodyHtml:
-                    type: string
+                $ref: '#/components/schemas/TokenResponse'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/collections/start:
+  /api/v1/xero/revoke:
     post:
-      summary: Start the Collections Reminder background scanner
+      summary: Revoke a token set and clear persisted credentials for a tenant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                clientId:
+                  type: string
+                tenantId:
+                  type: string
       responses:
         "204":
-          description: Started
+          description: Revoked
+        "400":
+          description: Bad request
 
-  /api/v1/collections/stop:
-    post:
-      summary: Stop the Collections Reminder background scanner
-      responses:
-        "204":
-          description: Stopped
-
-  /api/v1/collections/scan:
-    post:
-      summary: Trigger a one-off collections scan (on-demand)
-      responses:
-        "202":
-          description: Scan triggered
-
-  /api/v1/collections/scheduled:
+  /api/v1/xero/organisations:
     get:
-      summary: List persisted REMINDER.SCHEDULED events
+      summary: List Xero organisations/tenants connected to the current user
       responses:
         "200":
-          description: Array of scheduled reminders
+          description: Array of organisation summaries
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  type: object
+                  $ref: '#/components/schemas/Organisation'
 
-  /api/v1/payment-reconciliation/payments/reconcile:
+  /api/v1/xero/invoices:
+    get:
+      summary: List invoices (proxyed from Xero)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            example: AUTHORIZED
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 25
+      responses:
+        "200":
+          description: Paginated invoice summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InvoiceSummary'
+
+  /api/v1/xero/invoices/{invoiceId}:
+    get:
+      summary: Fetch a single invoice (proxyed)
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Invoice object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/xero/webhook:
     post:
-      summary: Attempt to reconcile an incoming payment to an invoice
+      summary: Xero webhook receiver
+      description: |
+        Endpoint to receive Xero webhooks. The server must verify the signature/headers
+        and respond 200 quickly. FE can query /webhooks/history for processed events.
+      parameters:
+        - name: X-Xero-Signature
+          in: header
+          required: false
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              properties:
-                paymentId:
-                  type: string
-                amount:
-                  type: number
-                reference:
-                  type: string
       responses:
         "200":
-          description: Reconciliation result
+          description: Accepted
+        "400":
+          description: Invalid signature or malformed payload
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  matched:
-                    type: boolean
-                  invoiceId:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    xero_oauth2:
+      type: oauth2
+      description: |
+        Authorization Code flow (recommended) with PKCE (S256). Frontend may use
+        SPA-managed flow with a JSON consent URL or rely on server-redirect.
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.xero.com/identity/connect/authorize
+          tokenUrl: https://identity.xero.com/connect/token
+          scopes:
+            accounting.transactions: Access accounting transactions
+            accounting.contacts: Access contacts
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: INVALID_STATE
+        message:
+          type: string
+          example: "State mismatch: expected X but received Y"
+        details:
+          type: object
+          nullable: true
+
+    ConsentUrlResponse:
+      type: object
+      properties:
+        url:
+          type: string
+          example: "https://login.xero.com/identity/connect/authorize?client_id=..."
+        state:
+          type: string
+          example: "r4nd0mst4te"
+        pkceChallenge:
+          type: string
+          description: PKCE code challenge (S256) if the backend generates it
+
+    TokenPersistRequest:
+      type: object
+      required: [clientId, tenantId, tokenSet]
+      properties:
+        clientId:
+          type: string
+        tenantId:
+          type: string
+        tokenSet:
+          type: object
+          properties:
+            refresh_token:
+              type: string
+            access_token:
+              type: string
+            expires_at:
+              type: string
+            scope:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
                     type: string
 
-components: {}
+    TokenResponse:
+      type: object
+      properties:
+        clientId:
+          type: string
+        tenantId:
+          type: string
+        tokenSet:
+          type: object
+          properties:
+            access_token:
+              type: string
+            refresh_token:
+              type: string
+            expires_at:
+              type: string
+            scope:
+              type: array
+              items:
+                type: string
+
+    TokenMetadataResponse:
+      type: object
+      properties:
+        clientId:
+          type: string
+        tenantId:
+          type: string
+        expires_at:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        access_token_present:
+          type: boolean
+          description: Whether an access token is present server-side (not the token itself)
+
+    Organisation:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        tenantId:
+          type: string
+
+    InvoiceSummary:
+      type: object
+      properties:
+        invoiceId:
+          type: string
+        number:
+          type: string
+        amount:
+          type: number
+        dueDate:
+          type: string
+        status:
+          type: string
+
+    Invoice:
+      type: object
+      properties:
+        invoiceId:
+          type: string
+        number:
+          type: string
+        contact:
+          type: object
+          properties:
+            name:
+              type: string
+        lineItems:
+          type: array
+          items:
+            type: object
+        amount:
+          type: number
+        dueDate:
+          type: string
+        status:
+          type: string
+
+    IntegrationStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        clientId:
+          type: string
+          nullable: true
+        tenantId:
+          type: string
+          nullable: true
+        scopes:
+          type: array
+          items:
+            type: string
+        expires_at:
+          type: string
+        nextRefreshAt:
+          type: string
+

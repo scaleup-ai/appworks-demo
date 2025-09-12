@@ -23,6 +23,35 @@ export interface XeroTokenResponse {
   error?: string;
 }
 
+export interface ConsentUrlResponse {
+  url: string;
+  state: string;
+  pkceChallenge?: string;
+}
+
+export interface TokenResponse {
+  clientId?: string;
+  tenantId?: string;
+  tokenSet?: XeroTokenSet;
+}
+
+export interface TokenMetadataResponse {
+  clientId?: string;
+  tenantId?: string;
+  expires_at?: string;
+  scopes?: string[];
+  access_token_present?: boolean;
+}
+
+export interface IntegrationStatus {
+  connected: boolean;
+  clientId?: string | null;
+  tenantId?: string | null;
+  scopes?: string[];
+  expires_at?: string;
+  nextRefreshAt?: string;
+}
+
 export interface EmailDraftRequest {
   invoiceId: string;
   amount?: number;
