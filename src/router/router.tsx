@@ -15,6 +15,7 @@ export const ROOT_PATH = (import.meta.env.BASE_URL as string) || "/";
 
 enum ROUTE_LOGIC_TYPE {
   AUTH_CHECK = "AUTH_CHECK",
+  XERO_OAUTH_CALLBACK = "XERO_OAUTH_CALLBACK",
 }
 
 export interface ExtendedRouteObject {
@@ -34,7 +35,7 @@ const utilityRoutes: ExtendedRouteObject[] = [
   // immediately process the URL and navigate away.
   {
     title: "Xero OAuth Callback Handler",
-    logicType: undefined,
+    logicType: ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK,
     routeObject: {
       path: `${ROOT_PATH}/xero/oauth2/redirect`,
       element: <div />,
@@ -95,33 +96,37 @@ export const routes: ExtendedRouteObject[] = [
   })),
 ];
 
-const applyRouterMiddleware = (route: ExtendedRouteObject): RouteObject => {
-  const original = route.routeObject.element as ReactElement | undefined;
-
-  const withLogic =
-    route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK ? (
-      <AuthProtectedRouteLogic>
-        {original as ReactElement}
-      </AuthProtectedRouteLogic>
-    ) : (
-      original
-    );
-
-  const wrappers: Array<ComponentType<{ children: ReactElement }>> = [
-    RedirectHandlerRouteLogic,
-    ...(route.wrappers ?? []),
+const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
+  // Global wrappers applied to all routes
+  const globalWrappers: Array<ComponentType<{ children: ReactElement }>> = [
+    // RedirectHandlerRouteLogic,
   ];
 
-  const wrapped = withLogic
-    ? wrappers.reduce<ReactElement>(
-        (acc, W) => <W>{acc}</W>,
-        withLogic as ReactElement
-      )
-    : undefined;
+  // Compose wrappers simply:
+  // - always apply global wrappers
+  // - only apply AuthProtectedRouteLogic for AUTH_CHECK routes
+  // - never apply the auth wrapper to the XERO OAuth callback route (prevents redirect loop)
+  const wrappers: Array<ComponentType<{ children: ReactElement }>> = [
+    ...globalWrappers,
+  ];
 
-  return { ...route.routeObject, element: wrapped as ReactElement };
+  if (route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK) {
+    wrappers.push(AuthProtectedRouteLogic);
+  }
+
+  if (route.logicType === ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK) {
+    wrappers.push(RedirectHandlerRouteLogic);
+  }
+
+  // Per-route wrappers applied after globals and logic-specific wrappers
+  if (route.wrappers && route.wrappers.length) wrappers.push(...route.wrappers);
+
+  const wrapped = wrappers.reduce<ReactElement>(
+    (acc, W) => <W>{acc}</W>,
+    route.routeObject.element as ReactElement
+  );
+
+  return { ...route.routeObject, element: wrapped };
 };
 
-export const browserRouter = createBrowserRouter(
-  routes.map(applyRouterMiddleware)
-);
+export const browserRouter = createBrowserRouter(routes.map(applyLogicWrapper));
