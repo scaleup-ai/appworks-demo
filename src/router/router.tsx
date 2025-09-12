@@ -99,7 +99,7 @@ export const routes: ExtendedRouteObject[] = [
 const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
   // Global wrappers applied to all routes
   const globalWrappers: Array<ComponentType<{ children: ReactElement }>> = [
-    // RedirectHandlerRouteLogic,
+    RedirectHandlerRouteLogic,
   ];
 
   // Compose wrappers simply:
@@ -109,10 +109,6 @@ const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
   const wrappers: Array<ComponentType<{ children: ReactElement }>> = [
     ...globalWrappers,
   ];
-
-  if (route.logicType === ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK) {
-    wrappers.push(RedirectHandlerRouteLogic);
-  }
   if (route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK) {
     wrappers.push(AuthProtectedRouteLogic);
   }
