@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { XeroTokenSet, ApiError } from '../../types/api.types';
+import { XeroTokenSet, ApiError, TokenMetadataResponse } from '../../types/api.types';
 
 interface XeroState {
   isLoading: boolean;
@@ -8,7 +8,9 @@ interface XeroState {
     clientId?: string;
     redirectUri?: string;
   };
-  tokens: Record<string, XeroTokenSet>; // keyed by clientId-tenantId
+  // After OpenAPI update the GET token endpoint returns metadata rather than
+  // the full token set. Store the metadata here keyed by clientId-tenantId.
+  tokens: Record<string, TokenMetadataResponse>;
   error: ApiError | null;
 }
 
@@ -57,10 +59,11 @@ const xeroSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    getTokenSuccess: (state, action: PayloadAction<XeroTokenSet>) => {
+    getTokenSuccess: (state, action: PayloadAction<TokenMetadataResponse>) => {
       state.isLoading = false;
       state.error = null;
-      // Store token in state if needed
+      // Store token metadata in state if needed
+      // Example keying strategy left to consumers: `${clientId}-${tenantId}`
     },
     getTokenFailure: (state, action: PayloadAction<ApiError>) => {
       state.isLoading = false;
