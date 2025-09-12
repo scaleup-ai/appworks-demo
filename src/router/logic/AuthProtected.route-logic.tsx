@@ -53,7 +53,21 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
       typeof window !== "undefined" &&
       sessionStorage.getItem("xero_processing") === "1"
     );
-    if (processing || href.includes("/xero/oauth2/redirect")) return <div />;
+    // If we've recently completed an auth (RedirectHandler sets this), wait a bit
+    // to let backend/integration status propagate before starting another flow.
+    const recentAuthTs = (() => {
+      try {
+        const v = sessionStorage.getItem("xero_recent_auth");
+        return v ? parseInt(v, 10) : null;
+      } catch {
+        return null;
+      }
+    })();
+    const now = Date.now();
+    const recentlyAuthed = recentAuthTs && now - recentAuthTs < 3000; // 3s grace
+
+    if (processing || href.includes("/xero/oauth2/redirect") || recentlyAuthed)
+      return <div />;
   } catch {}
 
   // Start full-page auth and capture the post-auth location.

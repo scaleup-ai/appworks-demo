@@ -15,7 +15,21 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 const RedirectHandler = ({ children }: { children: ReactElement }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [processing, setProcessing] = useState(false);
+  const callbackPath = "/xero/oauth2/redirect";
+  // If the current URL looks like the callback, mark processing synchronously
+  // so other route logic can observe it on first render and avoid restarting auth.
+  let initialProcessing = false;
+  try {
+    const href =
+      typeof window !== "undefined" ? window.location.href || "" : "";
+    if (href.includes(callbackPath)) {
+      try {
+        sessionStorage.setItem("xero_processing", "1");
+      } catch {}
+      initialProcessing = true;
+    }
+  } catch {}
+  const [processing, setProcessing] = useState(initialProcessing);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,7 +39,6 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
     // Example: https://scaleupai.tech/api/v1/xero/oauth2/redirect?code=...&state=...
     try {
       const href = window.location.href || "";
-      const callbackPath = "/xero/oauth2/redirect";
       if (!href.includes(callbackPath)) return;
 
       const url = new URL(href);
@@ -54,6 +67,11 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
           // automatically send them back into the OAuth loop.
           const stored = readAndClearPostAuthRedirect();
           if (ok) {
+            // Mark a short-lived 'recent auth' timestamp so route guards can
+            // avoid immediately restarting auth while backend state propagates.
+            try {
+              sessionStorage.setItem("xero_recent_auth", String(Date.now()));
+            } catch {}
             const target = stored || state || "/";
             navigate(target, { replace: true });
           } else {
