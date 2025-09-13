@@ -1,7 +1,7 @@
 import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import * as xeroApi from '../../apis/xero.api';
-import { 
+import {
   setXeroCredsStart,
   setXeroCredsSuccess,
   setXeroCredsFailure,
@@ -24,13 +24,13 @@ function* setXeroCredsSaga(action: PayloadAction<XeroCredentials & SagaActionWit
       xeroApi.setXeroCreds,
       credentials
     );
-    
+
     yield put(setXeroCredsSuccess(response));
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to set Xero credentials',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to set Xero credentials',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(setXeroCredsFailure(errorPayload));
     action.payload.onError?.(errorPayload);
@@ -44,13 +44,13 @@ function* saveTokenSaga(action: PayloadAction<XeroTokenRequest & SagaActionWithC
       xeroApi.saveXeroToken,
       tokenRequest
     );
-    
+
     yield put(saveTokenSuccess(response));
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to save Xero token',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to save Xero token',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(saveTokenFailure(errorPayload));
     action.payload.onError?.(errorPayload);
@@ -65,13 +65,13 @@ function* getTokenSaga(action: PayloadAction<{ clientId: string; tenantId: strin
       clientId,
       tenantId
     );
-    
+
     yield put(getTokenSuccess(response));
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to get Xero token',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to get Xero token',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(getTokenFailure(errorPayload));
     action.payload.onError?.(errorPayload);
@@ -84,7 +84,7 @@ function* startAuthSaga(action: PayloadAction<SagaActionWithCallback>) {
     const response: Awaited<ReturnType<typeof xeroApi.startXeroAuth>> = yield call(
       xeroApi.startXeroAuth
     );
-    
+
     yield put(startAuthSuccess(response));
     onSuccess?.(response);
   } catch (error: any) {

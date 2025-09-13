@@ -1,4 +1,4 @@
-import { call, put, takeEvery, takeLatest } from 'redux-saga/effects';
+import { call, put, takeLatest } from 'redux-saga/effects';
 import { PayloadAction } from '@reduxjs/toolkit';
 import * as collectionsApi from '../../apis/collections.api';
 import {
@@ -23,13 +23,13 @@ function* startCollectionsSaga(action: PayloadAction<SagaActionWithCallback>) {
     const response: Awaited<ReturnType<typeof collectionsApi.startCollections>> = yield call(
       collectionsApi.startCollections
     );
-    
+
     yield put(startCollectionsSuccess());
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to start collections',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to start collections',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(startCollectionsFailure(errorPayload));
     action.payload.onError?.(errorPayload);
@@ -42,13 +42,13 @@ function* stopCollectionsSaga(action: PayloadAction<SagaActionWithCallback>) {
     const response: Awaited<ReturnType<typeof collectionsApi.stopCollections>> = yield call(
       collectionsApi.stopCollections
     );
-    
+
     yield put(stopCollectionsSuccess());
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to stop collections',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to stop collections',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(stopCollectionsFailure(errorPayload));
     action.payload.onError?.(errorPayload);
@@ -61,13 +61,13 @@ function* triggerScanSaga(action: PayloadAction<SagaActionWithCallback>) {
     const response: Awaited<ReturnType<typeof collectionsApi.triggerScan>> = yield call(
       collectionsApi.triggerScan
     );
-    
+
     yield put(triggerScanSuccess());
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to trigger scan',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to trigger scan',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(triggerScanFailure(errorPayload));
     action.payload.onError?.(errorPayload);
@@ -80,13 +80,13 @@ function* getScheduledSaga(action: PayloadAction<SagaActionWithCallback>) {
     const response: Awaited<ReturnType<typeof collectionsApi.getScheduledReminders>> = yield call(
       collectionsApi.getScheduledReminders
     );
-    
+
     yield put(getScheduledSuccess(response));
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to get scheduled reminders',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to get scheduled reminders',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(getScheduledFailure(errorPayload));
     action.payload.onError?.(errorPayload);

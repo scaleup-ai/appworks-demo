@@ -15,13 +15,13 @@ function* reconcilePaymentSaga(action: PayloadAction<PaymentReconciliationReques
       paymentApi.reconcilePayment,
       reconciliationRequest
     );
-    
+
     yield put(reconcilePaymentSuccess(response));
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to reconcile payment',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to reconcile payment',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(reconcilePaymentFailure(errorPayload));
     action.payload.onError?.(errorPayload);

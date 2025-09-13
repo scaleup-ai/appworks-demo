@@ -87,7 +87,7 @@ export interface CollectionsReminderEvent {
 }
 
 // API Response wrapper
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   data: T;
   status: number;
   statusText: string;
@@ -101,12 +101,12 @@ export interface ApiError {
 }
 
 // Saga action types
-export interface SagaAction<T = any> {
+export interface SagaAction<T = unknown> {
   type: string;
   payload?: T;
 }
 
-export interface SagaActionWithCallback<T = any> extends SagaAction<T> {
-  onSuccess?: (result: any) => void;
+export interface SagaActionWithCallback<T = unknown> extends SagaAction<T> {
+  onSuccess?: (result: unknown) => void;
   onError?: (error: ApiError) => void;
 }

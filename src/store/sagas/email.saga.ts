@@ -15,13 +15,13 @@ function* generateDraftSaga(action: PayloadAction<EmailDraftRequest & SagaAction
       emailApi.generateEmailDraft,
       draftRequest
     );
-    
+
     yield put(generateDraftSuccess(response));
     onSuccess?.(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     const errorPayload = {
-      message: error.message || 'Failed to generate email draft',
-      status: error.response?.status,
+      message: error instanceof Error ? error.message : 'Failed to generate email draft',
+      status: (error as { response?: { status?: number } }).response?.status,
     };
     yield put(generateDraftFailure(errorPayload));
     action.payload.onError?.(errorPayload);
