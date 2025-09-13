@@ -62,6 +62,9 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
           const respPromise = handleOAuthRedirect({ code, state });
           const resp = await Promise.race([respPromise, timeoutPromise]);
 
+          console.log("RedirectHandler: Response status", (resp as any).status);
+          console.log("RedirectHandler: Response data", (resp as any).data);
+
           const ok =
             resp && (resp as any).status >= 200 && (resp as any).status < 300;
           if (ok) {
@@ -76,9 +79,12 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
             navigate(target, { replace: true });
           } else {
             console.log("RedirectHandler: Callback failed");
+            const errorDetails = (resp as any).data
+              ? JSON.stringify((resp as any).data)
+              : "Unknown error";
             if (mounted)
               setErrorMessage(
-                "Xero authentication failed. You can retry below."
+                `Xero authentication failed: ${errorDetails}. You can retry below.`
               );
           }
         } catch (err) {
@@ -148,6 +154,15 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
               className="px-4 py-3 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
             >
               Return home
+            </button>
+            <button
+              onClick={() => {
+                setErrorMessage(null);
+                navigate("/dashboard", { replace: true });
+              }}
+              className="px-4 py-3 text-sm text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50"
+            >
+              Proceed to Dashboard
             </button>
           </div>
         </div>
