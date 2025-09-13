@@ -59,7 +59,8 @@ function* startAuthSaga(action: PayloadAction<SagaActionWithCallback>) {
   try {
     const { onSuccess } = action.payload;
     const response: Awaited<ReturnType<typeof xeroApi.startXeroAuth>> = yield call(
-      xeroApi.startXeroAuth
+      xeroApi.startXeroAuth,
+      'json'
     );
 
     yield put(startAuthSuccess(response));
