@@ -24,6 +24,12 @@ export const ErrorBoundaryPage: React.FC = () => {
     error?.statusText || error?.message || "An unexpected error occurred";
   const errorStatus = error?.status;
 
+  // Log full error to console for easier diagnosis in staging/prod.
+  try {
+    // eslint-disable-next-line no-console
+    console.error("Route error:", error);
+  } catch {}
+
   return (
     <AppLayout title="Error">
       <div className="min-h-[60vh] flex items-center justify-center">
@@ -44,6 +50,24 @@ export const ErrorBoundaryPage: React.FC = () => {
             </h1>
 
             <p className="text-gray-600 mb-6">{errorMessage}</p>
+            {/* Render extra diagnostics when available */}
+            <div className="text-left text-xs text-gray-500 mt-4 break-words">
+              {error && (
+                <>
+                  {error.statusText && (
+                    <div>Status text: {error.statusText}</div>
+                  )}
+                  {error.status && <div>Status code: {error.status}</div>}
+                  {error.message && <div>Message: {String(error.message)}</div>}
+                  {/* Some route errors include a stack */}
+                  {(error as any)?.stack && (
+                    <pre className="mt-2 p-2 bg-gray-100 rounded">
+                      {String((error as any).stack)}
+                    </pre>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -65,6 +89,12 @@ export const ErrorBoundaryPage: React.FC = () => {
                 ↩️
               </span>
               Go Back
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-600 mt-3"
+            >
+              Reload
             </button>
           </div>
 
