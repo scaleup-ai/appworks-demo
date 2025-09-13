@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   handleOAuthRedirect,
   readAndClearPostAuthRedirect,
-  getXeroAuthUrl,
 } from "../../apis/xero.api";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
@@ -48,6 +47,7 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
       // Avoid double-processing
       if (!mounted) return;
 
+      console.log("RedirectHandler: Processing OAuth callback");
       // mark that we're processing a callback so other route guards don't
       // immediately redirect back to Xero and cause a loop.
       try {
@@ -56,31 +56,33 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
       setProcessing(true);
       (async () => {
         try {
-          const resp = await handleOAuthRedirect({ code, state });
-          if (!mounted) return;
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout")), 5000)
+          );
+          const respPromise = handleOAuthRedirect({ code, state });
+          const resp = await Promise.race([respPromise, timeoutPromise]);
 
-          const ok = resp && resp.status >= 200 && resp.status < 300;
-
-          // If backend handled the callback OK, navigate to the stored post-auth
-          // redirect (if any), else fall back to the state param. On failure,
-          // surface an error and let the user choose to retry so we don't
-          // automatically send them back into the OAuth loop.
-          const stored = readAndClearPostAuthRedirect();
+          const ok =
+            resp && (resp as any).status >= 200 && (resp as any).status < 300;
           if (ok) {
+            console.log("RedirectHandler: Callback successful, navigating");
             // Mark a short-lived 'recent auth' timestamp so route guards can
             // avoid immediately restarting auth while backend state propagates.
             try {
               sessionStorage.setItem("xero_recent_auth", String(Date.now()));
             } catch {}
-            const target = stored || state || "/";
+            const stored = readAndClearPostAuthRedirect();
+            const target = stored || state || "/dashboard";
             navigate(target, { replace: true });
           } else {
+            console.log("RedirectHandler: Callback failed");
             if (mounted)
               setErrorMessage(
                 "Xero authentication failed. You can retry below."
               );
           }
         } catch (err) {
+          console.error("RedirectHandler: Error processing callback", err);
           if (!mounted) return;
           // Don't auto-redirect to Xero on error — show a retry UI instead.
           if (mounted)
@@ -95,6 +97,7 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
         }
       })();
     } catch (err) {
+      console.error("RedirectHandler: Error in useEffect", err);
       // noop
     }
 
@@ -128,7 +131,7 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
               onClick={() => {
                 try {
                   // start Xero auth explicitly on user action
-                  window.location.href = getXeroAuthUrl();
+                  window.location.href = "/api/v1/xero/auth";
                 } catch {
                   // noop
                 }

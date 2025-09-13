@@ -7,7 +7,7 @@ import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
-import RedirectHandlerRouteLogic from "./logic/RedirectHandler.route-logic";
+import RedirectHandler from "./logic/RedirectHandler.route-logic";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
@@ -99,7 +99,7 @@ export const routes: ExtendedRouteObject[] = [
 const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
   // Global wrappers applied to all routes
   const globalWrappers: Array<ComponentType<{ children: ReactElement }>> = [
-    RedirectHandlerRouteLogic,
+    RedirectHandler,
   ];
 
   // Compose wrappers simply:

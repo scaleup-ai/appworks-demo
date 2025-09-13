@@ -6,7 +6,7 @@ import { RootState } from "../../store/store";
 import {
   capturePostAuthRedirect,
   getIntegrationStatus,
-  getXeroAuthUrl,
+  startXeroAuth,
 } from "../../apis/xero.api";
 
 // Keep the public name the same so imports stay valid.
@@ -14,149 +14,114 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
   const [loading, setLoading] = useState(true);
   const [integrated, setIntegrated] = useState<boolean | null>(null);
-  const [checking, setChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initial check: see if integration exists or we are authenticated.
   useEffect(() => {
     let mounted = true;
-    let timeoutId: number;
+
+    // Clear old sessionStorage flags on mount
+    try {
+      sessionStorage.removeItem("xero_processing");
+      sessionStorage.removeItem("xero_recent_auth");
+    } catch {}
+
     if (isAuthenticated) {
+      console.log("AuthProtected: User is authenticated, allowing access");
       setIntegrated(true);
       setLoading(false);
       return;
     }
 
+    console.log("AuthProtected: Checking integration status");
     (async () => {
       try {
-        const status = await getIntegrationStatus();
+        // Add timeout to prevent hanging
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Timeout")), 5000)
+        );
+        const statusPromise = getIntegrationStatus();
+        const status = await Promise.race([statusPromise, timeoutPromise]);
         if (!mounted) return;
         const ok = Boolean(status && (status as any).connected);
+        console.log("AuthProtected: Integration status", ok);
         setIntegrated(ok);
-      } catch {
+        if (!ok) {
+          console.log("AuthProtected: Not integrated, starting auth");
+          capturePostAuthRedirect();
+          const authData = await startXeroAuth("json");
+          if (authData && (authData as any).url) {
+            window.location.href = (authData as any).url;
+          } else {
+            setError("Failed to get auth URL");
+          }
+        }
+      } catch (err) {
+        console.error("AuthProtected: Error checking integration", err);
         if (!mounted) return;
+        setError(
+          "Failed to check integration status: " + (err as Error).message
+        );
         setIntegrated(false);
       } finally {
         if (mounted) setLoading(false);
       }
     })();
 
-    // Timeout to prevent infinite loading
-    timeoutId = setTimeout(() => {
-      if (mounted) {
-        setLoading(false);
-        setIntegrated(false); // Assume not integrated if timeout
-      }
-    }, 10000); // 10 seconds
-
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
     };
   }, [isAuthenticated]);
 
-  // Retry loop: when we know integration is false, poll a few times before starting full-page auth.
-  useEffect(() => {
-    let mounted = true;
-    let timeoutId: number;
-    if (checking || integrated !== false) return;
-
-    (async () => {
-      setChecking(true);
-      try {
-        const attempts = 3;
-        for (let i = 0; i < attempts && mounted; i++) {
-          try {
-            const status = await getIntegrationStatus();
-            if (!mounted) return;
-            const ok = Boolean(status && (status as any).connected);
-            if (ok) {
-              setIntegrated(true);
-              return;
-            }
-          } catch {
-            // ignore and retry
-          }
-          await new Promise((r) => setTimeout(r, 1000));
-        }
-
-        if (!mounted) return;
-
-        // still not integrated -> start auth
-        try {
-          capturePostAuthRedirect();
-        } catch {}
-        try {
-          window.location.href = getXeroAuthUrl();
-        } catch {}
-      } finally {
-        if (mounted) setChecking(false);
-      }
-    })();
-
-    // Timeout to prevent infinite checking
-    timeoutId = setTimeout(() => {
-      if (mounted) {
-        setChecking(false);
-        setIntegrated(false); // Assume not integrated if timeout
-      }
-    }, 15000); // 15 seconds
-
-    return () => {
-      mounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [checking, integrated]);
-
-  // sessionStorage-based runtime flags to avoid races with the redirect handler.
-  let processing = false;
-  let recentlyAuthed = false;
-  try {
-    const href = typeof window !== "undefined" ? window.location.href : "";
-    processing =
-      typeof window !== "undefined" &&
-      sessionStorage.getItem("xero_processing") === "1";
-    const recentAuthTs = (() => {
-      try {
-        const v = sessionStorage.getItem("xero_recent_auth");
-        return v ? parseInt(v, 10) : null;
-      } catch {
-        return null;
-      }
-    })();
-    const now = Date.now();
-    recentlyAuthed = Boolean(recentAuthTs && now - recentAuthTs < 3000);
-    if (href.includes("/xero/oauth2/redirect")) processing = true;
-  } catch {}
-
-  // Render decisions: show spinner during loading/checking/processing; render children only when integrated.
-  if (loading)
+  if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white">
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed inset-0 flex flex-col items-center justify-center p-6 bg-white">
+        <h2 className="mb-4 text-xl font-semibold text-gray-900">Error</h2>
+        <p className="mb-6 text-sm text-gray-700">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
+        >
+          Reload
+        </button>
+      </div>
+    );
+  }
 
   if (integrated) return children;
 
-  if (processing || recentlyAuthed || checking)
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-white">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-
-  // Fallback while the retry effect starts (should be transient).
+  // If not integrated and not loading, show error
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white p-6">
-      <LoadingSpinner size="lg" />
-      <p className="mt-4 text-sm text-gray-600">Loading...</p>
+    <div className="fixed inset-0 flex flex-col items-center justify-center p-6 bg-white">
+      <h2 className="mb-4 text-xl font-semibold text-gray-900">
+        Access Denied
+      </h2>
+      <p className="mb-6 text-sm text-gray-700">
+        You need to connect to Xero to access this page.
+      </p>
       <button
         onClick={() => {
-          setIntegrated(true); // Force exit spinner
+          capturePostAuthRedirect();
+          startXeroAuth("json")
+            .then((data) => {
+              if (data && (data as any).url) {
+                window.location.href = (data as any).url;
+              }
+            })
+            .catch(() => {
+              window.location.reload();
+            });
         }}
-        className="mt-4 px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700"
+        className="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
       >
-        Skip (Debug)
+        Connect to Xero
       </button>
     </div>
   );
