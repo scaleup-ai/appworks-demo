@@ -90,7 +90,7 @@ export function readAndClearPostAuthRedirect(): string | null {
 }
 
 export async function handleOAuthRedirect(query: { code?: string; state?: string }) {
-  const resp = await axiosClient.get(XeroApiRoutesLocal.OAUTH2_REDIRECT, { params: query, validateStatus: () => true })
+  const resp = await axiosClient.post(XeroApiRoutesLocal.OAUTH2_REDIRECT, query, { validateStatus: () => true })
   return resp
 }
 
