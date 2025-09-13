@@ -1,26 +1,14 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import showToast from "../utils/toast";
 import { setXeroCreds, startXeroAuth } from "../apis/xero.api";
-import { setDemoMode } from "../store/authSlice";
 
 const AuthPage: React.FC = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleDemoMode = () => {
-    // Demo mode - set auth state and navigate to dashboard
-    dispatch(setDemoMode());
-    showToast("Demo mode activated", { type: "success" });
-    navigate("/dashboard");
-  };
 
   const handleXeroAuth = async () => {
     setIsLoading(true);
     try {
-      // Set default Xero credentials from env or hardcoded for demo
+      // Set default Xero credentials
       const credsResponse = await setXeroCreds({
         clientId: "DB9274AFC30044CCA7A0AC94CA80810D",
         clientSecret: "FVqEhjI6_3ICcwL_C6iVYVkjQYMbNGb07Xq2vinpcYGDU-Hm",
@@ -55,8 +43,8 @@ const AuthPage: React.FC = () => {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
           <h1 className="mb-2 text-4xl font-bold text-gray-900">ScaleUp AI</h1>
-          <h2 className="mb-8 text-xl text-gray-600">Welcome to the Demo</h2>
-          <p className="mb-8 text-gray-500">Connect with Xero or explore the demo features</p>
+          <h2 className="mb-8 text-xl text-gray-600">Xero Integration</h2>
+          <p className="mb-8 text-gray-500">Connect with Xero to access your financial data</p>
         </div>
 
         <div className="px-4 py-8 bg-white shadow sm:rounded-lg sm:px-10">
@@ -84,32 +72,11 @@ const AuthPage: React.FC = () => {
                 </>
               )}
             </button>
-
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 text-gray-500 bg-white">or</span>
-              </div>
-            </div>
-
-            {/* Demo Mode Button */}
-            <button
-              onClick={handleDemoMode}
-              className="flex items-center justify-center w-full px-4 py-3 text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Explore Demo Features
-            </button>
           </div>
 
           <div className="mt-6 text-center">
             <p className="text-xs text-gray-500">
-              Demo mode allows you to explore collections, email, and payment features without Xero integration.
+              Connect your Xero account to access receivables, collections, and payment features.
             </p>
           </div>
         </div>

@@ -18,34 +18,30 @@ const XeroCallback: React.FC = () => {
 
       if (error) {
         showToast(`Xero OAuth error: ${error}`, { type: "error" });
-        navigate("/");
+        navigate("/auth");
         return;
       }
 
       if (!code) {
-        showToast("Missing authorization code", { type: "error" });
-        navigate("/");
+        showToast("No authorization code received", { type: "error" });
+        navigate("/auth");
         return;
       }
 
       try {
-        // Forward the OAuth callback to the backend
-        const response = await handleOAuthRedirect({ code, state: state || undefined });
+        const response = await handleOAuthRedirect({ code, state: state || "" });
 
-        if (response.status >= 200 && response.status < 300) {
-          // Set Xero connected state
+        if (response.status === 200) {
           dispatch(setXeroConnected());
-          showToast("Xero connected successfully!", { type: "success" });
+          showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");
         } else {
-          throw new Error(`Backend returned status ${response.status}`);
+          throw new Error("OAuth callback failed");
         }
       } catch (error) {
-        console.error("OAuth callback failed:", error);
-        showToast(`Authentication failed: ${error instanceof Error ? error.message : "Unknown error"}`, {
-          type: "error",
-        });
-        navigate("/");
+        console.error("OAuth callback error:", error);
+        showToast("Failed to complete Xero authentication", { type: "error" });
+        navigate("/auth");
       }
     };
 
@@ -53,13 +49,11 @@ const XeroCallback: React.FC = () => {
   }, [searchParams, navigate, dispatch]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-lg font-medium text-gray-900 mb-2">Completing Xero Authentication</h2>
-          <p className="text-gray-600">Please wait while we connect your Xero account...</p>
-        </div>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="text-center">
+        <div className="w-8 h-8 mx-auto mb-4 border-b-2 border-blue-600 rounded-full animate-spin"></div>
+        <h2 className="text-lg font-medium text-gray-900">Processing Xero Authentication...</h2>
+        <p className="text-gray-500">Please wait while we complete your login.</p>
       </div>
     </div>
   );

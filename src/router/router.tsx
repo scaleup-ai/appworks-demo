@@ -70,7 +70,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Dashboard",
     routeObject: {
-      path: `${ROOT_PATH}/dashboard`,
+      path: `${ROOT_PATH}dashboard`,
       element: <DashboardPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -78,7 +78,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Collections",
     routeObject: {
-      path: `${ROOT_PATH}/collections`,
+      path: `${ROOT_PATH}collections`,
       element: <CollectionsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -86,7 +86,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Payments",
     routeObject: {
-      path: `${ROOT_PATH}/payments`,
+      path: `${ROOT_PATH}payments`,
       element: <PaymentsPage />,
       errorElement: <ErrorBoundaryPage />,
     },

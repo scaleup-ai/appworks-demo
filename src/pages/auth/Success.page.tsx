@@ -1,19 +1,19 @@
 import React from "react";
 import { useDispatch } from "react-redux";
-import { logoutUser } from "../../store/authSlice";
 import type { AppDispatch } from "../../store/store";
+import { logout } from "../../store/authSlice";
 
 const SuccessPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-screen bg-white">
       <div className="text-center">
         <h1 className="text-2xl font-bold">Connected to Xero</h1>
-        <p className="mt-2 text-sm text-gray-600">You are authenticated (demo)</p>
+        <p className="mt-2 text-sm text-gray-600">You are authenticated with Xero</p>
         <button
-          className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md bg-red-500 text-white hover:bg-red-600"
-          onClick={() => dispatch(logoutUser())}
+          className="inline-flex items-center px-4 py-2 mt-4 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600"
+          onClick={() => dispatch(logout())}
         >
           Logout
         </button>
