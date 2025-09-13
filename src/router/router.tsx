@@ -1,8 +1,9 @@
 import type { ReactElement, ComponentType } from "react";
-import { createBrowserRouter, RouteObject, Outlet } from "react-router-dom";
+import { createBrowserRouter, RouteObject } from "react-router-dom";
 import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/main/Landing.page";
-// Login and Success pages removed — the app requires Xero auth immediately.
+import LoginPage from "../pages/login/Login.page";
+import XeroOAuthCallback from "../pages/auth/XeroOAuthCallback";
 import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
@@ -29,16 +30,15 @@ export interface ExtendedRouteObject {
 }
 
 const utilityRoutes: ExtendedRouteObject[] = [
-  // Frontend route used only to mount the global RedirectHandler when the
+  // Frontend route used only to mount the OAuth callback handler when the
   // OAuth provider redirects the browser to a frontend callback path such as
-  // /xero/oauth2/redirect. The element can be empty because the handler will
-  // immediately process the URL and navigate away.
+  // /xero/oauth2/redirect. This component will handle the OAuth flow completion.
   {
     title: "Xero OAuth Callback Handler",
     logicType: ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK,
     routeObject: {
-      path: `${ROOT_PATH}/xero/oauth2/redirect`,
-      element: <div />,
+      path: `${ROOT_PATH}xero/oauth2/redirect`,
+      element: <XeroOAuthCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
   },
@@ -54,6 +54,14 @@ export const lameRoutes: ExtendedRouteObject[] = [
       path: ROOT_PATH,
       element: <LandingPage />,
       errorElement: <ErrorBoundaryPage />, // Applies to all
+    },
+  },
+  {
+    title: "Login",
+    routeObject: {
+      path: `${ROOT_PATH}login`,
+      element: <LoginPage />,
+      errorElement: <ErrorBoundaryPage />,
     },
   },
 ];
@@ -98,17 +106,13 @@ export const routes: ExtendedRouteObject[] = [
 
 const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
   // Global wrappers applied to all routes
-  const globalWrappers: Array<ComponentType<{ children: ReactElement }>> = [
-    RedirectHandler,
-  ];
+  const globalWrappers: Array<ComponentType<{ children: ReactElement }>> = [RedirectHandler];
 
   // Compose wrappers simply:
   // - always apply global wrappers
   // - only apply AuthProtectedRouteLogic for AUTH_CHECK routes
   // - never apply the auth wrapper to the XERO OAuth callback route (prevents redirect loop)
-  const wrappers: Array<ComponentType<{ children: ReactElement }>> = [
-    ...globalWrappers,
-  ];
+  const wrappers: Array<ComponentType<{ children: ReactElement }>> = [...globalWrappers];
   if (route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK) {
     wrappers.push(AuthProtectedRouteLogic);
   }

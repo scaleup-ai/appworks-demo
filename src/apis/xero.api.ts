@@ -1,12 +1,10 @@
-import axiosClient, { API_SERVICE_BASE_URL } from './axios-client'
+import axiosClient, { API_SERVICE_BASE_URL } from './axios-client';
 import {
   XeroTokenRequest,
-  XeroTokenSet,
   ConsentUrlResponse,
   TokenMetadataResponse,
-  TokenResponse,
   IntegrationStatus,
-} from '../types/api.types'
+} from '../types/api.types';
 
 // Define routes enum locally per requirement
 export enum XeroApiRoutesLocal {
@@ -90,11 +88,13 @@ export function readAndClearPostAuthRedirect(): string | null {
 }
 
 export async function handleOAuthRedirect(query: { code?: string; state?: string }) {
-  const resp = await axiosClient.post(XeroApiRoutesLocal.OAUTH2_REDIRECT, query, { validateStatus: () => true })
-  return resp
-}
-
-export async function getIntegrationStatus(): Promise<IntegrationStatus> {
+  // Fixed: Backend expects GET request with query parameters, not POST
+  const resp = await axiosClient.get(XeroApiRoutesLocal.OAUTH2_REDIRECT, {
+    params: query,
+    validateStatus: () => true
+  });
+  return resp;
+} export async function getIntegrationStatus(): Promise<IntegrationStatus> {
   const resp = await axiosClient.get<IntegrationStatus>(XeroApiRoutesLocal.INTEGRATION_STATUS, { validateStatus: () => true })
   return resp.data
 }
