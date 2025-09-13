@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { store } from '../store/store';
-import { logout } from '../store/authSlice';
+// import { store } from '../store/store';
+// import { logoutUser } from '../store/authSlice';
 
 // Assumptions:
 // - API base URL is provided via Vite env: import.meta.env.VITE_API_BASE_URL
@@ -137,7 +137,8 @@ axiosClient.interceptors.response.use(
             // If refresh fails, clear tokens and force logout via store
             clearTokens();
             try {
-              store.dispatch(logout());
+              // TODO: Fix store dispatch for async thunk
+              // void store.dispatch(logoutUser());
             } catch {
               // ignore if dispatching fails in non-redux contexts
             }

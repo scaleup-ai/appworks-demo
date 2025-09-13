@@ -22,8 +22,8 @@ export enum XeroApiRoutesLocal {
 // This file provides small, typed helpers for the endpoints used by the app.
 
 export interface SetCredsResponse {
-  success?: boolean
-  error?: string
+  success?: boolean;
+  error?: string;
 }
 
 export async function setXeroCreds(params: {
@@ -34,13 +34,13 @@ export async function setXeroCreds(params: {
   const resp = await axiosClient.get<SetCredsResponse>(XeroApiRoutesLocal.CREDS, {
     params,
     headers: { 'Content-Type': 'application/json' },
-  })
-  return resp.data
+  });
+  return resp.data;
 }
 
+// Response for auth redirect - currently not used but kept for API compatibility  
 export interface StartAuthResponse {
-  // For the redirect case, the library will receive a 302 with Location header.
-  // We return the raw response so callers can inspect headers if necessary.
+  url?: string;
 }
 
 export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect') {
@@ -50,16 +50,16 @@ export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect') {
   if (mode === 'json') {
     const resp = await axiosClient.get<ConsentUrlResponse>(XeroApiRoutesLocal.AUTH, {
       params: { mode: 'json' },
-    })
-    return resp.data
+    });
+    return resp.data;
   }
 
-  return axiosClient.get(XeroApiRoutesLocal.AUTH, { validateStatus: () => true })
+  return axiosClient.get(XeroApiRoutesLocal.AUTH, { validateStatus: () => true });
 }
 
 export function getXeroAuthUrl(): string {
-  const base = (API_SERVICE_BASE_URL || '').replace(/\/$/, '')
-  return `${base}${XeroApiRoutesLocal.AUTH}`
+  const base = (API_SERVICE_BASE_URL || '').replace(/\/$/, '');
+  return `${base}${XeroApiRoutesLocal.AUTH}`;
 }
 
 // Store the intended post-auth redirect path in sessionStorage so the app
@@ -72,7 +72,7 @@ export function capturePostAuthRedirect(redirectPath?: string) {
         ? window.location.pathname + window.location.search + window.location.hash
         : '/');
     sessionStorage.setItem('xero_post_auth_redirect', path);
-  } catch (err) {
+  } catch {
     // ignore storage errors
   }
 }
@@ -82,7 +82,7 @@ export function readAndClearPostAuthRedirect(): string | null {
     const v = sessionStorage.getItem('xero_post_auth_redirect');
     if (v) sessionStorage.removeItem('xero_post_auth_redirect');
     return v;
-  } catch (err) {
+  } catch {
     return null;
   }
 }
@@ -94,20 +94,22 @@ export async function handleOAuthRedirect(query: { code?: string; state?: string
     validateStatus: () => true
   });
   return resp;
-} export async function getIntegrationStatus(): Promise<IntegrationStatus> {
-  const resp = await axiosClient.get<IntegrationStatus>(XeroApiRoutesLocal.INTEGRATION_STATUS, { validateStatus: () => true })
-  return resp.data
+}
+
+export async function getIntegrationStatus(): Promise<IntegrationStatus> {
+  const resp = await axiosClient.get<IntegrationStatus>(XeroApiRoutesLocal.INTEGRATION_STATUS, { validateStatus: () => true });
+  return resp.data;
 }
 
 export async function saveXeroToken(request: XeroTokenRequest): Promise<void> {
   // OpenAPI specifies 204 on success. Return void and let callers catch errors.
-  await axiosClient.post(XeroApiRoutesLocal.TOKEN, request)
+  await axiosClient.post(XeroApiRoutesLocal.TOKEN, request);
 }
 
 export async function getXeroToken(clientId: string, tenantId: string): Promise<TokenMetadataResponse> {
-  const path = XeroApiRoutesLocal.TOKEN_BY_IDS.replace('{clientId}', encodeURIComponent(clientId)).replace('{tenantId}', encodeURIComponent(tenantId))
-  const response = await axiosClient.get<TokenMetadataResponse>(path)
-  return response.data
+  const path = XeroApiRoutesLocal.TOKEN_BY_IDS.replace('{clientId}', encodeURIComponent(clientId)).replace('{tenantId}', encodeURIComponent(tenantId));
+  const response = await axiosClient.get<TokenMetadataResponse>(path);
+  return response.data;
 }
 
 export default {
@@ -120,4 +122,4 @@ export default {
   readAndClearPostAuthRedirect,
   saveXeroToken,
   getXeroToken,
-}
+};
