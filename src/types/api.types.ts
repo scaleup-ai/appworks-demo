@@ -25,7 +25,7 @@ export interface XeroTokenResponse {
 
 export interface ConsentUrlResponse {
   url: string;
-  state: string;
+  state?: string;
   pkceChallenge?: string;
 }
 
