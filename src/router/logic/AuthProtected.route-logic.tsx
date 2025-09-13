@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import {
@@ -13,6 +14,10 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
   const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
   const [loading, setLoading] = useState(true);
   const [integrated, setIntegrated] = useState<boolean | null>(null);
+
+  // Track whether we are retrying integration status checks to avoid
+  // immediately redirecting the user back to the provider.
+  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -70,15 +75,66 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
       return <div />;
   } catch {}
 
-  // Start full-page auth and capture the post-auth location.
-  try {
-    capturePostAuthRedirect();
-  } catch {}
-  try {
-    window.location.href = getXeroAuthUrl();
-  } catch {}
+  // If we reach here, integration is false. Don't immediately redirect.
+  // Instead, perform a few short retries to allow backend state to stabilize.
+  useEffect(() => {
+    let mounted = true;
+    if (checking || integrated !== false) return;
 
-  return <div />;
+    (async () => {
+      setChecking(true);
+      try {
+        const attempts = 3;
+        for (let i = 0; i < attempts && mounted; i++) {
+          try {
+            const status = await getIntegrationStatus();
+            if (!mounted) return;
+            const ok = Boolean(status && status.connected);
+            if (ok) {
+              setIntegrated(true);
+              return;
+            }
+          } catch {
+            // swallow and retry
+          }
+          // wait before next attempt
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+
+        if (!mounted) return;
+
+        // After retries, if still not integrated, proceed to start auth.
+        try {
+          capturePostAuthRedirect();
+        } catch {}
+        try {
+          window.location.href = getXeroAuthUrl();
+        } catch {}
+      } finally {
+        if (mounted) setChecking(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [checking, integrated]);
+
+  // While retrying or before redirecting show a centered spinner so the user
+  // isn't stuck on an empty page.
+  if (checking)
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+
+  // Fallback UI while the retry effect starts.
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-white">
+      <LoadingSpinner size="lg" />
+    </div>
+  );
 };
 
 export default AuthProtectedRouteLogic;
