@@ -15,6 +15,7 @@ const axiosClient: AxiosInstance = axios.create({
     Accept: 'application/json',
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Token management helper
