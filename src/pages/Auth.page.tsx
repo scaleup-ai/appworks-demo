@@ -1,27 +1,14 @@
 import React, { useState } from "react";
 import showToast from "../utils/toast";
-import { setXeroCreds, startXeroAuth } from "../apis/xero.api";
+import { startXeroAuth } from "../apis/xero.api";
 
 const AuthPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  // Dynamic redirect URI to match Xero app configuration
-  const redirectUri = `${window.location.origin}${import.meta.env.BASE_URL || "/"}xero/oauth2/redirect`;
 
   const handleXeroAuth = async () => {
     setIsLoading(true);
     try {
-      // Set default Xero credentials
-      const credsResponse = await setXeroCreds({
-        clientId: "DB9274AFC30044CCA7A0AC94CA80810D",
-        clientSecret: "FVqEhjI6_3ICcwL_C6iVYVkjQYMbNGb07Xq2vinpcYGDU-Hm",
-        redirectUri,
-      });
-
-      if (!credsResponse.success) {
-        throw new Error(credsResponse.error || "Failed to set Xero credentials");
-      }
-
-      // Start Xero OAuth flow
+      // Start Xero OAuth flow (backend handles creds from env)
       const authResponse = await startXeroAuth("json");
 
       if ("url" in authResponse && authResponse.url) {

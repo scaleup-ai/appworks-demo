@@ -21,23 +21,6 @@ export enum XeroApiRoutesLocal {
 // Minimal Xero API client based on provided OpenAPI subset.
 // This file provides small, typed helpers for the endpoints used by the app.
 
-export interface SetCredsResponse {
-  success?: boolean;
-  error?: string;
-}
-
-export async function setXeroCreds(params: {
-  clientId: string
-  clientSecret: string
-  redirectUri: string
-}): Promise<SetCredsResponse> {
-  const resp = await axiosClient.get<SetCredsResponse>(XeroApiRoutesLocal.CREDS, {
-    params,
-    headers: { 'Content-Type': 'application/json' },
-  });
-  return resp.data;
-}
-
 // Response for auth redirect - currently not used but kept for API compatibility  
 export interface StartAuthResponse {
   url?: string;
@@ -113,7 +96,7 @@ export async function getXeroToken(clientId: string, tenantId: string): Promise<
 }
 
 export default {
-  setXeroCreds,
+  // setXeroCreds, // DEPRECATED: insecure
   startXeroAuth,
   handleOAuthRedirect,
   getIntegrationStatus,
