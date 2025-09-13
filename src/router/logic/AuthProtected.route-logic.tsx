@@ -19,6 +19,7 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
   // Initial check: see if integration exists or we are authenticated.
   useEffect(() => {
     let mounted = true;
+    let timeoutId: number;
     if (isAuthenticated) {
       setIntegrated(true);
       setLoading(false);
@@ -39,14 +40,24 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
       }
     })();
 
+    // Timeout to prevent infinite loading
+    timeoutId = setTimeout(() => {
+      if (mounted) {
+        setLoading(false);
+        setIntegrated(false); // Assume not integrated if timeout
+      }
+    }, 10000); // 10 seconds
+
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
     };
   }, [isAuthenticated]);
 
   // Retry loop: when we know integration is false, poll a few times before starting full-page auth.
   useEffect(() => {
     let mounted = true;
+    let timeoutId: number;
     if (checking || integrated !== false) return;
 
     (async () => {
@@ -82,8 +93,17 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
       }
     })();
 
+    // Timeout to prevent infinite checking
+    timeoutId = setTimeout(() => {
+      if (mounted) {
+        setChecking(false);
+        setIntegrated(false); // Assume not integrated if timeout
+      }
+    }, 15000); // 15 seconds
+
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
     };
   }, [checking, integrated]);
 
@@ -127,8 +147,17 @@ const AuthProtectedRouteLogic = ({ children }: { children: ReactElement }) => {
 
   // Fallback while the retry effect starts (should be transient).
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-white">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white p-6">
       <LoadingSpinner size="lg" />
+      <p className="mt-4 text-sm text-gray-600">Loading...</p>
+      <button
+        onClick={() => {
+          setIntegrated(true); // Force exit spinner
+        }}
+        className="mt-4 px-4 py-2 text-sm text-white bg-red-600 rounded-md hover:bg-red-700"
+      >
+        Skip (Debug)
+      </button>
     </div>
   );
 };
