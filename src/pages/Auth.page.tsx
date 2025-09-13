@@ -4,6 +4,8 @@ import { setXeroCreds, startXeroAuth } from "../apis/xero.api";
 
 const AuthPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
+  // Dynamic redirect URI to match Xero app configuration
+  const redirectUri = `${window.location.origin}${import.meta.env.BASE_URL || "/"}xero/oauth2/redirect`;
 
   const handleXeroAuth = async () => {
     setIsLoading(true);
@@ -12,7 +14,7 @@ const AuthPage: React.FC = () => {
       const credsResponse = await setXeroCreds({
         clientId: "DB9274AFC30044CCA7A0AC94CA80810D",
         clientSecret: "FVqEhjI6_3ICcwL_C6iVYVkjQYMbNGb07Xq2vinpcYGDU-Hm",
-        redirectUri: "https://scaleupai.tech/xero/oauth2/redirect",
+        redirectUri,
       });
 
       if (!credsResponse.success) {
