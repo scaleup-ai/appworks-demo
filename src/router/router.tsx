@@ -2,8 +2,8 @@ import type { ReactElement, ComponentType } from "react";
 import { createBrowserRouter, RouteObject } from "react-router-dom";
 import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/main/Landing.page";
-import LoginPage from "../pages/login/Login.page";
-import XeroOAuthCallback from "../pages/auth/XeroOAuthCallback";
+import AuthPage from "../pages/Auth.page";
+import XeroCallback from "../pages/XeroCallback.page";
 import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
@@ -38,7 +38,7 @@ const utilityRoutes: ExtendedRouteObject[] = [
     logicType: ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK,
     routeObject: {
       path: `${ROOT_PATH}xero/oauth2/redirect`,
-      element: <XeroOAuthCallback />,
+      element: <XeroCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
   },
@@ -57,10 +57,10 @@ export const lameRoutes: ExtendedRouteObject[] = [
     },
   },
   {
-    title: "Login",
+    title: "Auth",
     routeObject: {
-      path: `${ROOT_PATH}login`,
-      element: <LoginPage />,
+      path: `${ROOT_PATH}auth`,
+      element: <AuthPage />,
       errorElement: <ErrorBoundaryPage />,
     },
   },
