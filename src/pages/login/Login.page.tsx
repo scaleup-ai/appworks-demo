@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getXeroAuthUrl } from "../../services/auth.service";
+import axios from "axios";
+import { startXeroAuth } from "../../apis/xero.api";
 import showToast from "../../utils/toast";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
@@ -12,16 +13,39 @@ const LoginPage: React.FC = () => {
   const handleXeroLogin = async () => {
     try {
       setIsLoading(true);
-      const authData = await getXeroAuthUrl();
 
-      // Redirect to Xero OAuth
-      window.location.href = authData.url;
+      // First, ensure Xero credentials are set up
+      try {
+        // Try to set credentials - this will use environment variables on the backend
+        const credsResponse = await axios.get("/api/v1/xero/creds");
+        console.log("Credentials setup response:", credsResponse.data);
+      } catch (credsError) {
+        console.warn("Failed to set credentials:", credsError);
+        // Continue anyway - the backend might already have credentials from env vars
+      }
+
+      // Start the Xero OAuth flow - this will redirect to Xero
+      await startXeroAuth("redirect");
     } catch (error) {
       console.error("Failed to initiate Xero OAuth:", error);
-      showToast("Failed to start Xero authentication", { type: "error" });
-    } finally {
+
+      let errorMessage = "Failed to start Xero authentication";
+      if (axios.isAxiosError(error)) {
+        if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response?.status) {
+          errorMessage = `Authentication failed with status ${error.response.status}`;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      showToast(errorMessage, { type: "error" });
       setIsLoading(false);
     }
+    // Note: If successful, the browser will redirect, so we don't set loading to false
   };
 
   const handleSkipAuth = () => {

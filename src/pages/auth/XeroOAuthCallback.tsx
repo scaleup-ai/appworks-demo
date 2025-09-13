@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { handleXeroCallback } from "../../services/auth.service";
+import { handleOAuthRedirect } from "../../apis/xero.api";
 import showToast from "../../utils/toast";
 
 const XeroOAuthCallback: React.FC = () => {
@@ -19,19 +19,51 @@ const XeroOAuthCallback: React.FC = () => {
         return;
       }
 
-      if (!code || !state) {
-        showToast("Missing OAuth parameters", { type: "error" });
+      // For the Xero OAuth callback, state parameter might be optional
+      // depending on how the backend is configured
+      if (!code) {
+        showToast("Missing OAuth code parameter", { type: "error" });
         navigate("/login");
         return;
       }
 
       try {
-        await handleXeroCallback(code, state);
-        showToast("Xero integration completed successfully!", { type: "success" });
-        navigate("/dashboard");
+        // Use the Xero API directly - pass state if available, otherwise undefined
+        const response = await handleOAuthRedirect({
+          code,
+          state: state || undefined,
+        });
+
+        console.log("OAuth response:", response);
+
+        if (response.status >= 200 && response.status < 300) {
+          showToast("Xero integration completed successfully!", { type: "success" });
+          navigate("/dashboard");
+        } else {
+          // Extract error message from response
+          let errorMessage = `OAuth failed with status ${response.status}`;
+          if (response.data) {
+            if (typeof response.data === "string") {
+              errorMessage = response.data;
+            } else if (response.data.message) {
+              errorMessage = response.data.message;
+            } else if (response.data.error) {
+              errorMessage = response.data.error;
+            }
+          }
+          console.error("OAuth failed:", response);
+          showToast(`Xero authentication failed: ${errorMessage}`, { type: "error" });
+          navigate("/login");
+        }
       } catch (error) {
         console.error("OAuth callback error:", error);
-        showToast("OAuth completion failed", { type: "error" });
+        let errorMessage = "Unknown error";
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+        showToast(`OAuth completion failed: ${errorMessage}`, { type: "error" });
         navigate("/login");
       }
     };
