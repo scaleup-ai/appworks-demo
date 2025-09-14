@@ -12,6 +12,18 @@ const XeroCallback: React.FC = () => {
 
   useEffect(() => {
     const processCallback = async () => {
+      // One-shot guard: prevent duplicate backend calls if component re-renders
+      try {
+        const guardKey = "xero_oauth_callback_inflight";
+        const inflight = sessionStorage.getItem(guardKey);
+        if (inflight === "1") {
+          return; // already processing
+        }
+        sessionStorage.setItem(guardKey, "1");
+      } catch {
+        // ignore storage issues; continue
+      }
+
       const code = searchParams.get("code");
       const state = searchParams.get("state");
       const error = searchParams.get("error");
@@ -35,11 +47,45 @@ const XeroCallback: React.FC = () => {
           dispatch(setXeroConnected());
           showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");
-        } else {
-          throw new Error("OAuth callback failed");
+          return;
         }
-      } catch (error) {
-        console.error("OAuth callback error:", error);
+
+        if (response.status === 409) {
+          // Authorization code reused. If already connected, proceed; else restart auth.
+          showToast("Session already processed. Checking connection…", { type: "info" });
+          try {
+            const statusResp = await (await import("../apis/xero.api")).getIntegrationStatus();
+            const anyResp: any = statusResp as any;
+            const isConnected =
+              anyResp?.integrationStatus?.success === true ||
+              statusResp.connected === true ||
+              Boolean(statusResp.tenantId);
+            if (isConnected) {
+              dispatch(setXeroConnected());
+              navigate("/dashboard");
+              return;
+            }
+          } catch {
+            // fall through to restart auth
+          }
+          showToast("Session expired. Restarting Xero sign-in…", { type: "warning" });
+          try {
+            const { startXeroAuth } = await import("../apis/xero.api");
+            const data = (await startXeroAuth("json")) as import("../types/api.types").ConsentUrlResponse;
+            if (data && data.url) {
+              window.location.href = data.url;
+              return;
+            }
+          } catch {
+            // if restart fails, fall through to auth page
+          }
+          navigate("/auth");
+          return;
+        }
+
+        throw new Error(`OAuth callback failed with status ${response.status}`);
+      } catch (err) {
+        console.error("OAuth callback error:", err);
         showToast("Failed to complete Xero authentication", { type: "error" });
         navigate("/auth");
       }
