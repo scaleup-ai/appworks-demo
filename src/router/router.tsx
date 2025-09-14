@@ -7,6 +7,8 @@ import XeroCallback from "../pages/XeroCallback.page";
 import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
+import ProfitabilityPage from "../pages/profitability/Profitability.page";
+import CashFlowPage from "../pages/cashflow/CashFlow.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
 import RedirectHandler from "./logic/RedirectHandler.route-logic";
 
@@ -88,6 +90,22 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
     routeObject: {
       path: `${ROOT_PATH}payments`,
       element: <PaymentsPage />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
+  {
+    title: "Profitability",
+    routeObject: {
+      path: `${ROOT_PATH}profitability`,
+      element: <ProfitabilityPage />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
+  {
+    title: "Cash Flow",
+    routeObject: {
+      path: `${ROOT_PATH}cashflow`,
+      element: <CashFlowPage />,
       errorElement: <ErrorBoundaryPage />,
     },
   },
