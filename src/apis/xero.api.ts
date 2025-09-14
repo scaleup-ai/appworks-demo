@@ -16,6 +16,7 @@ export enum XeroApiRoutesLocal {
   INTEGRATION_STATUS = '/api/v1/xero/integration/status',
   TOKEN = '/api/v1/xero/token',
   TOKEN_BY_IDS = '/api/v1/xero/token/{clientId}/{tenantId}',
+  LOGOUT = '/api/v1/xero/logout',
 }
 
 // Minimal Xero API client based on provided OpenAPI subset.
@@ -95,6 +96,11 @@ export async function getXeroToken(clientId: string, tenantId: string): Promise<
   return response.data;
 }
 
+export async function logoutXero(): Promise<boolean> {
+  const resp = await axiosClient.post(XeroApiRoutesLocal.LOGOUT, undefined, { validateStatus: () => true });
+  return resp.status === 204;
+}
+
 export default {
   // setXeroCreds, // DEPRECATED: insecure
   startXeroAuth,
@@ -105,4 +111,5 @@ export default {
   readAndClearPostAuthRedirect,
   saveXeroToken,
   getXeroToken,
+  logoutXero,
 };
