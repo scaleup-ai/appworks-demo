@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect } from "../apis/xero.api";
 import { setXeroConnected } from "../store/authSlice";
@@ -9,23 +9,14 @@ const XeroCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const params = useParams();
 
   useEffect(() => {
     const processCallback = async () => {
-      // One-shot guard: prevent duplicate backend calls if component re-renders
-      try {
-        const guardKey = "xero_oauth_callback_inflight";
-        const inflight = sessionStorage.getItem(guardKey);
-        if (inflight === "1") {
-          return; // already processing
-        }
-        sessionStorage.setItem(guardKey, "1");
-      } catch {
-        // ignore storage issues; continue
-      }
-
-      const code = searchParams.get("code");
-      const state = searchParams.get("state");
+      const code = searchParams.get("code") || undefined;
+      const stateFromQuery = searchParams.get("state") || undefined;
+      const stateFromPath = params.state || undefined;
+      const state = stateFromQuery || stateFromPath;
       const error = searchParams.get("error");
 
       if (error) {
@@ -35,9 +26,22 @@ const XeroCallback: React.FC = () => {
       }
 
       if (!code) {
-        showToast("No authorization code received", { type: "error" });
+        // Some providers might hit the route without query; show actionable help.
+        showToast("Missing authorization code. Please restart Xero sign-in.", { type: "error" });
         navigate("/auth");
         return;
+      }
+
+      // One-shot guard keyed by the specific code to avoid duplicate backend calls
+      try {
+        const guardKey = `xero_oauth_callback_inflight:${code}`;
+        const inflight = sessionStorage.getItem(guardKey);
+        if (inflight === "1") {
+          return; // already processing this code
+        }
+        sessionStorage.setItem(guardKey, "1");
+      } catch {
+        // ignore storage issues; continue
       }
 
       try {

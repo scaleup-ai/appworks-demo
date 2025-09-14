@@ -37,7 +37,7 @@ const utilityRoutes: ExtendedRouteObject[] = [
     title: "Xero OAuth Callback Handler",
     logicType: ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK,
     routeObject: {
-      path: `${ROOT_PATH}xero/oauth2/redirect`,
+      path: `${ROOT_PATH}xero/oauth2/redirect/:state?`,
       element: <XeroCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
