@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { selectTenant } from "../store/authSlice";
+import { selectTenant, setTenants } from "../store/authSlice";
+import axiosClient from "../apis/axios-client";
 
 type Tenant = {
   tenantId?: string;
@@ -19,7 +20,31 @@ const TenantSelector: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const tenants: Tenant[] = (location.state as { tenants?: Tenant[] })?.tenants || [];
+  const [tenants, setLocalTenants] = useState<Tenant[]>(
+    () => (location.state as { tenants?: Tenant[] })?.tenants || []
+  );
+
+  useEffect(() => {
+    // If no tenants passed via route state, fetch available organisations from backend
+    const fetchTenants = async () => {
+      if (tenants && tenants.length > 0) return;
+      try {
+        const resp = await axiosClient.get("/api/v1/xero/organisations");
+        const data = resp.data || [];
+        const tenantsArr = (data as Tenant[]).map((t) => ({
+          tenantId: String(t.tenantId || t.tenant_id || ""),
+          tenantName: t.tenantName || t.tenant_name || t.name || undefined,
+          tenantType: t.tenantType || t.type || undefined,
+        }));
+        setLocalTenants(data as Tenant[]);
+        // also persist to redux store for app-wide access (normalize shape)
+        dispatch(setTenants(tenantsArr));
+      } catch {
+        // ignore errors; the UI will show fallback
+      }
+    };
+    fetchTenants();
+  }, []);
 
   const handleSelect = (tenantId: string) => {
     localStorage.setItem("selectedTenantId", tenantId);

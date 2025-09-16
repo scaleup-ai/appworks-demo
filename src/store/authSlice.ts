@@ -15,7 +15,8 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   tenants: [],
-  selectedTenantId: null,
+  // initialize selected tenant from localStorage if present so app picks up previous selection
+  selectedTenantId: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
 };
 
 export const validateTokens = createAsyncThunk('auth/validateTokens', async () => {

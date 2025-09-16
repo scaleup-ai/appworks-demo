@@ -1,5 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 
 interface NavProps {
   className?: string;
@@ -7,36 +9,48 @@ interface NavProps {
   onLinkClick?: () => void;
 }
 
-const Nav: React.FC<NavProps> = ({
-  className = "",
-  mobile = false,
-  onLinkClick,
-}) => {
+const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }) => {
   const linkClass = mobile ? "block text-sm py-2" : "text-sm px-3";
 
   const handleLinkClick = () => {
     // single, explicit place to invoke the optional callback
     try {
       onLinkClick?.();
-    } catch {}
+    } catch (err) {
+      // non-fatal callback error
+      console.warn("Nav onLinkClick callback failed", err);
+    }
   };
 
   const startXeroAuth = async () => {
     try {
-      const { getXeroAuthUrl, capturePostAuthRedirect } = await import(
-        "../apis/xero.api"
-      );
+      const { getXeroAuthUrl, capturePostAuthRedirect } = await import("../apis/xero.api");
       try {
         capturePostAuthRedirect();
-      } catch {}
+      } catch (err) {
+        // non-fatal; best-effort only
+        console.warn("capturePostAuthRedirect failed", err);
+      }
       window.location.href = getXeroAuthUrl();
-    } catch {
-      // noop
+    } catch (err) {
+      console.warn("startXeroAuth failed", err);
     }
   };
 
   return (
     <div className={className + " flex items-center gap-4"}>
+      {/* show currently selected tenant and link to change */}
+      {(() => {
+        const sel = useSelector((s: RootState) => s.auth.selectedTenantId);
+        if (sel) {
+          return (
+            <Link to="/select-tenant" className={linkClass} onClick={handleLinkClick}>
+              {`Org: ${sel}`}
+            </Link>
+          );
+        }
+        return null;
+      })()}
       <Link to="/" onClick={handleLinkClick} className={linkClass}>
         Home
       </Link>
@@ -58,11 +72,7 @@ const Nav: React.FC<NavProps> = ({
 
       <button
         onClick={startXeroAuth}
-        className={
-          mobile
-            ? "text-sm font-medium text-blue-600 mt-2"
-            : "text-sm font-medium text-blue-600"
-        }
+        className={mobile ? "text-sm font-medium text-blue-600 mt-2" : "text-sm font-medium text-blue-600"}
       >
         Sign in
       </button>
