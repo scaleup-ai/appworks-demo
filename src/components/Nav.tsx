@@ -69,14 +69,40 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
         try {
           const resp = await axiosClient.get("/api/v1/xero/organisations");
           const data = resp.data || [];
-          const tenantsArr = (data as OrgResponse[]).map((t) => ({
-            tenantId: String(t.tenantId || t.tenant_id || t.id || ""),
-            tenantName: t.tenantName || t.tenant_name || t.clientId || t.id || undefined,
-            tenantType: t.tenantType || t.type || undefined,
-            clientId: t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined),
-            organisationNumber: t.organisationNumber || t.organisation_number || undefined,
-            createdAt: t.createdAt || t.created_at || undefined,
-          }));
+          type NavTenant = {
+            tenantId: string;
+            tenantName?: string;
+            tenantType?: string;
+            clientId?: string;
+            organisationNumber?: string;
+            createdAt?: string;
+            displayLabel?: string;
+          };
+          const tenantsArr = (data as OrgResponse[]).map((t) => {
+            let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
+            let clientId = t.clientId || undefined;
+            if (!tenantIdRaw && t.id) {
+              const parts = String(t.id).split(":");
+              if (parts.length === 2) {
+                clientId = clientId || parts[0];
+                tenantIdRaw = parts[1];
+              } else {
+                tenantIdRaw = String(t.id);
+              }
+            }
+            const orgNo = t.organisationNumber || t.organisation_number || undefined;
+            const name = t.tenantName || t.tenant_name || clientId || undefined;
+            const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""} ${tenantIdRaw ? `• ${String(tenantIdRaw).slice(0, 8)}` : ""}`;
+            return {
+              tenantId: String(tenantIdRaw || ""),
+              tenantName: name,
+              tenantType: t.tenantType || t.type || undefined,
+              clientId,
+              organisationNumber: orgNo,
+              createdAt: t.createdAt || t.created_at || undefined,
+              displayLabel,
+            } as NavTenant;
+          });
           // dedupe by tenantId before dispatching
           const map = new Map<string, (typeof tenantsArr)[number]>();
           for (const m of tenantsArr) {
@@ -88,7 +114,15 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
               ex.clientId = ex.clientId || m.clientId;
             }
           }
-          dispatch(setTenants(Array.from(map.values())));
+          dispatch(
+            setTenants(
+              Array.from(map.values()).map((m) => ({
+                tenantId: String(m.tenantId || ""),
+                tenantName: m.tenantName,
+                tenantType: m.tenantType,
+              }))
+            )
+          );
         } catch (err) {
           console.warn("Failed to fetch organisations for Nav", err);
         }
@@ -96,18 +130,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     }
   }, [selId]);
 
-  // tenant option shape used for rendering
-  type TenantOption = {
-    tenantId?: string;
-    tenant_id?: string;
-    id?: string;
-    tenantName?: string;
-    tenant_name?: string;
-    clientId?: string;
-    organisationNumber?: string;
-    organisation_number?: string;
-    name?: string;
-  };
+  // UI rendering tenant shape is provided by auth store
 
   const handleSelectChange = (ev: React.ChangeEvent<HTMLSelectElement>) => {
     const val = ev.target.value || null;
@@ -137,12 +160,25 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
           aria-label="Select organization"
         >
           <option value="">Select org</option>
-          {(tenants || []).map((t: TenantOption) => {
-            const tid = String(t.tenantId || t.tenant_id || t.id || "");
-            const name = t.tenantName || t.tenant_name || t.clientId || t.name || tid;
-            const orgNo = t.organisationNumber || t.organisation_number || undefined;
-            return <option key={tid} value={tid}>{`${name}${orgNo ? ` • Org#: ${orgNo}` : ""}`}</option>;
-          })}
+          {(tenants || []).map(
+            (t: {
+              tenantId: string;
+              tenantName?: string;
+              clientId?: string;
+              organisationNumber?: string;
+              displayLabel?: string;
+            }) => {
+              const tid = String(t.tenantId || "");
+              const label =
+                t.displayLabel ||
+                (t.tenantName || t.clientId || tid) + (t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "");
+              return (
+                <option key={tid} value={tid}>
+                  {label}
+                </option>
+              );
+            }
+          )}
         </select>
       </div>
       <Link to="/" onClick={handleLinkClick} className={linkClass}>

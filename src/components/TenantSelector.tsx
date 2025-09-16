@@ -16,6 +16,7 @@ type Tenant = {
   clientId?: string;
   organisationNumber?: string;
   createdAt?: string;
+  displayLabel?: string;
 };
 
 type OrgResponse = {
@@ -49,30 +50,53 @@ const TenantSelector: React.FC = () => {
       try {
         const resp = await axiosClient.get("/api/v1/xero/organisations");
         const data = resp.data || [];
-        const mapped = (data as OrgResponse[]).map((t) => ({
-          tenantId: String(t.tenantId || t.tenant_id || t.tenantId || t.tenant_id || t.id || ""),
-          tenantName: t.tenantName || t.tenant_name || t.clientId || t.id || undefined,
-          tenantType: t.tenantType || t.type || undefined,
-          clientId: t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined),
-          organisationNumber: t.organisationNumber || t.organisation_number || undefined,
-          createdAt: t.createdAt || t.created_at || undefined,
-        }));
+        const mapped = (data as OrgResponse[]).map((t) => {
+          // If backend returned id as `${clientId}:${tenantId}`, parse tenantId
+          let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
+          if (!tenantIdRaw && t.id) {
+            const parts = String(t.id).split(":");
+            if (parts.length === 2) tenantIdRaw = parts[1];
+            else tenantIdRaw = String(t.id);
+          }
+          const clientId = t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined);
+          const orgNo = t.organisationNumber || t.organisation_number || undefined;
+          const name = t.tenantName || t.tenant_name || clientId || undefined;
+          return {
+            tenantId: String(tenantIdRaw || ""),
+            tenantName: name,
+            tenantType: t.tenantType || t.type || undefined,
+            clientId,
+            organisationNumber: orgNo,
+            createdAt: t.createdAt || t.created_at || undefined,
+            // helpful display label used in UI
+            displayLabel: `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""} ${tenantIdRaw ? `• ${String(tenantIdRaw).slice(0, 8)}` : ""}`,
+          } as unknown as Tenant;
+        });
 
         // dedupe by tenantId while preserving metadata
         const map = new Map<string, (typeof mapped)[number]>();
         for (const m of mapped) {
-          if (!map.has(m.tenantId)) map.set(m.tenantId, m);
+          const key = String(m.tenantId || "");
+          if (!map.has(key)) map.set(key, { ...m, tenantId: key });
           else {
-            const ex = map.get(m.tenantId)!;
+            const ex = map.get(key)!;
             ex.tenantName = ex.tenantName || m.tenantName;
             ex.organisationNumber = ex.organisationNumber || m.organisationNumber;
             ex.clientId = ex.clientId || m.clientId;
           }
         }
         const tenantsArr = Array.from(map.values());
-        // persist normalized tenants to local state and redux store
+        // persist normalized tenants to local state and redux store (rich shape)
+        const tenantsArrTyped = tenantsArr.map((t) => ({
+          tenantId: String(t.tenantId || ""),
+          tenantName: t.tenantName,
+          tenantType: t.tenantType,
+          clientId: t.clientId,
+          organisationNumber: t.organisationNumber,
+          displayLabel: t.displayLabel,
+        }));
         setLocalTenants(tenantsArr as unknown as Tenant[]);
-        dispatch(setTenants(tenantsArr));
+        dispatch(setTenants(tenantsArrTyped));
       } catch (err) {
         console.warn("Failed to fetch organisations", err);
       }

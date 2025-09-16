@@ -5,7 +5,7 @@ export interface AuthState {
   xeroConnected: boolean;
   loading: boolean;
   error: string | null;
-  tenants: Array<{ tenantId: string; tenantName?: string; tenantType?: string }>;
+  tenants: Array<{ tenantId: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
   selectedTenantId?: string | null;
 }
 
@@ -33,7 +33,7 @@ const authSlice = createSlice({
       state.xeroConnected = true;
       state.error = null;
     },
-    setTenants(state, action: { payload: Array<{ tenantId: string; tenantName?: string; tenantType?: string }> }) {
+    setTenants(state, action: { payload: Array<{ tenantId: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }> }) {
       state.tenants = action.payload || [];
     },
     selectTenant(state, action: { payload: string | null }) {
