@@ -41,11 +41,14 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     <div className={className + " flex items-center gap-4"}>
       {/* show currently selected tenant and link to change */}
       {(() => {
-        const sel = useSelector((s: RootState) => s.auth.selectedTenantId);
-        if (sel) {
+        // show friendly tenant name when available
+        const selId = useSelector((s: RootState) => s.auth.selectedTenantId);
+        const tenants = useSelector((s: RootState) => s.auth.tenants);
+        const sel = (tenants || []).find((t) => t.tenantId === selId) || null;
+        if (selId) {
           return (
             <Link to="/select-tenant" className={linkClass} onClick={handleLinkClick}>
-              {`Org: ${sel}`}
+              {`Org: ${sel?.tenantName || selId}`}
             </Link>
           );
         }
