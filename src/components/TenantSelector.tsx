@@ -13,6 +13,24 @@ type Tenant = {
   type?: string;
   name?: string;
   organization?: string;
+  clientId?: string;
+  organisationNumber?: string;
+  createdAt?: string;
+};
+
+type OrgResponse = {
+  id?: string;
+  clientId?: string;
+  tenantId?: string;
+  tenant_id?: string;
+  tenantName?: string;
+  tenant_name?: string;
+  tenantType?: string;
+  type?: string;
+  organisationNumber?: string;
+  organisation_number?: string;
+  createdAt?: string;
+  created_at?: string;
 };
 
 const TenantSelector: React.FC = () => {
@@ -31,16 +49,19 @@ const TenantSelector: React.FC = () => {
       try {
         const resp = await axiosClient.get("/api/v1/xero/organisations");
         const data = resp.data || [];
-        const tenantsArr = (data as Tenant[]).map((t) => ({
-          tenantId: String(t.tenantId || t.tenant_id || ""),
-          tenantName: t.tenantName || t.tenant_name || t.name || undefined,
+        const tenantsArr = (data as OrgResponse[]).map((t) => ({
+          tenantId: String(t.tenantId || t.tenant_id || t.tenantId || t.tenant_id || t.id || ""),
+          tenantName: t.tenantName || t.tenant_name || t.clientId || t.id || undefined,
           tenantType: t.tenantType || t.type || undefined,
+          clientId: t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined),
+          organisationNumber: t.organisationNumber || t.organisation_number || undefined,
+          createdAt: t.createdAt || t.created_at || undefined,
         }));
-        setLocalTenants(data as Tenant[]);
-        // also persist to redux store for app-wide access (normalize shape)
+        // persist normalized tenants to local state and redux store
+        setLocalTenants(tenantsArr as unknown as Tenant[]);
         dispatch(setTenants(tenantsArr));
-      } catch {
-        // ignore errors; the UI will show fallback
+      } catch (err) {
+        console.warn("Failed to fetch organisations", err);
       }
     };
     fetchTenants();
@@ -75,9 +96,11 @@ const TenantSelector: React.FC = () => {
                 className="w-full px-4 py-2 text-left border rounded hover:bg-gray-100"
               >
                 <div className="font-medium">
-                  {t.tenantName || t.tenant_name || t.name || t.organization || "Unknown"}
+                  {t.tenantName || t.tenant_name || t.clientId || t.name || t.organization || "Unknown"}
                 </div>
-                <div className="text-xs text-gray-500">{t.tenantType || t.type || ""}</div>
+                <div className="text-xs text-gray-500">
+                  {t.organisationNumber ? `Org#: ${t.organisationNumber}` : t.tenantType || t.type || ""}
+                </div>
               </button>
             </li>
           ))}
