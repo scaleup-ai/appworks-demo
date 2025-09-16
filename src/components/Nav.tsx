@@ -85,31 +85,54 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     }
   }, [selId]);
 
-  type ExtendedTenant = {
-    tenantId: string;
+  // tenant option shape used for rendering
+  type TenantOption = {
+    tenantId?: string;
+    tenant_id?: string;
+    id?: string;
     tenantName?: string;
-    tenantType?: string;
+    tenant_name?: string;
     clientId?: string;
     organisationNumber?: string;
+    organisation_number?: string;
+    name?: string;
   };
-  const friendlySelected = ((tenants || []).find((t) => t.tenantId === selId) as ExtendedTenant | null) || null;
+
+  const handleSelectChange = (ev: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = ev.target.value || null;
+    try {
+      if (val) {
+        localStorage.setItem("selectedTenantId", val);
+        // dispatch selectTenant action
+        // import kept minimal here to avoid circular deps
+        dispatch({ type: "auth/selectTenant", payload: val });
+      } else {
+        localStorage.removeItem("selectedTenantId");
+        dispatch({ type: "auth/selectTenant", payload: null });
+      }
+    } catch (e) {
+      console.warn("Failed to persist tenant selection", e);
+    }
+  };
 
   return (
     <div className={className + " flex items-center gap-4"}>
       {/* Tenant selector / display */}
       <div className={linkClass}>
-        {friendlySelected ? (
-          <div className="text-sm">
-            {friendlySelected?.tenantName || friendlySelected?.clientId || friendlySelected?.tenantId}
-            {friendlySelected?.organisationNumber ? (
-              <span className="text-xs text-gray-500"> {` • Org#: ${friendlySelected.organisationNumber}`}</span>
-            ) : null}
-          </div>
-        ) : (
-          <Link to="/select-tenant" className={linkClass} onClick={handleLinkClick}>
-            Select org
-          </Link>
-        )}
+        <select
+          value={selId || ""}
+          onChange={handleSelectChange}
+          className="px-2 py-1 text-sm bg-white border rounded"
+          aria-label="Select organization"
+        >
+          <option value="">Select org</option>
+          {(tenants || []).map((t: TenantOption) => {
+            const tid = String(t.tenantId || t.tenant_id || t.id || "");
+            const name = t.tenantName || t.tenant_name || t.clientId || t.name || tid;
+            const orgNo = t.organisationNumber || t.organisation_number || undefined;
+            return <option key={tid} value={tid}>{`${name}${orgNo ? ` • Org#: ${orgNo}` : ""}`}</option>;
+          })}
+        </select>
       </div>
       <Link to="/" onClick={handleLinkClick} className={linkClass}>
         Home
