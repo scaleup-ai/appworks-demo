@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { selectTenant } from "../store/authSlice";
 import { RootState } from "../store/store";
 
 interface NavProps {
@@ -37,22 +38,58 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     }
   };
 
+  const dispatch = useDispatch();
+
+  const handleTenantChange = (v: string | null) => {
+    try {
+      if (v) localStorage.setItem("selectedTenantId", v);
+      else localStorage.removeItem("selectedTenantId");
+    } catch (e) {
+      console.warn("localStorage write failed", e);
+    }
+    try {
+      dispatch(selectTenant(v));
+    } catch (err) {
+      console.warn("dispatch(selectTenant) failed", err);
+    }
+  };
+
   return (
     <div className={className + " flex items-center gap-4"}>
       {/* show currently selected tenant and link to change */}
       {(() => {
-        // show friendly tenant name when available
+        // show tenant selector when we have tenants
         const selId = useSelector((s: RootState) => s.auth.selectedTenantId);
-        const tenants = useSelector((s: RootState) => s.auth.tenants);
-        const sel = (tenants || []).find((t) => t.tenantId === selId) || null;
-        if (selId) {
+        const tenants = useSelector((s: RootState) => s.auth.tenants || []);
+
+        const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => handleTenantChange(e.target.value || null);
+
+        if (tenants && tenants.length > 0) {
           return (
-            <Link to="/select-tenant" className={linkClass} onClick={handleLinkClick}>
-              {`Org: ${sel?.tenantName || selId}`}
-            </Link>
+            <div className={linkClass}>
+              <label htmlFor="tenant-select" className="sr-only">
+                Select organisation
+              </label>
+              <select id="tenant-select" value={selId || ""} onChange={handleChange} className="text-sm">
+                <option value="">(choose org)</option>
+                {tenants.map((t) => (
+                  <option key={t.tenantId} value={t.tenantId}>
+                    {t.tenantName || t.tenantId}
+                  </option>
+                ))}
+              </select>
+              <Link to="/select-tenant" className={"ml-2 " + linkClass} onClick={handleLinkClick}>
+                Change
+              </Link>
+            </div>
           );
         }
-        return null;
+        // no tenants: keep the existing link to selection page
+        return (
+          <Link to="/select-tenant" className={linkClass} onClick={handleLinkClick}>
+            Select org
+          </Link>
+        );
       })()}
       <Link to="/" onClick={handleLinkClick} className={linkClass}>
         Home
