@@ -28,7 +28,7 @@ interface AgentStatus {
 }
 
 const DashboardPage: React.FC = () => {
-  const { xeroConnected } = useSelector((state: RootState) => state.auth);
+  const { xeroConnected, selectedTenantId } = useSelector((state: RootState) => state.auth);
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
     outstandingAmount: 0,
@@ -82,9 +82,9 @@ const DashboardPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load invoices data scoped to selected tenant
-      const tenantId = localStorage.getItem("selectedTenantId") || null;
-      const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
+  // Load invoices data scoped to selected tenant (store first, fallback to localStorage)
+  const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+  const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 
       // Load scheduled collections
       const scheduledReminders = await collectionsApi.getScheduledReminders();

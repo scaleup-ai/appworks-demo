@@ -40,14 +40,15 @@ axiosClient.interceptors.request.use(
     if (token && config && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    // Attach tenant header when selected
+    // Attach tenant header when selected (app-wide from Redux store, fallback to localStorage)
     try {
-      const tenantId = localStorage.getItem('selectedTenantId') || localStorage.getItem('selected_tenant_id');
+      const stateTenant = store.getState().auth?.selectedTenantId;
+      const tenantId = stateTenant || localStorage.getItem('selectedTenantId') || localStorage.getItem('selected_tenant_id');
       if (tenantId && config && config.headers) {
         config.headers['X-Tenant-Id'] = tenantId;
       }
     } catch {
-      // ignore storage failures
+      // ignore storage/state failures
     }
     return config;
   },
