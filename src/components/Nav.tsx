@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { selectTenant } from "../store/authSlice";
+import { setTenants } from "../store/authSlice";
+import axiosClient from "../apis/axios-client";
 import { RootState } from "../store/store";
 
 interface NavProps {
@@ -40,57 +41,76 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
 
   const dispatch = useDispatch();
 
-  const handleTenantChange = (v: string | null) => {
-    try {
-      if (v) localStorage.setItem("selectedTenantId", v);
-      else localStorage.removeItem("selectedTenantId");
-    } catch (e) {
-      console.warn("localStorage write failed", e);
-    }
-    try {
-      dispatch(selectTenant(v));
-    } catch (err) {
-      console.warn("dispatch(selectTenant) failed", err);
-    }
+  // tenant change is handled elsewhere (Nav only displays friendly name)
+
+  // read tenant state at top-level so we can show friendly names and fetch missing metadata
+  const selId = useSelector((s: RootState) => s.auth.selectedTenantId);
+  const tenants = useSelector((s: RootState) => s.auth.tenants || []);
+
+  type OrgResponse = {
+    id?: string;
+    clientId?: string;
+    tenantId?: string;
+    tenant_id?: string;
+    tenantName?: string;
+    tenant_name?: string;
+    organisationNumber?: string;
+    organisation_number?: string;
+    createdAt?: string;
+    created_at?: string;
+    tenantType?: string;
+    type?: string;
   };
+
+  useEffect(() => {
+    // If a tenant is selected but the store has no tenant metadata yet, fetch organisations
+    if (selId && (!tenants || tenants.length === 0)) {
+      void (async () => {
+        try {
+          const resp = await axiosClient.get("/api/v1/xero/organisations");
+          const data = resp.data || [];
+          const tenantsArr = (data as OrgResponse[]).map((t) => ({
+            tenantId: String(t.tenantId || t.tenant_id || t.id || ""),
+            tenantName: t.tenantName || t.tenant_name || t.clientId || t.id || undefined,
+            tenantType: t.tenantType || t.type || undefined,
+            clientId: t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined),
+            organisationNumber: t.organisationNumber || t.organisation_number || undefined,
+            createdAt: t.createdAt || t.created_at || undefined,
+          }));
+          dispatch(setTenants(tenantsArr));
+        } catch (err) {
+          console.warn("Failed to fetch organisations for Nav", err);
+        }
+      })();
+    }
+  }, [selId]);
+
+  type ExtendedTenant = {
+    tenantId: string;
+    tenantName?: string;
+    tenantType?: string;
+    clientId?: string;
+    organisationNumber?: string;
+  };
+  const friendlySelected = ((tenants || []).find((t) => t.tenantId === selId) as ExtendedTenant | null) || null;
 
   return (
     <div className={className + " flex items-center gap-4"}>
-      {/* show currently selected tenant and link to change */}
-      {(() => {
-        // show tenant selector when we have tenants
-        const selId = useSelector((s: RootState) => s.auth.selectedTenantId);
-        const tenants = useSelector((s: RootState) => s.auth.tenants || []);
-
-        const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => handleTenantChange(e.target.value || null);
-
-        if (tenants && tenants.length > 0) {
-          return (
-            <div className={linkClass}>
-              <label htmlFor="tenant-select" className="sr-only">
-                Select organisation
-              </label>
-              <select id="tenant-select" value={selId || ""} onChange={handleChange} className="text-sm">
-                <option value="">(choose org)</option>
-                {tenants.map((t) => (
-                  <option key={t.tenantId} value={t.tenantId}>
-                    {t.tenantName || t.tenantId}
-                  </option>
-                ))}
-              </select>
-              <Link to="/select-tenant" className={"ml-2 " + linkClass} onClick={handleLinkClick}>
-                Change
-              </Link>
-            </div>
-          );
-        }
-        // no tenants: keep the existing link to selection page
-        return (
+      {/* Tenant selector / display */}
+      <div className={linkClass}>
+        {friendlySelected ? (
+          <div className="text-sm">
+            {friendlySelected?.tenantName || friendlySelected?.clientId || friendlySelected?.tenantId}
+            {friendlySelected?.organisationNumber ? (
+              <span className="text-xs text-gray-500"> {` • Org#: ${friendlySelected.organisationNumber}`}</span>
+            ) : null}
+          </div>
+        ) : (
           <Link to="/select-tenant" className={linkClass} onClick={handleLinkClick}>
             Select org
           </Link>
-        );
-      })()}
+        )}
+      </div>
       <Link to="/" onClick={handleLinkClick} className={linkClass}>
         Home
       </Link>
