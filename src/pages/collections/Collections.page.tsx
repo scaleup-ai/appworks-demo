@@ -189,6 +189,11 @@ const CollectionsPage: React.FC = () => {
 
   useEffect(() => {
     if (xeroConnected) {
+      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      if (!tenantId) {
+        window.location.href = "/select-tenant";
+        return;
+      }
       loadCollectionsData();
     } else {
       setLoading(false);

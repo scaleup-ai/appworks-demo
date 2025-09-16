@@ -179,6 +179,12 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     initializeAgents();
     if (xeroConnected) {
+      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      if (!tenantId) {
+        // Prompt user to pick an organisation
+        window.location.href = "/select-tenant";
+        return;
+      }
       loadDashboardData();
     } else {
       setLoading(false);

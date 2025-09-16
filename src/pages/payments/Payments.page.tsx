@@ -203,6 +203,11 @@ const PaymentsPage: React.FC = () => {
   };
 
   useEffect(() => {
+    const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+    if (!tenantId) {
+      window.location.href = "/select-tenant";
+      return;
+    }
     loadPaymentData();
   }, []);
 
