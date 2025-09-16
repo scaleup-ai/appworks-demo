@@ -61,6 +61,8 @@ const TenantSelector: React.FC = () => {
           const clientId = t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined);
           const orgNo = t.organisationNumber || t.organisation_number || undefined;
           const name = t.tenantName || t.tenant_name || clientId || undefined;
+          const shortTid = tenantIdRaw ? String(tenantIdRaw).slice(0, 8) : undefined;
+          const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortTid ? ` • ${shortTid}` : ""}`;
           return {
             tenantId: String(tenantIdRaw || ""),
             tenantName: name,
@@ -69,7 +71,7 @@ const TenantSelector: React.FC = () => {
             organisationNumber: orgNo,
             createdAt: t.createdAt || t.created_at || undefined,
             // helpful display label used in UI
-            displayLabel: `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""} ${tenantIdRaw ? `• ${String(tenantIdRaw).slice(0, 8)}` : ""}`,
+            displayLabel,
           } as unknown as Tenant;
         });
 
@@ -85,7 +87,13 @@ const TenantSelector: React.FC = () => {
             ex.clientId = ex.clientId || m.clientId;
           }
         }
-        const tenantsArr = Array.from(map.values());
+        // Also dedupe by displayLabel to avoid showing multiple identical-looking entries
+        const byLabel = new Map<string, (typeof mapped)[number]>();
+        for (const v of Array.from(map.values())) {
+          const key = v.displayLabel || String(v.tenantId || "");
+          if (!byLabel.has(key)) byLabel.set(key, v);
+        }
+        const tenantsArr = Array.from(byLabel.values());
         // persist normalized tenants to local state and redux store (rich shape)
         const tenantsArrTyped = tenantsArr.map((t) => ({
           tenantId: String(t.tenantId || ""),

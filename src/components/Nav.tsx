@@ -92,7 +92,8 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             }
             const orgNo = t.organisationNumber || t.organisation_number || undefined;
             const name = t.tenantName || t.tenant_name || clientId || undefined;
-            const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""} ${tenantIdRaw ? `• ${String(tenantIdRaw).slice(0, 8)}` : ""}`;
+            const shortTid = tenantIdRaw ? String(tenantIdRaw).slice(0, 8) : undefined;
+            const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortTid ? ` • ${shortTid}` : ""}`;
             return {
               tenantId: String(tenantIdRaw || ""),
               tenantName: name,
@@ -120,6 +121,9 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
                 tenantId: String(m.tenantId || ""),
                 tenantName: m.tenantName,
                 tenantType: m.tenantType,
+                clientId: m.clientId,
+                organisationNumber: m.organisationNumber,
+                displayLabel: m.displayLabel,
               }))
             )
           );
@@ -160,25 +164,28 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
           aria-label="Select organization"
         >
           <option value="">Select org</option>
-          {(tenants || []).map(
-            (t: {
-              tenantId: string;
-              tenantName?: string;
-              clientId?: string;
-              organisationNumber?: string;
-              displayLabel?: string;
-            }) => {
-              const tid = String(t.tenantId || "");
-              const label =
-                t.displayLabel ||
-                (t.tenantName || t.clientId || tid) + (t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "");
-              return (
-                <option key={tid} value={tid}>
-                  {label}
-                </option>
-              );
-            }
-          )}
+          {(tenants || [])
+            .filter((t) => t && String(t.tenantId || "").length > 0)
+            .map(
+              (t: {
+                tenantId: string;
+                tenantName?: string;
+                clientId?: string;
+                organisationNumber?: string;
+                displayLabel?: string;
+              }) => {
+                const tid = String(t.tenantId || "");
+                const label =
+                  t.displayLabel ||
+                  (t.tenantName || t.clientId || tid) +
+                    (t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "");
+                return (
+                  <option key={tid} value={tid}>
+                    {label}
+                  </option>
+                );
+              }
+            )}
         </select>
       </div>
       <Link to="/" onClick={handleLinkClick} className={linkClass}>
