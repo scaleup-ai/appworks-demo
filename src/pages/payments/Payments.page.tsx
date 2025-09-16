@@ -158,9 +158,9 @@ const PaymentsPage: React.FC = () => {
 
   const handleRunBulkReconciliation = async () => {
     try {
-  // Get some invoices to create test payments for (scoped to tenant)
-  const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
-  const invoices = await accountsReceivablesApi.listInvoices({ limit: 5, tenantId: tenantId || undefined });
+      // Get some invoices to create test payments for (scoped to tenant)
+      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      const invoices = await accountsReceivablesApi.listInvoices({ limit: 5, tenantId: tenantId || undefined });
 
       if (invoices.length === 0) {
         showToast("No invoices available for bulk reconciliation test", { type: "warning" });

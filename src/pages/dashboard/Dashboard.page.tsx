@@ -82,9 +82,9 @@ const DashboardPage: React.FC = () => {
     try {
       setLoading(true);
 
-  // Load invoices data scoped to selected tenant (store first, fallback to localStorage)
-  const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
-  const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
+      // Load invoices data scoped to selected tenant (store first, fallback to localStorage)
+      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 
       // Load scheduled collections
       const scheduledReminders = await collectionsApi.getScheduledReminders();
