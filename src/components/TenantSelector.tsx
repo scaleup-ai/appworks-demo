@@ -49,7 +49,7 @@ const TenantSelector: React.FC = () => {
       try {
         const resp = await axiosClient.get("/api/v1/xero/organisations");
         const data = resp.data || [];
-        const tenantsArr = (data as OrgResponse[]).map((t) => ({
+        const mapped = (data as OrgResponse[]).map((t) => ({
           tenantId: String(t.tenantId || t.tenant_id || t.tenantId || t.tenant_id || t.id || ""),
           tenantName: t.tenantName || t.tenant_name || t.clientId || t.id || undefined,
           tenantType: t.tenantType || t.type || undefined,
@@ -57,6 +57,19 @@ const TenantSelector: React.FC = () => {
           organisationNumber: t.organisationNumber || t.organisation_number || undefined,
           createdAt: t.createdAt || t.created_at || undefined,
         }));
+
+        // dedupe by tenantId while preserving metadata
+        const map = new Map<string, (typeof mapped)[number]>();
+        for (const m of mapped) {
+          if (!map.has(m.tenantId)) map.set(m.tenantId, m);
+          else {
+            const ex = map.get(m.tenantId)!;
+            ex.tenantName = ex.tenantName || m.tenantName;
+            ex.organisationNumber = ex.organisationNumber || m.organisationNumber;
+            ex.clientId = ex.clientId || m.clientId;
+          }
+        }
+        const tenantsArr = Array.from(map.values());
         // persist normalized tenants to local state and redux store
         setLocalTenants(tenantsArr as unknown as Tenant[]);
         dispatch(setTenants(tenantsArr));

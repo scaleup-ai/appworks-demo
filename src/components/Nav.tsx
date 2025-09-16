@@ -77,7 +77,18 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             organisationNumber: t.organisationNumber || t.organisation_number || undefined,
             createdAt: t.createdAt || t.created_at || undefined,
           }));
-          dispatch(setTenants(tenantsArr));
+          // dedupe by tenantId before dispatching
+          const map = new Map<string, (typeof tenantsArr)[number]>();
+          for (const m of tenantsArr) {
+            if (!map.has(m.tenantId)) map.set(m.tenantId, m);
+            else {
+              const ex = map.get(m.tenantId)!;
+              ex.tenantName = ex.tenantName || m.tenantName;
+              ex.organisationNumber = ex.organisationNumber || m.organisationNumber;
+              ex.clientId = ex.clientId || m.clientId;
+            }
+          }
+          dispatch(setTenants(Array.from(map.values())));
         } catch (err) {
           console.warn("Failed to fetch organisations for Nav", err);
         }
