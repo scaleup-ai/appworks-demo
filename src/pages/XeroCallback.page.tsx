@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect } from "../apis/xero.api";
-import { setXeroConnected } from "../store/authSlice";
+import { setXeroConnected, selectTenant } from "../store/authSlice";
 import showToast from "../utils/toast";
 
 const XeroCallback: React.FC = () => {
@@ -49,14 +49,29 @@ const XeroCallback: React.FC = () => {
 
         // backend may return tenant list when OAuth completes for SPA flows
         if (response.status === 200) {
-          const payload: any = response.data || {};
+          type ResponsePayload = {
+            tenants?: Array<{
+              tenantId?: string;
+              tenant_id?: string;
+              tenantName?: string;
+              tenant_name?: string;
+              tenantType?: string;
+              type?: string;
+              name?: string;
+              organization?: string;
+            }>;
+          };
+          const payload = (response.data || {}) as ResponsePayload;
           if (payload.tenants && Array.isArray(payload.tenants) && payload.tenants.length > 0) {
             // If single tenant, auto-select and continue
             if (payload.tenants.length === 1) {
               const single = payload.tenants[0];
               // persist selection for axios and future requests
-              localStorage.setItem("selectedTenantId", single.tenantId || single.tenant_id || "");
-              dispatch({ type: "auth/selectTenant", payload: single.tenantId || single.tenant_id || null });
+              const tid = single.tenantId || single.tenant_id || "";
+              if (tid) {
+                localStorage.setItem("selectedTenantId", tid);
+                dispatch(selectTenant(tid));
+              }
               dispatch(setXeroConnected());
               showToast("Successfully connected to Xero!", { type: "success" });
               navigate("/dashboard");
@@ -79,12 +94,18 @@ const XeroCallback: React.FC = () => {
           // Authorization code reused. If already connected, proceed; else restart auth.
           showToast("Session already processed. Checking connection…", { type: "info" });
           try {
-            const statusResp = await (await import("../apis/xero.api")).getIntegrationStatus();
-            const anyResp: any = statusResp as any;
+            type StatusResp = {
+              integrationStatus?: { success?: boolean };
+              connected?: boolean;
+              tenantId?: string;
+            } | null;
+            const statusRespRaw = await (await import("../apis/xero.api")).getIntegrationStatus();
+            const statusResp = statusRespRaw as unknown as StatusResp;
+            const integrationStatus = statusResp?.integrationStatus || null;
             const isConnected =
-              anyResp?.integrationStatus?.success === true ||
-              statusResp.connected === true ||
-              Boolean(statusResp.tenantId);
+              (integrationStatus && integrationStatus.success === true) ||
+              statusResp?.connected === true ||
+              Boolean(statusResp?.tenantId);
             if (isConnected) {
               dispatch(setXeroConnected());
               navigate("/dashboard");

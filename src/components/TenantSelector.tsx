@@ -3,12 +3,23 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { selectTenant } from "../store/authSlice";
 
+type Tenant = {
+  tenantId?: string;
+  tenant_id?: string;
+  tenantName?: string;
+  tenant_name?: string;
+  tenantType?: string;
+  type?: string;
+  name?: string;
+  organization?: string;
+};
+
 const TenantSelector: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const tenants: Array<any> = (location.state as any)?.tenants || [];
+  const tenants: Tenant[] = (location.state as { tenants?: Tenant[] })?.tenants || [];
 
   const handleSelect = (tenantId: string) => {
     localStorage.setItem("selectedTenantId", tenantId);
@@ -27,16 +38,16 @@ const TenantSelector: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md bg-white rounded shadow p-6">
-        <h2 className="text-xl font-semibold mb-4">Select an Organization</h2>
-        <p className="text-sm text-gray-600 mb-4">Choose which Xero organization you want to use for this session.</p>
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-md p-6 bg-white rounded shadow">
+        <h2 className="mb-4 text-xl font-semibold">Select an Organization</h2>
+        <p className="mb-4 text-sm text-gray-600">Choose which Xero organization you want to use for this session.</p>
         <ul>
-          {tenants.map((t: any) => (
+          {tenants.map((t: Tenant) => (
             <li key={t.tenantId || t.tenant_id} className="mb-3">
               <button
-                onClick={() => handleSelect(t.tenantId || t.tenant_id)}
-                className="w-full text-left px-4 py-2 border rounded hover:bg-gray-100"
+                onClick={() => handleSelect(t.tenantId || t.tenant_id || "")}
+                className="w-full px-4 py-2 text-left border rounded hover:bg-gray-100"
               >
                 <div className="font-medium">
                   {t.tenantName || t.tenant_name || t.name || t.organization || "Unknown"}
