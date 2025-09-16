@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { setTenants } from "../store/authSlice";
+import { setTenants, selectTenant } from "../store/authSlice";
 import axiosClient from "../apis/axios-client";
 import { RootState } from "../store/store";
 
@@ -105,10 +105,10 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
         localStorage.setItem("selectedTenantId", val);
         // dispatch selectTenant action
         // import kept minimal here to avoid circular deps
-        dispatch({ type: "auth/selectTenant", payload: val });
+        dispatch(selectTenant(val));
       } else {
         localStorage.removeItem("selectedTenantId");
-        dispatch({ type: "auth/selectTenant", payload: null });
+        dispatch(selectTenant(null));
       }
     } catch (e) {
       console.warn("Failed to persist tenant selection", e);
