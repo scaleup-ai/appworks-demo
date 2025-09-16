@@ -47,7 +47,28 @@ const XeroCallback: React.FC = () => {
       try {
         const response = await handleOAuthRedirect({ code, state: state || "" });
 
+        // backend may return tenant list when OAuth completes for SPA flows
         if (response.status === 200) {
+          const payload: any = response.data || {};
+          if (payload.tenants && Array.isArray(payload.tenants) && payload.tenants.length > 0) {
+            // If single tenant, auto-select and continue
+            if (payload.tenants.length === 1) {
+              const single = payload.tenants[0];
+              // persist selection for axios and future requests
+              localStorage.setItem("selectedTenantId", single.tenantId || single.tenant_id || "");
+              dispatch({ type: "auth/selectTenant", payload: single.tenantId || single.tenant_id || null });
+              dispatch(setXeroConnected());
+              showToast("Successfully connected to Xero!", { type: "success" });
+              navigate("/dashboard");
+              return;
+            }
+
+            // multiple tenants -> navigate to selector and pass tenants via state
+            navigate("/select-tenant", { state: { tenants: payload.tenants } });
+            return;
+          }
+
+          // default: mark connected and go to dashboard
           dispatch(setXeroConnected());
           showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");

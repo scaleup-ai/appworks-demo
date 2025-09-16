@@ -6,7 +6,7 @@ import { validateTokens } from '../store/authSlice';
 // since most demo endpoints don't require authentication
 
 // Prefer Vite env; fall back to the local backend running on port 8098
-export const API_SERVICE_BASE_URL = (import.meta.env!.VITE_API_BASE_URL as string);
+export const API_SERVICE_BASE_URL = (import.meta.env!.VITE_API_BASE_URL as string) || 'http://localhost:8098';
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: API_SERVICE_BASE_URL,
@@ -39,6 +39,15 @@ axiosClient.interceptors.request.use(
     const token = getAccessToken();
     if (token && config && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    // Attach tenant header when selected
+    try {
+      const tenantId = localStorage.getItem('selectedTenantId') || localStorage.getItem('selected_tenant_id');
+      if (tenantId && config && config.headers) {
+        config.headers['X-Tenant-Id'] = tenantId;
+      }
+    } catch {
+      // ignore storage failures
     }
     return config;
   },

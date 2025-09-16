@@ -4,6 +4,7 @@ import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/main/Landing.page";
 import AuthPage from "../pages/Auth.page";
 import XeroCallback from "../pages/XeroCallback.page";
+import TenantSelector from "../components/TenantSelector";
 import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
@@ -63,6 +64,14 @@ export const lameRoutes: ExtendedRouteObject[] = [
     routeObject: {
       path: `${ROOT_PATH}auth`,
       element: <AuthPage />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
+  {
+    title: "Select Tenant",
+    routeObject: {
+      path: `${ROOT_PATH}select-tenant`,
+      element: <TenantSelector />,
       errorElement: <ErrorBoundaryPage />,
     },
   },
