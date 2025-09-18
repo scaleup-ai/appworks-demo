@@ -206,6 +206,9 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
       <Link to="/cashflow" onClick={handleLinkClick} className={linkClass}>
         Cash Flow
       </Link>
+      <Link to="/settings" onClick={handleLinkClick} className={linkClass}>
+        Settings
+      </Link>
 
       <button
         onClick={startXeroAuth}
