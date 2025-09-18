@@ -46,6 +46,24 @@ export function getXeroAuthUrl(): string {
   return `${base}${XeroApiRoutesLocal.AUTH}`;
 }
 
+export async function setXeroCreds(params: {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}): Promise<{ success?: boolean; error?: string } | undefined> {
+  // Expose the admin/ops endpoint for setting creds when needed (kept minimal).
+  try {
+    const resp = await axiosClient.get<{ success?: boolean; error?: string }>(XeroApiRoutesLocal.CREDS, {
+      params,
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return resp.data;
+  } catch {
+    // bubble up minimal information; callers can catch if needed
+    return undefined;
+  }
+}
+
 // Store the intended post-auth redirect path in sessionStorage so the app
 // can return the user to the page they were trying to access.
 export function capturePostAuthRedirect(redirectPath?: string) {
@@ -55,10 +73,10 @@ export function capturePostAuthRedirect(redirectPath?: string) {
       (typeof window !== 'undefined'
         ? window.location.pathname + window.location.search + window.location.hash
         : '/');
-  // Do not store the OAuth callback itself or any URL containing an auth code
-  const callbackIndicator = '/oauth2/redirect';
-  if (String(path).includes(callbackIndicator) || String(path).includes('?code=')) return;
-  sessionStorage.setItem('xero_post_auth_redirect', path);
+    // Do not store the OAuth callback itself or any URL containing an auth code
+    const callbackIndicator = '/oauth2/redirect';
+    if (String(path).includes(callbackIndicator) || String(path).includes('?code=')) return;
+    sessionStorage.setItem('xero_post_auth_redirect', path);
   } catch {
     // ignore storage errors
   }
