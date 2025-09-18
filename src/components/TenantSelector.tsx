@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { selectTenant, setTenants } from "../store/authSlice";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import axiosClient from "../apis/axios-client";
 
 type Tenant = {
@@ -37,7 +37,8 @@ type OrgResponse = {
 const TenantSelector: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
+  const selectedTenantId = useAppSelector((s) => s.auth.selectedTenantId);
 
   const [tenants, setLocalTenants] = useState<Tenant[]>(
     () => (location.state as { tenants?: Tenant[] })?.tenants || []
@@ -113,7 +114,12 @@ const TenantSelector: React.FC = () => {
   }, []);
 
   const handleSelect = (tenantId: string) => {
-    localStorage.setItem("selectedTenantId", tenantId);
+    try {
+      if (tenantId) localStorage.setItem("selectedTenantId", tenantId);
+      else localStorage.removeItem("selectedTenantId");
+    } catch {
+      // ignore storage errors
+    }
     dispatch(selectTenant(tenantId));
     navigate("/dashboard");
   };
@@ -134,21 +140,25 @@ const TenantSelector: React.FC = () => {
         <h2 className="mb-4 text-xl font-semibold">Select an Organization</h2>
         <p className="mb-4 text-sm text-gray-600">Choose which Xero organization you want to use for this session.</p>
         <ul>
-          {tenants.map((t: Tenant) => (
-            <li key={t.tenantId || t.tenant_id} className="mb-3">
-              <button
-                onClick={() => handleSelect(t.tenantId || t.tenant_id || "")}
-                className="w-full px-4 py-2 text-left border rounded hover:bg-gray-100"
-              >
-                <div className="font-medium">
-                  {t.tenantName || t.tenant_name || t.clientId || t.name || t.organization || "Unknown"}
-                </div>
-                <div className="text-xs text-gray-500">
-                  {t.organisationNumber ? `Org#: ${t.organisationNumber}` : t.tenantType || t.type || ""}
-                </div>
-              </button>
-            </li>
-          ))}
+          {tenants.map((t: Tenant) => {
+            const tid = t.tenantId || t.tenant_id || "";
+            const isSelected = Boolean(selectedTenantId && selectedTenantId === tid);
+            return (
+              <li key={tid} className="mb-3">
+                <button
+                  onClick={() => handleSelect(tid)}
+                  className={`w-full px-4 py-2 text-left border rounded hover:bg-gray-100 ${isSelected ? "bg-blue-50 border-blue-300" : ""}`}
+                >
+                  <div className="font-medium">
+                    {t.tenantName || t.tenant_name || t.clientId || t.name || t.organization || "Unknown"}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {t.organisationNumber ? `Org#: ${t.organisationNumber}` : t.tenantType || t.type || ""}
+                  </div>
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>
