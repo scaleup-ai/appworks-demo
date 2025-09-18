@@ -26,6 +26,18 @@ const XeroCallback: React.FC = () => {
       }
 
       if (!code) {
+        // If another handler (RedirectHandler) is actively processing the
+        // callback we should remain quiet and avoid showing an error toast
+        // or redirecting — the other handler will navigate when ready.
+        try {
+          const processing = sessionStorage.getItem("xero_processing");
+          if (processing === "1") {
+            return; // silently exit if callback is already being processed elsewhere
+          }
+        } catch {
+          // ignore storage issues (private mode)
+        }
+
         // Some providers might hit the route without query; show actionable help.
         showToast("Missing authorization code. Please restart Xero sign-in.", { type: "error" });
         navigate("/auth");
