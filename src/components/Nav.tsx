@@ -163,7 +163,10 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
           className="px-2 py-1 text-sm bg-white border rounded"
           aria-label="Select organization"
         >
-          <option value="">Select org</option>
+          {/* Only show a blank placeholder when we have no tenants loaded */}
+          {(tenants || []).filter((t) => t && String(t.tenantId || "").length > 0).length === 0 && (
+            <option value="">Select org</option>
+          )}
           {(tenants || [])
             .filter((t) => t && String(t.tenantId || "").length > 0)
             .map(
