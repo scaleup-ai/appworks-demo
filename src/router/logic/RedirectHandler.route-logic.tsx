@@ -49,6 +49,19 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
       // Avoid double-processing
       if (!mounted) return;
 
+      // Per-code guard: avoid processing the same authorization code twice
+      try {
+        const codeGuardKey = `xero_oauth_callback_inflight:${code}`;
+        const inflight = sessionStorage.getItem(codeGuardKey);
+        if (inflight === "1") {
+          console.debug("RedirectHandler: code already inflight, skipping");
+          return;
+        }
+        sessionStorage.setItem(codeGuardKey, "1");
+      } catch {
+        // ignore storage issues
+      }
+
       console.log("RedirectHandler: Processing OAuth callback");
       // mark that we're processing a callback so other route guards don't
       // immediately redirect back to Xero and cause a loop.
@@ -116,6 +129,13 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
           if (!mounted) return;
           if (mounted) setErrorMessage("An error occurred while processing the Xero callback. Retry to continue.");
         } finally {
+          // Clear per-code guard if set
+          try {
+            const codeGuardKey = `xero_oauth_callback_inflight:${code}`;
+            sessionStorage.removeItem(codeGuardKey);
+          } catch {
+            // ignore
+          }
           try {
             sessionStorage.removeItem("xero_processing");
           } catch (e) {

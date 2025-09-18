@@ -33,8 +33,8 @@ const XeroCallback: React.FC = () => {
       }
 
       // One-shot guard keyed by the specific code to avoid duplicate backend calls
+      const guardKey = `xero_oauth_callback_inflight:${code}`;
       try {
-        const guardKey = `xero_oauth_callback_inflight:${code}`;
         const inflight = sessionStorage.getItem(guardKey);
         if (inflight === "1") {
           return; // already processing this code
@@ -136,6 +136,12 @@ const XeroCallback: React.FC = () => {
         console.error("OAuth callback error:", err);
         showToast("Failed to complete Xero authentication", { type: "error" });
         navigate("/auth");
+      } finally {
+        try {
+          sessionStorage.removeItem(guardKey);
+        } catch {
+          // ignore
+        }
       }
     };
 
