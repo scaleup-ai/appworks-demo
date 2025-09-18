@@ -125,8 +125,8 @@ const TenantSelector: React.FC = () => {
     } catch {
       // ignore storage errors
     }
-  // dispatch null when no id
-  dispatch(selectTenant(tenantId && tenantId.length > 0 ? tenantId : null));
+    // dispatch null when no id
+    dispatch(selectTenant(tenantId && tenantId.length > 0 ? tenantId : null));
     navigate("/dashboard");
   };
 
