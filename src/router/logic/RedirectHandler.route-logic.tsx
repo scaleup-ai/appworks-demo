@@ -1,10 +1,7 @@
 import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  handleOAuthRedirect,
-  readAndClearPostAuthRedirect,
-} from "../../apis/xero.api";
+import { handleOAuthRedirect, readAndClearPostAuthRedirect } from "../../apis/xero.api";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 // A small route-level redirect handler. It receives the route element as
@@ -19,15 +16,20 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
   // so other route logic can observe it on first render and avoid restarting auth.
   let initialProcessing = false;
   try {
-    const href =
-      typeof window !== "undefined" ? window.location.href || "" : "";
+    const href = typeof window !== "undefined" ? window.location.href || "" : "";
     if (href.includes(callbackPath)) {
       try {
         sessionStorage.setItem("xero_processing", "1");
-      } catch {}
+      } catch (e) {
+        // ignore sessionStorage write failures (private mode)
+        void e;
+      }
       initialProcessing = true;
     }
-  } catch {}
+  } catch (e) {
+    // Defensive: ignore unexpected errors reading window in non-browser envs
+    void e;
+  }
   const [processing, setProcessing] = useState(initialProcessing);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -52,59 +54,76 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
       // immediately redirect back to Xero and cause a loop.
       try {
         sessionStorage.setItem("xero_processing", "1");
-      } catch {}
+      } catch (e) {
+        // ignore sessionStorage write failures (private mode)
+        void e;
+      }
       setProcessing(true);
       (async () => {
         try {
           const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Timeout")), 5000)
+            setTimeout(() => reject(new Error("Timeout while waiting for backend response")), 15000)
           );
           const respPromise = handleOAuthRedirect({ code, state });
           const resp = await Promise.race([respPromise, timeoutPromise]);
 
-          console.log("RedirectHandler: Response status", (resp as any).status);
-          console.log("RedirectHandler: Response data", (resp as any).data);
+          // Narrow the response to unknown and access properties safely
+          const respUnknown = resp as unknown;
+          try {
+            const maybeStatus = (respUnknown as { status?: number }).status;
+            const maybeData = (respUnknown as { data?: unknown }).data;
+            console.debug("RedirectHandler: Response status", maybeStatus);
+            console.debug("RedirectHandler: Response data", maybeData);
+          } catch (e) {
+            void e;
+          }
 
-          const ok =
-            resp && (resp as any).status >= 200 && (resp as any).status < 300;
+          const statusVal = (respUnknown as { status?: number }).status;
+          const ok = typeof statusVal === "number" && statusVal >= 200 && statusVal < 300;
           if (ok) {
             console.log("RedirectHandler: Callback successful, navigating");
             // Mark a short-lived 'recent auth' timestamp so route guards can
             // avoid immediately restarting auth while backend state propagates.
             try {
               sessionStorage.setItem("xero_recent_auth", String(Date.now()));
-            } catch {}
+            } catch (e) {
+              void e;
+            }
             const stored = readAndClearPostAuthRedirect();
             const target = stored || state || "/dashboard";
             navigate(target, { replace: true });
           } else {
             console.log("RedirectHandler: Callback failed");
-            const errorDetails = (resp as any).data
-              ? JSON.stringify((resp as any).data)
-              : "Unknown error";
-            if (mounted)
-              setErrorMessage(
-                `Xero authentication failed: ${errorDetails}. You can retry below.`
-              );
+            // Narrow resp typing safely
+            const respUnknown = resp as unknown;
+            let errorDetails = "Unknown error";
+            try {
+              const maybeResp = respUnknown as { data?: unknown };
+              if (maybeResp && maybeResp.data) errorDetails = JSON.stringify(maybeResp.data);
+            } catch (e) {
+              void e;
+            }
+            if (mounted) setErrorMessage(`Xero authentication failed: ${errorDetails}. You can retry below.`);
           }
         } catch (err) {
+          // Log and show friendly UI; keep error variable narrow
           console.error("RedirectHandler: Error processing callback", err);
           if (!mounted) return;
-          // Don't auto-redirect to Xero on error — show a retry UI instead.
-          if (mounted)
-            setErrorMessage(
-              "An error occurred while processing the Xero callback. Retry to continue."
-            );
+          if (mounted) setErrorMessage("An error occurred while processing the Xero callback. Retry to continue.");
         } finally {
           try {
             sessionStorage.removeItem("xero_processing");
-          } catch {}
+          } catch (e) {
+            // ignore sessionStorage removal failures
+            void e;
+          }
           if (mounted) setProcessing(false);
         }
       })();
     } catch (err) {
       console.error("RedirectHandler: Error in useEffect", err);
-      // noop
+      // Defensive: nothing further to do here
+      void err;
     }
 
     return () => {
@@ -115,11 +134,7 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
   // While processing the OAuth callback, render a full-viewport centered spinner.
   if (processing)
     return (
-      <div
-        role="status"
-        aria-live="polite"
-        className="fixed inset-0 flex items-center justify-center bg-white"
-      >
+      <div role="status" aria-live="polite" className="fixed inset-0 flex items-center justify-center bg-white">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -128,9 +143,7 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center p-6 bg-white">
         <div className="max-w-lg text-center">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">
-            Authentication issue
-          </h2>
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Authentication issue</h2>
           <p className="mb-6 text-sm text-gray-700">{errorMessage}</p>
           <div className="flex items-center justify-center gap-3">
             <button
