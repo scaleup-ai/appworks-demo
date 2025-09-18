@@ -17,13 +17,8 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
   let initialProcessing = false;
   try {
     const href = typeof window !== "undefined" ? window.location.href || "" : "";
-    // If the URL contains the callback but our client router is already
-    // mounted on the callback path (i.e. there's a dedicated XeroCallback
-    // component), prefer that component to handle the callback. Only mark
-    // initial processing when the URL looks like the callback and the
-    // current client pathname does NOT start with the callback path.
-    const clientPath = typeof window !== "undefined" ? window.location.pathname || "" : "";
-    if (href.includes(callbackPath) && !clientPath.startsWith(callbackPath)) {
+    const href = typeof window !== "undefined" ? window.location.href || "" : "";
+    if (href.includes(callbackPath)) {
       try {
         sessionStorage.setItem("xero_processing", "1");
       } catch (e) {
@@ -46,9 +41,6 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
     // Example: https://scaleupai.tech/api/v1/xero/oauth2/redirect?code=...&state=...
     try {
       const href = window.location.href || "";
-      // If this client route is already the dedicated callback route, skip
-      // processing here and let the dedicated component handle the callback.
-      if (location.pathname && location.pathname.startsWith(callbackPath)) return;
       if (!href.includes(callbackPath)) return;
 
       const url = new URL(href);

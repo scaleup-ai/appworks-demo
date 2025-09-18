@@ -44,14 +44,7 @@ const XeroCallback: React.FC = () => {
         // ignore storage issues; continue
       }
 
-      // If RedirectHandler already processed the callback in this session,
-      // skip processing here to avoid duplicate backend calls.
-      try {
-        const globalProcessing = sessionStorage.getItem("xero_processing");
-        if (globalProcessing === "1") return;
-      } catch {
-        // ignore
-      }
+      // continue: process callback normally
 
       try {
         const response = await handleOAuthRedirect({ code, state: state || "" });
