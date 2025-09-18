@@ -13,6 +13,19 @@ const XeroCallback: React.FC = () => {
 
   useEffect(() => {
     const processCallback = async () => {
+      // If another handler (RedirectHandler) is actively processing the
+      // same OAuth redirect, avoid doing any work here to prevent duplicate
+      // backend calls which result in 409 conflicts.
+      try {
+        const processing = sessionStorage.getItem("xero_processing");
+        if (processing === "1") {
+          // quietly exit — RedirectHandler will navigate when ready
+          return;
+        }
+      } catch {
+        // ignore storage issues and continue
+      }
+
       const code = searchParams.get("code") || undefined;
       const stateFromQuery = searchParams.get("state") || undefined;
       const stateFromPath = params.state || undefined;
