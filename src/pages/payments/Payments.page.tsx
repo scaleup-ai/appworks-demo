@@ -52,33 +52,14 @@ const PaymentsPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // In a real implementation, this would load actual payment reconciliation history
-      // For now, we'll simulate some data
-      const mockTests: PaymentReconciliationTest[] = [
-        {
-          id: "1",
-          paymentId: "PAY-001",
-          amount: 1500,
-          reference: "INV-001",
-          result: { matched: true, invoiceId: "inv-123" },
-          timestamp: new Date(Date.now() - 60000).toISOString(),
-          status: "completed",
-        },
-        {
-          id: "2",
-          paymentId: "PAY-002",
-          amount: 750,
-          reference: "Payment for services",
-          result: { matched: false },
-          timestamp: new Date(Date.now() - 120000).toISOString(),
-          status: "completed",
-        },
-      ];
+      // Load reconciliation history from API when available. Keep empty state if none.
+      // No server endpoint for reconciliation history currently available.
+      // Keep empty history to avoid fabricating demo data in the UI.
+      const history: PaymentReconciliationTest[] = [];
+      setReconciliationTests([]);
 
-      setReconciliationTests(mockTests);
-
-      // Calculate summary
-      const completed = mockTests.filter((t) => t.status === "completed");
+      // Calculate summary from fetched reconciliation history
+      const completed = history.filter((t) => t.status === "completed");
       const matched = completed.filter((t) => t.result?.matched);
       const unmatched = completed.filter((t) => t.result && !t.result.matched);
       const totalAmount = completed.reduce((sum, t) => sum + t.amount, 0);

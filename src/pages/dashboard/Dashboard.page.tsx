@@ -47,13 +47,13 @@ const DashboardPage: React.FC = () => {
         name: "Data Integration Agent",
         status: xeroConnected ? "active" : "inactive",
         description: "Syncs Xero invoices, contacts, and bank feeds",
-        lastRun: xeroConnected ? new Date().toISOString() : undefined,
+        lastRun: undefined,
       },
       {
         name: "Collections Reminder Agent",
         status: "active",
         description: "Monitors invoice aging and schedules reminders",
-        lastRun: new Date().toISOString(),
+        lastRun: undefined,
       },
       {
         name: "Email Copywriter Agent",
@@ -144,7 +144,7 @@ const DashboardPage: React.FC = () => {
       const testRequest = {
         invoiceId: "test-invoice-001",
         amount: 1500,
-        dueDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days overdue
+        // keep payload minimal; let backend determine dates when generating drafts
         stage: "overdue_stage_1",
         customerName: "Test Customer Ltd",
       };

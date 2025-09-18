@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store/store";
+// no redux selector required for this view
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -14,7 +13,7 @@ interface Project {
   revenueToDate: number;
   costToDate: number;
   profitMargin: number;
-  status: 'active' | 'completed' | 'on-hold';
+  status: "active" | "completed" | "on-hold";
   lastUpdated: string;
 }
 
@@ -40,7 +39,7 @@ interface ProfitabilitySummary {
 }
 
 const ProfitabilityPage: React.FC = () => {
-  const { xeroConnected } = useSelector((state: RootState) => state.auth);
+  // no direct xeroConnected usage in this view; keep selector minimal
   const [projects, setProjects] = useState<Project[]>([]);
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [summary, setSummary] = useState<ProfitabilitySummary>({
@@ -54,89 +53,32 @@ const ProfitabilityPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showTimeEntryForm, setShowTimeEntryForm] = useState(false);
   const [newTimeEntry, setNewTimeEntry] = useState({
-    projectCode: '',
-    user: '',
-    role: '',
-    date: new Date().toISOString().split('T')[0],
-    hours: '',
+    projectCode: "",
+    user: "",
+    role: "",
+    date: new Date().toISOString().split("T")[0],
+    hours: "",
     billable: true,
-    description: '',
+    description: "",
   });
 
   const loadProfitabilityData = async () => {
     try {
       setLoading(true);
 
-      // Mock project data - in real implementation, this would come from Xero tracking categories
-      const mockProjects: Project[] = [
-        {
-          id: '1',
-          code: 'PROJ-001',
-          name: 'Website Redesign',
-          revenueToDate: 25000,
-          costToDate: 18000,
-          profitMargin: 28,
-          status: 'active',
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          code: 'PROJ-002',
-          name: 'Mobile App Development',
-          revenueToDate: 45000,
-          costToDate: 32000,
-          profitMargin: 28.9,
-          status: 'active',
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          id: '3',
-          code: 'PROJ-003',
-          name: 'Data Migration',
-          revenueToDate: 15000,
-          costToDate: 12000,
-          profitMargin: 20,
-          status: 'completed',
-          lastUpdated: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
+      // No demo fixtures: default to empty lists if no real API is available
+      const proj: Project[] = [];
+      const entries: TimeEntry[] = [];
+      setProjects(proj);
+      setTimeEntries(entries);
 
-      // Mock time entries
-      const mockTimeEntries: TimeEntry[] = [
-        {
-          id: '1',
-          projectCode: 'PROJ-001',
-          user: 'John Doe',
-          role: 'Senior Developer',
-          date: new Date().toISOString().split('T')[0],
-          hours: 8,
-          billable: true,
-          description: 'Frontend development',
-          hourlyRate: 120,
-        },
-        {
-          id: '2',
-          projectCode: 'PROJ-002',
-          user: 'Jane Smith',
-          role: 'Project Manager',
-          date: new Date().toISOString().split('T')[0],
-          hours: 4,
-          billable: true,
-          description: 'Client meetings and planning',
-          hourlyRate: 150,
-        },
-      ];
-
-      setProjects(mockProjects);
-      setTimeEntries(mockTimeEntries);
-
-      // Calculate summary
-      const totalRevenue = mockProjects.reduce((sum, p) => sum + p.revenueToDate, 0);
-      const totalCosts = mockProjects.reduce((sum, p) => sum + p.costToDate, 0);
+      // Calculate summary from the loaded (or empty) arrays
+      const totalRevenue = proj.reduce((sum, p) => sum + (p.revenueToDate || 0), 0);
+      const totalCosts = proj.reduce((sum, p) => sum + (p.costToDate || 0), 0);
       const totalProfit = totalRevenue - totalCosts;
       const averageMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-      const activeProjects = mockProjects.filter(p => p.status === 'active').length;
-      const unbilledHours = mockTimeEntries.filter(e => e.billable).reduce((sum, e) => sum + e.hours, 0);
+      const activeProjects = proj.filter((p) => p.status === "active").length;
+      const unbilledHours = entries.filter((e) => e.billable).reduce((sum, e) => sum + e.hours, 0);
 
       setSummary({
         totalRevenue,
@@ -146,10 +88,9 @@ const ProfitabilityPage: React.FC = () => {
         activeProjects,
         unbilledHours,
       });
-
-    } catch (error) {
-      console.error('Failed to load profitability data:', error);
-      showToast('Failed to load profitability data', { type: 'error' });
+    } catch {
+      console.error("Failed to load profitability data");
+      showToast("Failed to load profitability data", { type: "error" });
     } finally {
       setLoading(false);
     }
@@ -157,7 +98,7 @@ const ProfitabilityPage: React.FC = () => {
 
   const handleAddTimeEntry = async () => {
     if (!newTimeEntry.projectCode || !newTimeEntry.user || !newTimeEntry.hours) {
-      showToast('Please fill in all required fields', { type: 'warning' });
+      showToast("Please fill in all required fields", { type: "warning" });
       return;
     }
 
@@ -169,37 +110,36 @@ const ProfitabilityPage: React.FC = () => {
         hourlyRate: getRoleRate(newTimeEntry.role),
       };
 
-      setTimeEntries(prev => [timeEntry, ...prev]);
-      
+      setTimeEntries((prev) => [timeEntry, ...prev]);
+
       // Reset form
       setNewTimeEntry({
-        projectCode: '',
-        user: '',
-        role: '',
-        date: new Date().toISOString().split('T')[0],
-        hours: '',
+        projectCode: "",
+        user: "",
+        role: "",
+        date: new Date().toISOString().split("T")[0],
+        hours: "",
         billable: true,
-        description: '',
+        description: "",
       });
-      
+
       setShowTimeEntryForm(false);
-      showToast('Time entry added successfully', { type: 'success' });
-      
+      showToast("Time entry added successfully", { type: "success" });
+
       // Refresh data
       await loadProfitabilityData();
-
-    } catch (error) {
-      showToast('Failed to add time entry', { type: 'error' });
+    } catch {
+      showToast("Failed to add time entry", { type: "error" });
     }
   };
 
   const getRoleRate = (role: string): number => {
     const rates: Record<string, number> = {
-      'Senior Developer': 120,
-      'Junior Developer': 80,
-      'Project Manager': 150,
-      'Designer': 100,
-      'QA Engineer': 90,
+      "Senior Developer": 120,
+      "Junior Developer": 80,
+      "Project Manager": 150,
+      Designer: 100,
+      "QA Engineer": 90,
     };
     return rates[role] || 100;
   };
@@ -210,11 +150,11 @@ const ProfitabilityPage: React.FC = () => {
       summary,
       projects,
       timeEntries,
-      generatedAt: new Date().toISOString(),
+      // Do not synthesize timestamps for reports; let callers add metadata as needed
     };
-    
-    console.log('Generated profitability report:', reportData);
-    showToast('Profitability report generated (check console)', { type: 'success' });
+
+    console.log("Generated profitability report:", reportData);
+    showToast("Profitability report generated (check console)", { type: "success" });
   };
 
   useEffect(() => {
@@ -222,18 +162,22 @@ const ProfitabilityPage: React.FC = () => {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
-  const getStatusColor = (status: Project['status']) => {
+  const getStatusColor = (status: Project["status"]) => {
     switch (status) {
-      case 'active': return 'text-green-600 bg-green-100';
-      case 'completed': return 'text-blue-600 bg-blue-100';
-      case 'on-hold': return 'text-yellow-600 bg-yellow-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case "active":
+        return "text-green-600 bg-green-100";
+      case "completed":
+        return "text-blue-600 bg-blue-100";
+      case "on-hold":
+        return "text-yellow-600 bg-yellow-100";
+      default:
+        return "text-gray-600 bg-gray-100";
     }
   };
 
@@ -248,7 +192,7 @@ const ProfitabilityPage: React.FC = () => {
   }
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Project Profitability"
       actions={
         <div className="flex gap-2">
@@ -320,16 +264,14 @@ const ProfitabilityPage: React.FC = () => {
               <h3 className="text-lg font-semibold mb-4">Add Time Entry</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Project Code *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Code *</label>
                   <select
                     value={newTimeEntry.projectCode}
-                    onChange={(e) => setNewTimeEntry(prev => ({ ...prev, projectCode: e.target.value }))}
+                    onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, projectCode: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select project</option>
-                    {projects.map(project => (
+                    {projects.map((project) => (
                       <option key={project.id} value={project.code}>
                         {project.code} - {project.name}
                       </option>
@@ -338,25 +280,21 @@ const ProfitabilityPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    User *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">User *</label>
                   <input
                     type="text"
                     value={newTimeEntry.user}
-                    onChange={(e) => setNewTimeEntry(prev => ({ ...prev, user: e.target.value }))}
+                    onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, user: e.target.value }))}
                     placeholder="John Doe"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Role
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                   <select
                     value={newTimeEntry.role}
-                    onChange={(e) => setNewTimeEntry(prev => ({ ...prev, role: e.target.value }))}
+                    onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, role: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select role</option>
@@ -370,25 +308,21 @@ const ProfitabilityPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Date *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                     <input
                       type="date"
                       value={newTimeEntry.date}
-                      onChange={(e) => setNewTimeEntry(prev => ({ ...prev, date: e.target.value }))}
+                      onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, date: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Hours *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Hours *</label>
                     <input
                       type="number"
                       value={newTimeEntry.hours}
-                      onChange={(e) => setNewTimeEntry(prev => ({ ...prev, hours: e.target.value }))}
+                      onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, hours: e.target.value }))}
                       placeholder="8"
                       step="0.25"
                       min="0"
@@ -402,7 +336,7 @@ const ProfitabilityPage: React.FC = () => {
                     <input
                       type="checkbox"
                       checked={newTimeEntry.billable}
-                      onChange={(e) => setNewTimeEntry(prev => ({ ...prev, billable: e.target.checked }))}
+                      onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, billable: e.target.checked }))}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
                     <span className="ml-2 text-sm text-gray-700">Billable</span>
@@ -410,12 +344,10 @@ const ProfitabilityPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                   <textarea
                     value={newTimeEntry.description}
-                    onChange={(e) => setNewTimeEntry(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, description: e.target.value }))}
                     placeholder="Work description..."
                     rows={3}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -424,15 +356,10 @@ const ProfitabilityPage: React.FC = () => {
               </div>
 
               <div className="flex justify-end gap-2 mt-6">
-                <Button
-                  onClick={() => setShowTimeEntryForm(false)}
-                  variant="secondary"
-                >
+                <Button onClick={() => setShowTimeEntryForm(false)} variant="secondary">
                   Cancel
                 </Button>
-                <Button onClick={handleAddTimeEntry}>
-                  Add Entry
-                </Button>
+                <Button onClick={handleAddTimeEntry}>Add Entry</Button>
               </div>
             </div>
           </div>
@@ -479,27 +406,27 @@ const ProfitabilityPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {formatCurrency(project.revenueToDate)}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{formatCurrency(project.revenueToDate)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {formatCurrency(project.costToDate)}
-                        </div>
+                        <div className="text-sm text-gray-900">{formatCurrency(project.costToDate)}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`text-sm font-medium ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className={`text-sm font-medium ${profit >= 0 ? "text-green-600" : "text-red-600"}`}>
                           {formatCurrency(profit)}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className={`text-sm font-medium ${project.profitMargin >= 20 ? 'text-green-600' : project.profitMargin >= 10 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        <div
+                          className={`text-sm font-medium ${project.profitMargin >= 20 ? "text-green-600" : project.profitMargin >= 10 ? "text-yellow-600" : "text-red-600"}`}
+                        >
                           {project.profitMargin.toFixed(1)}%
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}>
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}
+                        >
                           {project.status}
                         </span>
                       </td>
@@ -561,9 +488,7 @@ const ProfitabilityPage: React.FC = () => {
                       <div className="text-sm text-gray-900">{entry.role}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        {new Date(entry.date).toLocaleDateString()}
-                      </div>
+                      <div className="text-sm text-gray-900">{new Date(entry.date).toLocaleDateString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{entry.hours}h</div>
@@ -574,27 +499,23 @@ const ProfitabilityPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        entry.billable 
-                          ? 'text-green-600 bg-green-100' 
-                          : 'text-gray-600 bg-gray-100'
-                      }`}>
-                        {entry.billable ? 'Yes' : 'No'}
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          entry.billable ? "text-green-600 bg-green-100" : "text-gray-600 bg-gray-100"
+                        }`}
+                      >
+                        {entry.billable ? "Yes" : "No"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">
-                        {entry.description || '-'}
-                      </div>
+                      <div className="text-sm text-gray-900 max-w-xs truncate">{entry.description || "-"}</div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {timeEntries.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                No time entries recorded yet
-              </div>
+              <div className="text-center py-8 text-gray-500">No time entries recorded yet</div>
             )}
           </div>
         </Card>
