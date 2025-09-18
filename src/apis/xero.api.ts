@@ -55,7 +55,10 @@ export function capturePostAuthRedirect(redirectPath?: string) {
       (typeof window !== 'undefined'
         ? window.location.pathname + window.location.search + window.location.hash
         : '/');
-    sessionStorage.setItem('xero_post_auth_redirect', path);
+  // Do not store the OAuth callback itself or any URL containing an auth code
+  const callbackIndicator = '/oauth2/redirect';
+  if (String(path).includes(callbackIndicator) || String(path).includes('?code=')) return;
+  sessionStorage.setItem('xero_post_auth_redirect', path);
   } catch {
     // ignore storage errors
   }
