@@ -175,16 +175,12 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
                 displayLabel?: string;
               }) => {
                 const tid = String(t.tenantId || "");
-                // Prefer tenantName (friendly org name). Fall back to clientId or a short tenantId.
-                const shortTid = tid ? ` • ${String(tid).slice(0, 8)}` : "";
-                const label =
-                  t.displayLabel ||
-                  (t.tenantName || t.clientId || `${String(tid).slice(0, 8)}`) +
-                    (t.organisationNumber
-                      ? ` • Org#: ${t.organisationNumber}`
-                      : shortTid
-                        ? ` • ${String(tid).slice(0, 8)}`
-                        : "");
+                // Prefer tenantName (friendly org name). Fall back to displayLabel, clientId or short tenant id.
+                const orgNo = t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "";
+                const shortId = tid ? String(tid).slice(0, 8) : "";
+                const labelBase =
+                  t.tenantName || t.displayLabel || t.clientId || (shortId ? `...${shortId}` : "Unknown");
+                const label = `${labelBase}${orgNo}`;
                 return (
                   <option key={tid} value={tid}>
                     {label}
