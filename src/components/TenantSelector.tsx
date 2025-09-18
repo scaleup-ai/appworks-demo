@@ -46,6 +46,7 @@ const TenantSelector: React.FC = () => {
 
   useEffect(() => {
     // If no tenants passed via route state, fetch available organisations from backend
+    let mounted = true;
     const fetchTenants = async () => {
       if (tenants && tenants.length > 0) return;
       try {
@@ -104,14 +105,18 @@ const TenantSelector: React.FC = () => {
           organisationNumber: t.organisationNumber,
           displayLabel: t.displayLabel,
         }));
-        setLocalTenants(tenantsArr as unknown as Tenant[]);
+        if (mounted) setLocalTenants(tenantsArr as unknown as Tenant[]);
+        // Persist rich shape to redux regardless of component mount state (safe)
         dispatch(setTenants(tenantsArrTyped));
       } catch (err) {
         console.warn("Failed to fetch organisations", err);
       }
     };
     fetchTenants();
-  }, []);
+    return () => {
+      mounted = false;
+    };
+  }, [dispatch, tenants]);
 
   const handleSelect = (tenantId: string) => {
     try {
@@ -120,11 +125,18 @@ const TenantSelector: React.FC = () => {
     } catch {
       // ignore storage errors
     }
-    dispatch(selectTenant(tenantId));
+  // dispatch null when no id
+  dispatch(selectTenant(tenantId && tenantId.length > 0 ? tenantId : null));
     navigate("/dashboard");
   };
 
-  if (!tenants || tenants.length === 0) {
+  // filter out any entries without a valid tenant id before rendering
+  const visibleTenants = (tenants || []).filter((t) => {
+    const tid = String(t?.tenantId || t?.tenant_id || "").trim();
+    return tid.length > 0;
+  });
+
+  if (!visibleTenants || visibleTenants.length === 0) {
     // Nothing to select
     return (
       <div className="p-6">
@@ -140,8 +152,8 @@ const TenantSelector: React.FC = () => {
         <h2 className="mb-4 text-xl font-semibold">Select an Organization</h2>
         <p className="mb-4 text-sm text-gray-600">Choose which Xero organization you want to use for this session.</p>
         <ul>
-          {tenants.map((t: Tenant) => {
-            const tid = t.tenantId || t.tenant_id || "";
+          {visibleTenants.map((t: Tenant) => {
+            const tid = (t.tenantId || t.tenant_id || "").toString();
             const isSelected = Boolean(selectedTenantId && selectedTenantId === tid);
             return (
               <li key={tid} className="mb-3">
