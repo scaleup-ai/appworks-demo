@@ -13,19 +13,6 @@ const XeroCallback: React.FC = () => {
 
   useEffect(() => {
     const processCallback = async () => {
-      // If another handler (RedirectHandler) is actively processing the
-      // same OAuth redirect, avoid doing any work here to prevent duplicate
-      // backend calls which result in 409 conflicts.
-      try {
-        const processing = sessionStorage.getItem("xero_processing");
-        if (processing === "1") {
-          // quietly exit — RedirectHandler will navigate when ready
-          return;
-        }
-      } catch {
-        // ignore storage issues and continue
-      }
-
       const code = searchParams.get("code") || undefined;
       const stateFromQuery = searchParams.get("state") || undefined;
       const stateFromPath = params.state || undefined;
@@ -40,12 +27,36 @@ const XeroCallback: React.FC = () => {
 
       if (!code) {
         // If another handler (RedirectHandler) is actively processing the
-        // callback we should remain quiet and avoid showing an error toast
-        // or redirecting — the other handler will navigate when ready.
+        // callback, avoid showing an error toast. Instead try to detect if
+        // the app is already connected (race where backend processed code).
         try {
           const processing = sessionStorage.getItem("xero_processing");
           if (processing === "1") {
-            return; // silently exit if callback is already being processed elsewhere
+            try {
+              // If backend already processed the callback, query integration
+              // status and proceed to dashboard silently if connected.
+              const statusRespRaw = await (await import("../apis/xero.api")).getIntegrationStatus();
+              const statusResp = statusRespRaw as unknown as {
+                integrationStatus?: { success?: boolean };
+                connected?: boolean;
+                tenantId?: string;
+              } | null;
+              const integrationStatus = statusResp?.integrationStatus || null;
+              const isConnected =
+                (integrationStatus && integrationStatus.success === true) ||
+                statusResp?.connected === true ||
+                Boolean(statusResp?.tenantId);
+              if (isConnected) {
+                dispatch(setXeroConnected());
+                navigate("/dashboard");
+                return;
+              }
+            } catch {
+              // ignore status check failures — fall through to silent return
+            }
+
+            // If not connected, silently exit and let the other handler finish.
+            return;
           }
         } catch {
           // ignore storage issues (private mode)
