@@ -90,7 +90,12 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
               void e;
             }
             const stored = readAndClearPostAuthRedirect();
-            const target = stored || state || "/dashboard";
+            // Guard: do not navigate back to the OAuth callback URL or any URL
+            // that contains an auth code parameter. Prefer explicit state or
+            // fall back to dashboard.
+            const callbackIndicator = "/oauth2/redirect";
+            const isBad = (s?: string | null) => !s || s.includes(callbackIndicator) || s.includes("?code=");
+            const target = !isBad(stored) ? (stored as string) : !isBad(state) ? (state as string) : "/dashboard";
             navigate(target, { replace: true });
           } else {
             console.log("RedirectHandler: Callback failed");
