@@ -17,7 +17,6 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
   let initialProcessing = false;
   try {
     const href = typeof window !== "undefined" ? window.location.href || "" : "";
-    const href = typeof window !== "undefined" ? window.location.href || "" : "";
     if (href.includes(callbackPath)) {
       try {
         sessionStorage.setItem("xero_processing", "1");
