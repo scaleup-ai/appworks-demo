@@ -36,6 +36,11 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
   useEffect(() => {
     let mounted = true;
 
+    type AxiosLikeError = { response?: { status?: number; data?: unknown } } | unknown;
+    const hasAxiosResponse = (v: unknown): v is { response: { status?: number; data?: unknown } } => {
+      return typeof v === "object" && v !== null && "response" in (v as Record<string, unknown>);
+    };
+
     // Detect the Xero OAuth backend redirect path in the full URL.
     // Example: https://scaleupai.tech/api/v1/xero/oauth2/redirect?code=...&state=...
     try {
@@ -124,10 +129,24 @@ const RedirectHandler = ({ children }: { children: ReactElement }) => {
             if (mounted) setErrorMessage(`Xero authentication failed: ${errorDetails}. You can retry below.`);
           }
         } catch (err) {
-          // Log and show friendly UI; keep error variable narrow
-          console.error("RedirectHandler: Error processing callback", err);
-          if (!mounted) return;
-          if (mounted) setErrorMessage("An error occurred while processing the Xero callback. Retry to continue.");
+          // Log and show friendly UI with diagnostics
+          try {
+            const ae = err as AxiosLikeError;
+            if (hasAxiosResponse(ae)) {
+              const resp = ae.response;
+              console.error("RedirectHandler: Error processing callback - response:", resp.status, resp.data);
+              if (mounted)
+                setErrorMessage(
+                  `Xero auth failed: ${resp.status} ${JSON.stringify(resp.data || {})}. Retry to continue.`
+                );
+            } else {
+              console.error("RedirectHandler: Error processing callback", err);
+              if (mounted) setErrorMessage("An error occurred while processing the Xero callback. Retry to continue.");
+            }
+          } catch (logErr) {
+            console.error("RedirectHandler: Error while logging error", logErr, err);
+            if (mounted) setErrorMessage("An error occurred while processing the Xero callback. Retry to continue.");
+          }
         } finally {
           // Clear per-code guard if set
           try {
