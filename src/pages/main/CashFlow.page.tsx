@@ -61,114 +61,22 @@ const CashFlowPage: React.FC = () => {
   const loadCashFlowData = async () => {
     try {
       setLoading(true);
-
-      // Mock 13-week cash flow forecast
-      const mockForecast: CashFlowForecast[] = [];
-      let currentBalance = 50000; // Starting balance
-
-      for (let week = 1; week <= 13; week++) {
-        const startDate = new Date();
-        startDate.setDate(startDate.getDate() + (week - 1) * 7);
-        const endDate = new Date(startDate);
-        endDate.setDate(endDate.getDate() + 6);
-
-        // Mock inflows and outflows with some seasonality
-        const baseInflows = 15000 + Math.random() * 10000;
-        const baseOutflows = 12000 + Math.random() * 8000;
-
-        // Add some seasonality (higher inflows at month end)
-        const dayOfMonth = startDate.getDate();
-        const monthEndBoost = dayOfMonth > 25 ? 1.3 : 1.0;
-
-        const inflows = baseInflows * monthEndBoost;
-        const outflows = baseOutflows;
-
-        const closingBalance = currentBalance + inflows - outflows;
-
-        let breachRisk: "low" | "medium" | "high" = "low";
-        if (closingBalance < 10000) breachRisk = "high";
-        else if (closingBalance < 25000) breachRisk = "medium";
-
-        mockForecast.push({
-          week,
-          startDate: startDate.toISOString().split("T")[0],
-          endDate: endDate.toISOString().split("T")[0],
-          openingBalance: currentBalance,
-          inflows,
-          outflows,
-          closingBalance,
-          breachRisk,
-        });
-
-        currentBalance = closingBalance;
-      }
-
-      setForecast(mockForecast);
-
-      // Calculate summary
-      const totalInflows = mockForecast.reduce((sum, week) => sum + week.inflows, 0);
-      const totalOutflows = mockForecast.reduce((sum, week) => sum + week.outflows, 0);
-      const breachWeeks = mockForecast.filter((week) => week.breachRisk === "high").length;
-      const finalBalance = mockForecast[mockForecast.length - 1]?.closingBalance || 0;
-
-      // Calculate runway (weeks until balance hits zero)
-      let runway = 13;
-      for (let i = 0; i < mockForecast.length; i++) {
-        if (mockForecast[i].closingBalance <= 0) {
-          runway = i + 1;
-          break;
+      // Fetch cash flow data from backend API
+      const res = await fetch("/api/v1/cashflow");
+      if (!res.ok) throw new Error("Failed to fetch cash flow data");
+      const data = await res.json();
+      setForecast(data.forecast || []);
+      setSummary(
+        data.summary || {
+          currentBalance: 0,
+          projectedBalance13Week: 0,
+          totalInflows13Week: 0,
+          totalOutflows13Week: 0,
+          breachWeeks: 0,
+          runway: 0,
         }
-      }
-
-      setSummary({
-        currentBalance: 50000,
-        projectedBalance13Week: finalBalance,
-        totalInflows13Week: totalInflows,
-        totalOutflows13Week: totalOutflows,
-        breachWeeks,
-        runway,
-      });
-
-      // Mock scenarios
-      const mockScenarios: Scenario[] = [
-        {
-          id: "base",
-          name: "Base Case",
-          description: "Current trajectory with existing collection patterns",
-          assumptions: {},
-          impact: { balanceChange: 0, runwayChange: 0 },
-        },
-        {
-          id: "improved-collections",
-          name: "Improved Collections",
-          description: "Reduce DSO by 15 days through better collection processes",
-          assumptions: { collectionImprovement: 15 },
-          impact: { balanceChange: 25000, runwayChange: 3 },
-        },
-        {
-          id: "payment-delay",
-          name: "Payment Delays",
-          description: "Delay supplier payments by 10 days to preserve cash",
-          assumptions: { paymentDelay: 10 },
-          impact: { balanceChange: 15000, runwayChange: 2 },
-        },
-        {
-          id: "new-revenue",
-          name: "New Contract",
-          description: "Land new $50k contract starting week 4",
-          assumptions: { newRevenue: 50000 },
-          impact: { balanceChange: 50000, runwayChange: 5 },
-        },
-        {
-          id: "cost-reduction",
-          name: "Cost Reduction",
-          description: "Reduce operational costs by 20%",
-          assumptions: { costReduction: 20 },
-          impact: { balanceChange: 20000, runwayChange: 4 },
-        },
-      ];
-
-      setScenarios(mockScenarios);
+      );
+      setScenarios(data.scenarios || []);
     } catch (error) {
       console.error("Failed to load cash flow data:", error);
       showToast("Failed to load cash flow data", { type: "error" });
@@ -234,12 +142,12 @@ const CashFlowPage: React.FC = () => {
     return (
       <DashboardLayout title="Cash Flow Management">
         <Card>
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">
+          <div className="py-12 text-center">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 text-2xl bg-yellow-100 rounded-full">
               🔗
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Xero Connection Required</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="mb-2 text-lg font-medium text-gray-900">Xero Connection Required</h3>
+            <p className="mb-6 text-gray-600">
               Connect your Xero account to access cash flow forecasting and treasury data.
             </p>
             <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
@@ -278,7 +186,7 @@ const CashFlowPage: React.FC = () => {
     >
       <div className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card className="border-l-4 border-l-blue-500">
             <div>
               <p className="text-sm font-medium text-gray-600">Current Balance</p>
@@ -314,7 +222,7 @@ const CashFlowPage: React.FC = () => {
 
         {/* Scenario Selector */}
         <Card title="Scenario Analysis" description="Compare different cash flow scenarios">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2 lg:grid-cols-3">
             {scenarios.map((scenario) => (
               <div
                 key={scenario.id}
@@ -331,10 +239,10 @@ const CashFlowPage: React.FC = () => {
                     type="radio"
                     checked={selectedScenario === scenario.id}
                     onChange={() => handleScenarioChange(scenario.id)}
-                    className="h-4 w-4 text-blue-600"
+                    className="w-4 h-4 text-blue-600"
                   />
                 </div>
-                <p className="text-sm text-gray-600 mb-3">{scenario.description}</p>
+                <p className="mb-3 text-sm text-gray-600">{scenario.description}</p>
                 <div className="flex justify-between text-sm">
                   <span
                     className={`font-medium ${scenario.impact.balanceChange >= 0 ? "text-green-600" : "text-red-600"}`}
@@ -358,25 +266,25 @@ const CashFlowPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Week
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Period
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Opening Balance
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Inflows
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Outflows
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Closing Balance
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Risk
                   </th>
                 </tr>
@@ -424,46 +332,46 @@ const CashFlowPage: React.FC = () => {
 
         {/* Cash Flow Insights */}
         <Card title="Cash Flow Insights" description="Key patterns and recommendations">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Key Patterns Detected:</h4>
+              <h4 className="mb-3 font-semibold text-gray-900">Key Patterns Detected:</h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="flex-shrink-0 w-2 h-2 mt-2 mr-3 bg-blue-500 rounded-full"></span>
                   Month-end collections boost average inflows by 30%
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-yellow-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="flex-shrink-0 w-2 h-2 mt-2 mr-3 bg-yellow-500 rounded-full"></span>
                   Payroll and rent create predictable outflow spikes
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="flex-shrink-0 w-2 h-2 mt-2 mr-3 bg-green-500 rounded-full"></span>
                   Collections timing varies by 7-14 days from invoice date
                 </li>
                 <li className="flex items-start">
-                  <span className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></span>
+                  <span className="flex-shrink-0 w-2 h-2 mt-2 mr-3 bg-red-500 rounded-full"></span>
                   {summary.breachWeeks > 0 && `${summary.breachWeeks} weeks show cash flow risk`}
                 </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-semibold text-gray-900 mb-3">Recommendations:</h4>
+              <h4 className="mb-3 font-semibold text-gray-900">Recommendations:</h4>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start">
-                  <span className="text-green-600 mr-2">✓</span>
+                  <span className="mr-2 text-green-600">✓</span>
                   Implement automated collections reminders to reduce DSO
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-600 mr-2">→</span>
+                  <span className="mr-2 text-blue-600">→</span>
                   Negotiate payment terms with key suppliers for flexibility
                 </li>
                 <li className="flex items-start">
-                  <span className="text-yellow-600 mr-2">⚠</span>
+                  <span className="mr-2 text-yellow-600">⚠</span>
                   Consider line of credit for weeks with high breach risk
                 </li>
                 <li className="flex items-start">
-                  <span className="text-purple-600 mr-2">📊</span>
+                  <span className="mr-2 text-purple-600">📊</span>
                   Monitor collection patterns weekly for early warning signs
                 </li>
               </ul>
