@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate, useParams } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { handleOAuthRedirect } from "../../../apis/xero.api";
-import { setXeroConnected, selectTenant } from "../../../store/authSlice";
-import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
+import { useSetAuth } from "../../../store/hooks";
+import showToast from "../../../utils/toast";
 
 const XeroCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const setAuth = useSetAuth();
   const params = useParams();
   const [processing, setProcessing] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -72,9 +71,9 @@ const XeroCallback: React.FC = () => {
               const tid = single.tenantId || single.tenant_id || "";
               if (tid) {
                 localStorage.setItem("selectedTenantId", tid);
-                dispatch(selectTenant(tid));
+                setAuth({ selectedTenantId: tid });
               }
-              dispatch(setXeroConnected());
+              setAuth({ xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
               navigate("/dashboard");
               return;
@@ -82,7 +81,7 @@ const XeroCallback: React.FC = () => {
             navigate("/select-tenant", { state: { tenants: payload.tenants } });
             return;
           }
-          dispatch(setXeroConnected());
+          setAuth({ xeroConnected: true });
           showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");
           return;
@@ -103,7 +102,7 @@ const XeroCallback: React.FC = () => {
               statusResp?.connected === true ||
               Boolean(statusResp?.tenantId);
             if (isConnected) {
-              dispatch(setXeroConnected());
+              setAuth({ xeroConnected: true });
               navigate("/dashboard");
               return;
             }
@@ -144,7 +143,7 @@ const XeroCallback: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [searchParams, navigate, dispatch, params.state]);
+  }, [searchParams, navigate, params.state]);
 
   if (processing) {
     return (

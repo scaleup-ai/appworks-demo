@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useXeroConnected, useSelectedTenantId, useSetSelectedTenantId } from "../../store/hooks";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
@@ -7,7 +7,7 @@ import * as paymentApi from "../../apis/payment.api";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import { RootState } from "../../store/store";
+// Zustand store hooks used instead of Redux
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 
@@ -28,8 +28,9 @@ interface AgentStatus {
 }
 
 const DashboardPage: React.FC = () => {
-  const dispatch = useDispatch();
-  const { xeroConnected, selectedTenantId } = useSelector((state: RootState) => state.auth);
+  const xeroConnected = useXeroConnected();
+  const selectedTenantId = useSelectedTenantId();
+  const setSelectedTenantId = useSetSelectedTenantId();
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
     outstandingAmount: 0,
@@ -218,7 +219,7 @@ const DashboardPage: React.FC = () => {
               onClick={() => {
                 if (tenantInput.trim()) {
                   localStorage.setItem("selectedTenantId", tenantInput.trim());
-                  dispatch({ type: "auth/selectTenant", payload: tenantInput.trim() });
+                  setSelectedTenantId(tenantInput.trim());
                   setShowTenantPrompt(false);
                   setLoading(true);
                   setTimeout(() => loadDashboardData(), 100);

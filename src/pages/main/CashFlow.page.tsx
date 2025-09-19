@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store/store";
+import { useXeroConnected } from "../../store/hooks";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -44,7 +43,7 @@ interface Scenario {
 }
 
 const CashFlowPage: React.FC = () => {
-  const { xeroConnected } = useSelector((state: RootState) => state.auth);
+  const xeroConnected = useXeroConnected();
   const [forecast, setForecast] = useState<CashFlowForecast[]>([]);
   const [summary, setSummary] = useState<CashFlowSummary>({
     currentBalance: 0,

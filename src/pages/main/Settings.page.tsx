@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
-import axiosClient from "../../apis/axios-client";
-import { selectTenant, setTenants } from "../../store/authSlice";
+import { useSetAuth } from "../../store/hooks";
 import AppLayout from "../layouts/App.layout";
+import axiosClient from "../../apis/axios-client";
+import { NavTenant } from "../../store/store";
 
 type Org = {
   id?: string;
@@ -16,7 +16,7 @@ type Org = {
 };
 
 const SettingsPage: React.FC = () => {
-  const dispatch = useDispatch();
+  const setAuth = useSetAuth();
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [selected, setSelected] = useState<string | null>(() => {
     try {
@@ -66,17 +66,7 @@ const SettingsPage: React.FC = () => {
             } as Org;
           });
           setOrgs(mapped);
-          dispatch(
-            setTenants(
-              mapped.map((m) => ({
-                tenantId: String(m.tenantId || ""),
-                tenantName: m.tenantName,
-                clientId: m.clientId,
-                organisationNumber: m.organisationNumber,
-                displayLabel: m.displayLabel,
-              }))
-            )
-          );
+          setAuth({ tenants: mapped as NavTenant[] });
         } else {
           // fallback to older organisations endpoint
           const orgResp = await axiosClient.get("/api/v1/xero/organisations");
@@ -107,17 +97,7 @@ const SettingsPage: React.FC = () => {
             } as Org;
           });
           setOrgs(mapped);
-          dispatch(
-            setTenants(
-              mapped.map((m) => ({
-                tenantId: String(m.tenantId || ""),
-                tenantName: m.tenantName,
-                clientId: m.clientId,
-                organisationNumber: m.organisationNumber,
-                displayLabel: m.displayLabel,
-              }))
-            )
-          );
+          setAuth({ tenants: mapped as NavTenant[] });
         }
       } catch (err) {
         console.warn("Failed to fetch organisations or status", err);
@@ -126,17 +106,17 @@ const SettingsPage: React.FC = () => {
       }
     };
     void fetch();
-  }, [dispatch]);
+  }, []);
 
   const handleChange = (ev: React.ChangeEvent<HTMLSelectElement>) => {
     const val = ev.target.value || null;
     try {
       if (val) {
         localStorage.setItem("selectedTenantId", val);
-        dispatch(selectTenant(val));
+        setAuth({ selectedTenantId: val });
       } else {
         localStorage.removeItem("selectedTenantId");
-        dispatch(selectTenant(null));
+        setAuth({ selectedTenantId: null });
       }
       setSelected(val);
     } catch (e) {

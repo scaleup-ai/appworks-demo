@@ -1,10 +1,8 @@
 import React from "react";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../../store/store";
-import { logout } from "../../../store/authSlice";
+import { useSetAuth } from "../../../store/hooks";
 
 const XeroSuccessPage: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const setAuth = useSetAuth();
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-white">
@@ -13,7 +11,7 @@ const XeroSuccessPage: React.FC = () => {
         <p className="mt-2 text-sm text-gray-600">You are authenticated with Xero</p>
         <button
           className="inline-flex items-center px-4 py-2 mt-4 text-sm font-medium text-white bg-red-500 border border-transparent rounded-md hover:bg-red-600"
-          onClick={() => dispatch(logout())}
+          onClick={() => setAuth({ isAuthenticated: false, xeroConnected: false, selectedTenantId: null, tenants: [] })}
         >
           Logout
         </button>
