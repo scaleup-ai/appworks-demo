@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
@@ -28,6 +28,7 @@ interface AgentStatus {
 }
 
 const DashboardPage: React.FC = () => {
+  const dispatch = useDispatch();
   const { xeroConnected, selectedTenantId } = useSelector((state: RootState) => state.auth);
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
@@ -40,42 +41,18 @@ const DashboardPage: React.FC = () => {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showTenantPrompt, setShowTenantPrompt] = useState(false);
+  const [tenantInput, setTenantInput] = useState("");
 
-  const initializeAgents = () => {
-    setAgents([
-      {
-        name: "Data Integration Agent",
-        status: xeroConnected ? "active" : "inactive",
-        description: "Syncs Xero invoices, contacts, and bank feeds",
-        lastRun: undefined,
-      },
-      {
-        name: "Collections Reminder Agent",
-        status: "active",
-        description: "Monitors invoice aging and schedules reminders",
-        lastRun: undefined,
-      },
-      {
-        name: "Email Copywriter Agent",
-        status: "active",
-        description: "Generates polite and firm collection emails",
-      },
-      {
-        name: "Payment Reconciliation Agent",
-        status: "active",
-        description: "Matches payments to invoices automatically",
-      },
-      {
-        name: "Project Profitability Agent",
-        status: "inactive",
-        description: "Tracks project costs and revenue",
-      },
-      {
-        name: "Cash Flow Forecast Agent",
-        status: "inactive",
-        description: "Predicts 13-week cash flow patterns",
-      },
-    ]);
+  const initializeAgents = async () => {
+    try {
+      // Fetch real agent status from backend
+      const agentList = await import("../../apis/agents.api").then((m) => m.listAgents());
+      setAgents(agentList);
+    } catch (err) {
+      setAgents([]);
+      showToast("Failed to load agent status", { type: "error" });
+    }
   };
 
   const loadDashboardData = async () => {
@@ -179,17 +156,17 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     initializeAgents();
     if (xeroConnected) {
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || "";
       if (!tenantId) {
-        // Prompt user to pick an organisation
-        window.location.href = "/select-tenant";
+        setShowTenantPrompt(true);
+        setLoading(false);
         return;
       }
       loadDashboardData();
     } else {
       setLoading(false);
     }
-  }, [xeroConnected]);
+  }, [xeroConnected, selectedTenantId]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -216,6 +193,42 @@ const DashboardPage: React.FC = () => {
       <DashboardLayout title="Dashboard">
         <div className="flex items-center justify-center py-12">
           <LoadingSpinner size="lg" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (showTenantPrompt) {
+    return (
+      <DashboardLayout title="Dashboard">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-full max-w-md p-8 text-center bg-white rounded-lg shadow-md">
+            <h2 className="mb-4 text-xl font-semibold text-gray-900">Select Tenant</h2>
+            <p className="mb-6 text-gray-700">
+              Please enter or select your organisation/tenant ID to view dashboard data.
+            </p>
+            <input
+              type="text"
+              value={tenantInput}
+              onChange={(e) => setTenantInput(e.target.value)}
+              placeholder="Tenant ID"
+              className="w-full px-4 py-2 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={() => {
+                if (tenantInput.trim()) {
+                  localStorage.setItem("selectedTenantId", tenantInput.trim());
+                  dispatch({ type: "auth/selectTenant", payload: tenantInput.trim() });
+                  setShowTenantPrompt(false);
+                  setLoading(true);
+                  setTimeout(() => loadDashboardData(), 100);
+                }
+              }}
+              className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              Confirm Tenant
+            </button>
+          </div>
         </div>
       </DashboardLayout>
     );
