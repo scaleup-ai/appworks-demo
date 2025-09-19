@@ -1,32 +1,29 @@
-import { configureStore } from '@reduxjs/toolkit';
-import createSagaMiddleware from 'redux-saga';
-import authReducer from './authSlice';
-import xeroReducer from './slices/xero.slice';
-import collectionsReducer from './slices/collections.slice';
-import emailReducer from './slices/email.slice';
-import paymentReducer from './slices/payment.slice';
-import rootSaga from './sagas';
+import { create } from 'zustand';
 
-const sagaMiddleware = createSagaMiddleware();
+export type NavTenant = {
+  tenantId: string;
+  tenantName?: string;
+  tenantType?: string;
+  clientId?: string;
+  organisationNumber?: string;
+  createdAt?: string;
+  displayLabel?: string;
+};
 
-export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    xero: xeroReducer,
-    collections: collectionsReducer,
-    email: emailReducer,
-    payment: paymentReducer,
-  },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      thunk: true, // Enable thunk for createAsyncThunk actions
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-      },
-    }).concat(sagaMiddleware),
-});
+export interface AuthState {
+  isAuthenticated: boolean;
+  xeroConnected: boolean;
+  selectedTenantId: string | null;
+  tenants: NavTenant[];
+  setAuth: (auth: Partial<AuthState>) => void;
+  setSelectedTenantId: (tenantId: string) => void;
+}
 
-sagaMiddleware.run(rootSaga);
-
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export const useAuthStore = create<AuthState>((set: (fn: (state: AuthState) => AuthState) => void) => ({
+  isAuthenticated: false,
+  xeroConnected: false,
+  selectedTenantId: null,
+  tenants: [],
+  setAuth: (auth: Partial<AuthState>) => set((state: AuthState) => ({ ...state, ...auth })),
+  setSelectedTenantId: (tenantId: string) => set((state: AuthState) => ({ ...state, selectedTenantId: tenantId })),
+}));

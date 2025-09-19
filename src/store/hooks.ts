@@ -1,6 +1,8 @@
-import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import type { RootState, AppDispatch } from './store';
+import { AuthState, useAuthStore } from './store';
 
-// Use throughout the app instead of plain `useDispatch` and `useSelector`
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+export const useIsAuthenticated = () => useAuthStore((state: AuthState) => state.isAuthenticated);
+export const useXeroConnected = () => useAuthStore((state: AuthState) => state.xeroConnected);
+export const useSelectedTenantId = () => useAuthStore((state: AuthState) => state.selectedTenantId);
+export const useTenants = () => useAuthStore((state: AuthState) => state.tenants);
+export const useSetAuth = () => useAuthStore((state: AuthState) => state.setAuth);
+export const useSetSelectedTenantId = () => useAuthStore((state: AuthState) => state.setSelectedTenantId);
