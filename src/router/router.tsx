@@ -12,7 +12,6 @@ import ProfitabilityPage from "../pages/profitability/Profitability.page";
 import CashFlowPage from "../pages/cashflow/CashFlow.page";
 import SettingsPage from "../pages/settings/Settings.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
-import RedirectHandler from "./logic/RedirectHandler.route-logic";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
@@ -141,29 +140,16 @@ export const routes: ExtendedRouteObject[] = [
 ];
 
 const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
-  // Global wrappers applied to all routes
-  const globalWrappers: Array<ComponentType<{ children: ReactElement }>> = [RedirectHandler];
-
-  // Compose wrappers simply:
-  // - always apply global wrappers
-  // - only apply AuthProtectedRouteLogic for AUTH_CHECK routes
-  // - never apply the auth wrapper to the XERO OAuth callback route (prevents redirect loop)
-  const wrappers: Array<ComponentType<{ children: ReactElement }>> = [...globalWrappers];
+  // Only apply AuthProtectedRouteLogic for AUTH_CHECK routes
+  const wrappers: Array<ComponentType<{ children: ReactElement }>> = [];
   if (route.logicType === ROUTE_LOGIC_TYPE.AUTH_CHECK) {
     wrappers.push(AuthProtectedRouteLogic);
   }
-
-  // Per-route wrappers applied after globals and logic-specific wrappers
   if (route.wrappers && route.wrappers.length) wrappers.push(...route.wrappers);
-
-  // Apply wrappers so that earlier entries in `wrappers` become the outer
-  // components. Using reduceRight nests them in that order, which makes
-  // global wrappers (added first) wrap the route-specific wrappers.
   const wrapped = wrappers.reduceRight<ReactElement>(
     (acc, W) => <W>{acc}</W>,
     route.routeObject.element as ReactElement
   );
-
   return { ...route.routeObject, element: wrapped };
 };
 

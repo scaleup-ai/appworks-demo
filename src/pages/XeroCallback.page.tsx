@@ -1,17 +1,21 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect } from "../apis/xero.api";
 import { setXeroConnected, selectTenant } from "../store/authSlice";
 import showToast from "../utils/toast";
+import LoadingSpinner from "../components/ui/LoadingSpinner";
 
 const XeroCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const params = useParams();
+  const [processing, setProcessing] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     const processCallback = async () => {
       const code = searchParams.get("code") || undefined;
       const stateFromQuery = searchParams.get("state") || undefined;
@@ -21,50 +25,15 @@ const XeroCallback: React.FC = () => {
 
       if (error) {
         showToast(`Xero OAuth error: ${error}`, { type: "error" });
-        navigate("/auth");
+        setErrorMessage(`Xero OAuth error: ${error}`);
+        setProcessing(false);
         return;
       }
 
       if (!code) {
-        // If another handler (RedirectHandler) is actively processing the
-        // callback, avoid showing an error toast. Instead try to detect if
-        // the app is already connected (race where backend processed code).
-        try {
-          const processing = sessionStorage.getItem("xero_processing");
-          if (processing === "1") {
-            try {
-              // If backend already processed the callback, query integration
-              // status and proceed to dashboard silently if connected.
-              const statusRespRaw = await (await import("../apis/xero.api")).getIntegrationStatus();
-              const statusResp = statusRespRaw as unknown as {
-                integrationStatus?: { success?: boolean };
-                connected?: boolean;
-                tenantId?: string;
-              } | null;
-              const integrationStatus = statusResp?.integrationStatus || null;
-              const isConnected =
-                (integrationStatus && integrationStatus.success === true) ||
-                statusResp?.connected === true ||
-                Boolean(statusResp?.tenantId);
-              if (isConnected) {
-                dispatch(setXeroConnected());
-                navigate("/dashboard");
-                return;
-              }
-            } catch {
-              // ignore status check failures — fall through to silent return
-            }
-
-            // If not connected, silently exit and let the other handler finish.
-            return;
-          }
-        } catch {
-          // ignore storage issues (private mode)
-        }
-
-        // Some providers might hit the route without query; show actionable help.
         showToast("Missing authorization code. Please restart Xero sign-in.", { type: "error" });
-        navigate("/auth");
+        setErrorMessage("Missing authorization code. Please restart Xero sign-in.");
+        setProcessing(false);
         return;
       }
 
@@ -73,6 +42,7 @@ const XeroCallback: React.FC = () => {
       try {
         const inflight = sessionStorage.getItem(guardKey);
         if (inflight === "1") {
+          setProcessing(false);
           return; // already processing this code
         }
         sessionStorage.setItem(guardKey, "1");
@@ -80,12 +50,8 @@ const XeroCallback: React.FC = () => {
         // ignore storage issues; continue
       }
 
-      // continue: process callback normally
-
       try {
         const response = await handleOAuthRedirect({ code, state: state || "" });
-
-        // backend may return tenant list when OAuth completes for SPA flows
         if (response.status === 200) {
           type ResponsePayload = {
             tenants?: Array<{
@@ -101,10 +67,8 @@ const XeroCallback: React.FC = () => {
           };
           const payload = (response.data || {}) as ResponsePayload;
           if (payload.tenants && Array.isArray(payload.tenants) && payload.tenants.length > 0) {
-            // If single tenant, auto-select and continue
             if (payload.tenants.length === 1) {
               const single = payload.tenants[0];
-              // persist selection for axios and future requests
               const tid = single.tenantId || single.tenant_id || "";
               if (tid) {
                 localStorage.setItem("selectedTenantId", tid);
@@ -115,21 +79,15 @@ const XeroCallback: React.FC = () => {
               navigate("/dashboard");
               return;
             }
-
-            // multiple tenants -> navigate to selector and pass tenants via state
             navigate("/select-tenant", { state: { tenants: payload.tenants } });
             return;
           }
-
-          // default: mark connected and go to dashboard
           dispatch(setXeroConnected());
           showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");
           return;
         }
-
         if (response.status === 409) {
-          // Authorization code reused. If already connected, proceed; else restart auth.
           showToast("Session already processed. Checking connection…", { type: "info" });
           try {
             type StatusResp = {
@@ -163,15 +121,16 @@ const XeroCallback: React.FC = () => {
           } catch {
             // if restart fails, fall through to auth page
           }
-          navigate("/auth");
+          setErrorMessage("Session expired. Please try again.");
+          setProcessing(false);
           return;
         }
-
         throw new Error(`OAuth callback failed with status ${response.status}`);
       } catch (err) {
         console.error("OAuth callback error:", err);
         showToast("Failed to complete Xero authentication", { type: "error" });
-        navigate("/auth");
+        setErrorMessage("Failed to complete Xero authentication");
+        setProcessing(false);
       } finally {
         try {
           sessionStorage.removeItem(guardKey);
@@ -179,20 +138,68 @@ const XeroCallback: React.FC = () => {
           // ignore
         }
       }
+      if (mounted) setProcessing(false);
     };
-
     processCallback();
-  }, [searchParams, navigate, dispatch]);
+    return () => {
+      mounted = false;
+    };
+  }, [searchParams, navigate, dispatch, params.state]);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="text-center">
-        <div className="w-8 h-8 mx-auto mb-4 border-b-2 border-blue-600 rounded-full animate-spin"></div>
-        <h2 className="text-lg font-medium text-gray-900">Processing Xero Authentication...</h2>
-        <p className="text-gray-500">Please wait while we complete your login.</p>
+  if (processing) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <h2 className="text-lg font-medium text-gray-900">Processing Xero Authentication...</h2>
+          <p className="text-gray-500">Please wait while we complete your login.</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-white">
+        <div className="max-w-lg text-center">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">Authentication issue</h2>
+          <p className="mb-6 text-sm text-gray-700">{errorMessage}</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={async () => {
+                try {
+                  const { startXeroAuth } = await import("../apis/xero.api");
+                  const data = (await startXeroAuth("json")) as import("../types/api.types").ConsentUrlResponse;
+                  if (data && data.url) {
+                    window.location.href = data.url;
+                  }
+                } catch {
+                  // noop
+                }
+              }}
+              className="px-5 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
+            >
+              Retry Connect
+            </button>
+            <button
+              onClick={() => navigate("/", { replace: true })}
+              className="px-4 py-3 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Return home
+            </button>
+            <button
+              onClick={() => navigate("/dashboard", { replace: true })}
+              className="px-4 py-3 text-sm text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50"
+            >
+              Proceed to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default XeroCallback;
