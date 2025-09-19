@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import axiosClient from "../../apis/axios-client";
 import { selectTenant, setTenants } from "../../store/authSlice";
+import AppLayout from "../layouts/App.layout";
 
 type Org = {
   id?: string;
@@ -144,38 +145,40 @@ const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="mb-4 text-2xl font-semibold">Settings</h1>
-      <section className="mb-6">
-        <h2 className="text-lg font-medium">Organization</h2>
-        <p className="mb-2 text-sm text-gray-600">Select which connected Xero organization to use for the app.</p>
-        <div className="max-w-md">
-          <select value={selected || ""} onChange={handleChange} className="w-full px-3 py-2 border rounded">
-            <option value="">(none)</option>
-            {orgs.map((o) => (
-              <option key={o.tenantId} value={o.tenantId}>
-                {o.displayLabel || o.tenantName || o.clientId || o.tenantId}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="mt-2 text-sm text-gray-600">Connected organizations: {orgs.length}</div>
-      </section>
+    <AppLayout>
+      <div className="p-6">
+        <h1 className="mb-4 text-2xl font-semibold">Settings</h1>
+        <section className="mb-6">
+          <h2 className="text-lg font-medium">Organization</h2>
+          <p className="mb-2 text-sm text-gray-600">Select which connected Xero organization to use for the app.</p>
+          <div className="max-w-md">
+            <select value={selected || ""} onChange={handleChange} className="w-full px-3 py-2 border rounded">
+              <option value="">(none)</option>
+              {orgs.map((o) => (
+                <option key={o.tenantId} value={o.tenantId}>
+                  {o.displayLabel || o.tenantName || o.clientId || o.tenantId}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mt-2 text-sm text-gray-600">Connected organizations: {orgs.length}</div>
+        </section>
 
-      <section>
-        <h2 className="text-lg font-medium">Xero Integration</h2>
-        <p className="mb-2 text-sm text-gray-600">Current integration status and limits returned by the backend.</p>
-        <div className="max-w-2xl p-3 rounded bg-gray-50">
-          {loading ? (
-            <div>Loading status…</div>
-          ) : (
-            <pre className="overflow-auto text-xs">
-              {JSON.stringify(status ?? { organisations: orgs.length }, null, 2)}
-            </pre>
-          )}
-        </div>
-      </section>
-    </div>
+        <section>
+          <h2 className="text-lg font-medium">Xero Integration</h2>
+          <p className="mb-2 text-sm text-gray-600">Current integration status and limits returned by the backend.</p>
+          <div className="max-w-2xl p-3 rounded bg-gray-50">
+            {loading ? (
+              <div>Loading status…</div>
+            ) : (
+              <pre className="overflow-auto text-xs">
+                {JSON.stringify(status ?? { organisations: orgs.length }, null, 2)}
+              </pre>
+            )}
+          </div>
+        </section>
+      </div>
+    </AppLayout>
   );
 };
 
