@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { selectTenant, setTenants } from "../store/authSlice";
-import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { useSetSelectedTenantId, useSetAuth, useSelectedTenantId } from "../store/hooks";
 import axiosClient from "../apis/axios-client";
 
 type Tenant = {
@@ -37,8 +36,9 @@ type OrgResponse = {
 const TenantSelector: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
-  const selectedTenantId = useAppSelector((s) => s.auth.selectedTenantId);
+  const setSelectedTenantId = useSetSelectedTenantId();
+  const setAuth = useSetAuth();
+  const selectedTenantId = useSelectedTenantId();
 
   const [tenants, setLocalTenants] = useState<Tenant[]>(
     () => (location.state as { tenants?: Tenant[] })?.tenants || []
@@ -96,18 +96,14 @@ const TenantSelector: React.FC = () => {
           if (!byLabel.has(key)) byLabel.set(key, v);
         }
         const tenantsArr = Array.from(byLabel.values());
-        // persist normalized tenants to local state and redux store (rich shape)
-        const tenantsArrTyped = tenantsArr.map((t) => ({
-          tenantId: String(t.tenantId || ""),
-          tenantName: t.tenantName,
-          tenantType: t.tenantType,
-          clientId: t.clientId,
-          organisationNumber: t.organisationNumber,
-          displayLabel: t.displayLabel,
-        }));
         if (mounted) setLocalTenants(tenantsArr as unknown as Tenant[]);
-        // Persist rich shape to redux regardless of component mount state (safe)
-        dispatch(setTenants(tenantsArrTyped));
+        // Persist rich shape to Zustand store
+        // Ensure all tenantId are strings (never undefined)
+        const navTenants = tenantsArr.map((t) => ({
+          ...t,
+          tenantId: String(t.tenantId || ""),
+        }));
+        setAuth({ tenants: navTenants });
       } catch (err) {
         console.warn("Failed to fetch organisations", err);
       }
@@ -116,7 +112,7 @@ const TenantSelector: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [dispatch, tenants]);
+  }, [tenants]);
 
   const handleSelect = (tenantId: string) => {
     try {
@@ -126,7 +122,11 @@ const TenantSelector: React.FC = () => {
       // ignore storage errors
     }
     // dispatch null when no id
-    dispatch(selectTenant(tenantId && tenantId.length > 0 ? tenantId : null));
+    if (tenantId && tenantId.length > 0) {
+      setSelectedTenantId(tenantId);
+    } else {
+      setSelectedTenantId(""); // Clear selection with empty string
+    }
     navigate("/dashboard");
   };
 

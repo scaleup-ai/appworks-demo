@@ -1,13 +1,12 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store/store";
+import { useIsAuthenticated } from "../../store/hooks";
 import AppLayout from "../layouts/App.layout";
 import { ROOT_PATH } from "../../router/router";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const isAuthenticated = useSelector((s: RootState) => s.auth.isAuthenticated);
+  const isAuthenticated = useIsAuthenticated();
 
   useEffect(() => {
     if (isAuthenticated) {

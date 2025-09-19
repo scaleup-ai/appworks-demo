@@ -1,7 +1,6 @@
 import React, { ReactElement, useEffect } from "react";
-import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { RootState } from "../../store/store";
+import { useIsAuthenticated } from "../../store/hooks";
 
 interface AuthProtectedRouteLogicProps {
   children: ReactElement;
@@ -9,7 +8,7 @@ interface AuthProtectedRouteLogicProps {
 
 const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ children }) => {
   const navigate = useNavigate();
-  const isAuthenticated = useSelector((state: RootState) => state.auth.isAuthenticated);
+  const isAuthenticated = useIsAuthenticated();
 
   useEffect(() => {
     if (!isAuthenticated) {

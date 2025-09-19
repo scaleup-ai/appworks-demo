@@ -17,6 +17,10 @@ export interface AuthState {
   tenants: NavTenant[];
   setAuth: (auth: Partial<AuthState>) => void;
   setSelectedTenantId: (tenantId: string) => void;
+  xeroLoading: boolean;
+  collectionsLoading: boolean;
+  emailLoading: boolean;
+  paymentLoading: boolean;
 }
 
 export const useAuthStore = create<AuthState>((set: (fn: (state: AuthState) => AuthState) => void) => ({
@@ -26,4 +30,8 @@ export const useAuthStore = create<AuthState>((set: (fn: (state: AuthState) => A
   tenants: [],
   setAuth: (auth: Partial<AuthState>) => set((state: AuthState) => ({ ...state, ...auth })),
   setSelectedTenantId: (tenantId: string) => set((state: AuthState) => ({ ...state, selectedTenantId: tenantId })),
+  xeroLoading: false,
+  collectionsLoading: false,
+  emailLoading: false,
+  paymentLoading: false,
 }));

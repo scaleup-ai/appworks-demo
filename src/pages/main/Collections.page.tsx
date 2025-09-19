@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { RootState } from "../../store/store";
+import { useXeroConnected, useSelectedTenantId } from "../../store/hooks";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -31,7 +30,8 @@ interface CollectionsSummary {
 }
 
 const CollectionsPage: React.FC = () => {
-  const { xeroConnected, selectedTenantId } = useSelector((state: RootState) => state.auth);
+  const xeroConnected = useXeroConnected();
+  const selectedTenantId = useSelectedTenantId();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [summary, setSummary] = useState<CollectionsSummary>({
     totalOutstanding: 0,

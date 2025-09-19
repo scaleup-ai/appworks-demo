@@ -1,6 +1,4 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
-import { store } from '../store/store';
-import { validateTokens } from '../store/authSlice';
 
 // Modern, simplified axios client without complex refresh token logic
 // since most demo endpoints don't require authentication
@@ -53,8 +51,7 @@ axiosClient.interceptors.response.use(
       // Clear invalid tokens
       clearAccessToken();
 
-      // Validate tokens in the store
-      store.dispatch(validateTokens());
+      // TODO: If you want to trigger a Zustand state update on 401, add logic here using your Zustand store hooks.
 
       // For protected routes, redirect to login
       const currentPath = window.location.pathname;
