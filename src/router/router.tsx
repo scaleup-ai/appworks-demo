@@ -4,11 +4,13 @@ import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/main/Landing.page";
 import AuthPage from "../pages/Auth.page";
 import XeroCallback from "../pages/XeroCallback.page";
+import TenantSelector from "../components/TenantSelector";
 import DashboardPage from "../pages/dashboard/Dashboard.page";
 import CollectionsPage from "../pages/collections/Collections.page";
 import PaymentsPage from "../pages/payments/Payments.page";
 import ProfitabilityPage from "../pages/profitability/Profitability.page";
 import CashFlowPage from "../pages/cashflow/CashFlow.page";
+import SettingsPage from "../pages/settings/Settings.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
 import RedirectHandler from "./logic/RedirectHandler.route-logic";
 
@@ -66,6 +68,14 @@ export const lameRoutes: ExtendedRouteObject[] = [
       errorElement: <ErrorBoundaryPage />,
     },
   },
+  {
+    title: "Select Tenant",
+    routeObject: {
+      path: `${ROOT_PATH}select-tenant`,
+      element: <TenantSelector />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
 ];
 
 export const mainAppRoutes: ExtendedRouteObject[] = [
@@ -106,6 +116,14 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
     routeObject: {
       path: `${ROOT_PATH}cashflow`,
       element: <CashFlowPage />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
+  {
+    title: "Settings",
+    routeObject: {
+      path: `${ROOT_PATH}settings`,
+      element: <SettingsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
   },

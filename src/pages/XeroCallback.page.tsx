@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect } from "../apis/xero.api";
-import { setXeroConnected } from "../store/authSlice";
+import { setXeroConnected, selectTenant } from "../store/authSlice";
 import showToast from "../utils/toast";
 
 const XeroCallback: React.FC = () => {
@@ -26,6 +26,42 @@ const XeroCallback: React.FC = () => {
       }
 
       if (!code) {
+        // If another handler (RedirectHandler) is actively processing the
+        // callback, avoid showing an error toast. Instead try to detect if
+        // the app is already connected (race where backend processed code).
+        try {
+          const processing = sessionStorage.getItem("xero_processing");
+          if (processing === "1") {
+            try {
+              // If backend already processed the callback, query integration
+              // status and proceed to dashboard silently if connected.
+              const statusRespRaw = await (await import("../apis/xero.api")).getIntegrationStatus();
+              const statusResp = statusRespRaw as unknown as {
+                integrationStatus?: { success?: boolean };
+                connected?: boolean;
+                tenantId?: string;
+              } | null;
+              const integrationStatus = statusResp?.integrationStatus || null;
+              const isConnected =
+                (integrationStatus && integrationStatus.success === true) ||
+                statusResp?.connected === true ||
+                Boolean(statusResp?.tenantId);
+              if (isConnected) {
+                dispatch(setXeroConnected());
+                navigate("/dashboard");
+                return;
+              }
+            } catch {
+              // ignore status check failures — fall through to silent return
+            }
+
+            // If not connected, silently exit and let the other handler finish.
+            return;
+          }
+        } catch {
+          // ignore storage issues (private mode)
+        }
+
         // Some providers might hit the route without query; show actionable help.
         showToast("Missing authorization code. Please restart Xero sign-in.", { type: "error" });
         navigate("/auth");
@@ -33,8 +69,8 @@ const XeroCallback: React.FC = () => {
       }
 
       // One-shot guard keyed by the specific code to avoid duplicate backend calls
+      const guardKey = `xero_oauth_callback_inflight:${code}`;
       try {
-        const guardKey = `xero_oauth_callback_inflight:${code}`;
         const inflight = sessionStorage.getItem(guardKey);
         if (inflight === "1") {
           return; // already processing this code
@@ -44,10 +80,48 @@ const XeroCallback: React.FC = () => {
         // ignore storage issues; continue
       }
 
+      // continue: process callback normally
+
       try {
         const response = await handleOAuthRedirect({ code, state: state || "" });
 
+        // backend may return tenant list when OAuth completes for SPA flows
         if (response.status === 200) {
+          type ResponsePayload = {
+            tenants?: Array<{
+              tenantId?: string;
+              tenant_id?: string;
+              tenantName?: string;
+              tenant_name?: string;
+              tenantType?: string;
+              type?: string;
+              name?: string;
+              organization?: string;
+            }>;
+          };
+          const payload = (response.data || {}) as ResponsePayload;
+          if (payload.tenants && Array.isArray(payload.tenants) && payload.tenants.length > 0) {
+            // If single tenant, auto-select and continue
+            if (payload.tenants.length === 1) {
+              const single = payload.tenants[0];
+              // persist selection for axios and future requests
+              const tid = single.tenantId || single.tenant_id || "";
+              if (tid) {
+                localStorage.setItem("selectedTenantId", tid);
+                dispatch(selectTenant(tid));
+              }
+              dispatch(setXeroConnected());
+              showToast("Successfully connected to Xero!", { type: "success" });
+              navigate("/dashboard");
+              return;
+            }
+
+            // multiple tenants -> navigate to selector and pass tenants via state
+            navigate("/select-tenant", { state: { tenants: payload.tenants } });
+            return;
+          }
+
+          // default: mark connected and go to dashboard
           dispatch(setXeroConnected());
           showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");
@@ -58,12 +132,18 @@ const XeroCallback: React.FC = () => {
           // Authorization code reused. If already connected, proceed; else restart auth.
           showToast("Session already processed. Checking connection…", { type: "info" });
           try {
-            const statusResp = await (await import("../apis/xero.api")).getIntegrationStatus();
-            const anyResp: any = statusResp as any;
+            type StatusResp = {
+              integrationStatus?: { success?: boolean };
+              connected?: boolean;
+              tenantId?: string;
+            } | null;
+            const statusRespRaw = await (await import("../apis/xero.api")).getIntegrationStatus();
+            const statusResp = statusRespRaw as unknown as StatusResp;
+            const integrationStatus = statusResp?.integrationStatus || null;
             const isConnected =
-              anyResp?.integrationStatus?.success === true ||
-              statusResp.connected === true ||
-              Boolean(statusResp.tenantId);
+              (integrationStatus && integrationStatus.success === true) ||
+              statusResp?.connected === true ||
+              Boolean(statusResp?.tenantId);
             if (isConnected) {
               dispatch(setXeroConnected());
               navigate("/dashboard");
@@ -92,6 +172,12 @@ const XeroCallback: React.FC = () => {
         console.error("OAuth callback error:", err);
         showToast("Failed to complete Xero authentication", { type: "error" });
         navigate("/auth");
+      } finally {
+        try {
+          sessionStorage.removeItem(guardKey);
+        } catch {
+          // ignore
+        }
       }
     };
 

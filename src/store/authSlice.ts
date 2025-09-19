@@ -5,6 +5,8 @@ export interface AuthState {
   xeroConnected: boolean;
   loading: boolean;
   error: string | null;
+  tenants: Array<{ tenantId: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
+  selectedTenantId?: string | null;
 }
 
 const initialState: AuthState = {
@@ -12,6 +14,9 @@ const initialState: AuthState = {
   xeroConnected: false,
   loading: false,
   error: null,
+  tenants: [],
+  // initialize selected tenant from localStorage if present so app picks up previous selection
+  selectedTenantId: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
 };
 
 export const validateTokens = createAsyncThunk('auth/validateTokens', async () => {
@@ -28,11 +33,19 @@ const authSlice = createSlice({
       state.xeroConnected = true;
       state.error = null;
     },
+    setTenants(state, action: { payload: Array<{ tenantId: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }> }) {
+      state.tenants = action.payload || [];
+    },
+    selectTenant(state, action: { payload: string | null }) {
+      state.selectedTenantId = action.payload;
+    },
     logout: (state) => {
       state.isAuthenticated = false;
       state.xeroConnected = false;
       state.error = null;
       localStorage.removeItem('access_token');
+      state.tenants = [];
+      state.selectedTenantId = null;
     },
     setError: (state, action) => {
       state.error = action.payload;
@@ -65,5 +78,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setXeroConnected, logout, setError, clearError, setLoading } = authSlice.actions;
+export const { setXeroConnected, logout, setError, clearError, setLoading, setTenants, selectTenant } = authSlice.actions;
 export default authSlice.reducer;
