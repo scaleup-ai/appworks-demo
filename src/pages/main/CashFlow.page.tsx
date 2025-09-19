@@ -15,7 +15,7 @@ interface CashFlowForecast {
   inflows: number;
   outflows: number;
   closingBalance: number;
-  breachRisk: 'low' | 'medium' | 'high';
+  breachRisk: "low" | "medium" | "high";
 }
 
 interface CashFlowSummary {
@@ -56,7 +56,7 @@ const CashFlowPage: React.FC = () => {
   });
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedScenario, setSelectedScenario] = useState<string>('base');
+  const [selectedScenario, setSelectedScenario] = useState<string>("base");
 
   const loadCashFlowData = async () => {
     try {
@@ -75,24 +75,24 @@ const CashFlowPage: React.FC = () => {
         // Mock inflows and outflows with some seasonality
         const baseInflows = 15000 + Math.random() * 10000;
         const baseOutflows = 12000 + Math.random() * 8000;
-        
+
         // Add some seasonality (higher inflows at month end)
         const dayOfMonth = startDate.getDate();
         const monthEndBoost = dayOfMonth > 25 ? 1.3 : 1.0;
-        
+
         const inflows = baseInflows * monthEndBoost;
         const outflows = baseOutflows;
-        
+
         const closingBalance = currentBalance + inflows - outflows;
-        
-        let breachRisk: 'low' | 'medium' | 'high' = 'low';
-        if (closingBalance < 10000) breachRisk = 'high';
-        else if (closingBalance < 25000) breachRisk = 'medium';
+
+        let breachRisk: "low" | "medium" | "high" = "low";
+        if (closingBalance < 10000) breachRisk = "high";
+        else if (closingBalance < 25000) breachRisk = "medium";
 
         mockForecast.push({
           week,
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0],
           openingBalance: currentBalance,
           inflows,
           outflows,
@@ -108,9 +108,9 @@ const CashFlowPage: React.FC = () => {
       // Calculate summary
       const totalInflows = mockForecast.reduce((sum, week) => sum + week.inflows, 0);
       const totalOutflows = mockForecast.reduce((sum, week) => sum + week.outflows, 0);
-      const breachWeeks = mockForecast.filter(week => week.breachRisk === 'high').length;
+      const breachWeeks = mockForecast.filter((week) => week.breachRisk === "high").length;
       const finalBalance = mockForecast[mockForecast.length - 1]?.closingBalance || 0;
-      
+
       // Calculate runway (weeks until balance hits zero)
       let runway = 13;
       for (let i = 0; i < mockForecast.length; i++) {
@@ -132,56 +132,55 @@ const CashFlowPage: React.FC = () => {
       // Mock scenarios
       const mockScenarios: Scenario[] = [
         {
-          id: 'base',
-          name: 'Base Case',
-          description: 'Current trajectory with existing collection patterns',
+          id: "base",
+          name: "Base Case",
+          description: "Current trajectory with existing collection patterns",
           assumptions: {},
           impact: { balanceChange: 0, runwayChange: 0 },
         },
         {
-          id: 'improved-collections',
-          name: 'Improved Collections',
-          description: 'Reduce DSO by 15 days through better collection processes',
+          id: "improved-collections",
+          name: "Improved Collections",
+          description: "Reduce DSO by 15 days through better collection processes",
           assumptions: { collectionImprovement: 15 },
           impact: { balanceChange: 25000, runwayChange: 3 },
         },
         {
-          id: 'payment-delay',
-          name: 'Payment Delays',
-          description: 'Delay supplier payments by 10 days to preserve cash',
+          id: "payment-delay",
+          name: "Payment Delays",
+          description: "Delay supplier payments by 10 days to preserve cash",
           assumptions: { paymentDelay: 10 },
           impact: { balanceChange: 15000, runwayChange: 2 },
         },
         {
-          id: 'new-revenue',
-          name: 'New Contract',
-          description: 'Land new $50k contract starting week 4',
+          id: "new-revenue",
+          name: "New Contract",
+          description: "Land new $50k contract starting week 4",
           assumptions: { newRevenue: 50000 },
           impact: { balanceChange: 50000, runwayChange: 5 },
         },
         {
-          id: 'cost-reduction',
-          name: 'Cost Reduction',
-          description: 'Reduce operational costs by 20%',
+          id: "cost-reduction",
+          name: "Cost Reduction",
+          description: "Reduce operational costs by 20%",
           assumptions: { costReduction: 20 },
           impact: { balanceChange: 20000, runwayChange: 4 },
         },
       ];
 
       setScenarios(mockScenarios);
-
     } catch (error) {
-      console.error('Failed to load cash flow data:', error);
-      showToast('Failed to load cash flow data', { type: 'error' });
+      console.error("Failed to load cash flow data:", error);
+      showToast("Failed to load cash flow data", { type: "error" });
     } finally {
       setLoading(false);
     }
   };
 
   const handleGenerateForecast = async () => {
-    showToast('Regenerating 13-week cash flow forecast...', { type: 'info' });
+    showToast("Regenerating 13-week cash flow forecast...", { type: "info" });
     await loadCashFlowData();
-    showToast('Cash flow forecast updated', { type: 'success' });
+    showToast("Cash flow forecast updated", { type: "success" });
   };
 
   const handleExportForecast = () => {
@@ -192,16 +191,16 @@ const CashFlowPage: React.FC = () => {
       generatedAt: new Date().toISOString(),
       selectedScenario,
     };
-    
-    console.log('Cash flow forecast export:', exportData);
-    showToast('Cash flow forecast exported (check console)', { type: 'success' });
+
+    console.log("Cash flow forecast export:", exportData);
+    showToast("Cash flow forecast exported (check console)", { type: "success" });
   };
 
   const handleScenarioChange = (scenarioId: string) => {
     setSelectedScenario(scenarioId);
-    const scenario = scenarios.find(s => s.id === scenarioId);
+    const scenario = scenarios.find((s) => s.id === scenarioId);
     if (scenario) {
-      showToast(`Viewing ${scenario.name} scenario`, { type: 'info' });
+      showToast(`Viewing ${scenario.name} scenario`, { type: "info" });
     }
   };
 
@@ -210,20 +209,24 @@ const CashFlowPage: React.FC = () => {
   }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
   };
 
-  const getRiskColor = (risk: 'low' | 'medium' | 'high') => {
+  const getRiskColor = (risk: "low" | "medium" | "high") => {
     switch (risk) {
-      case 'low': return 'text-green-600 bg-green-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'high': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case "low":
+        return "text-green-600 bg-green-100";
+      case "medium":
+        return "text-yellow-600 bg-yellow-100";
+      case "high":
+        return "text-red-600 bg-red-100";
+      default:
+        return "text-gray-600 bg-gray-100";
     }
   };
 
@@ -239,9 +242,7 @@ const CashFlowPage: React.FC = () => {
             <p className="text-gray-600 mb-6">
               Connect your Xero account to access cash flow forecasting and treasury data.
             </p>
-            <Button onClick={() => window.location.href = '/auth'}>
-              Connect Xero
-            </Button>
+            <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
           </div>
         </Card>
       </DashboardLayout>
@@ -259,7 +260,7 @@ const CashFlowPage: React.FC = () => {
   }
 
   return (
-    <DashboardLayout 
+    <DashboardLayout
       title="Cash Flow Management"
       actions={
         <div className="flex gap-2">
@@ -288,7 +289,9 @@ const CashFlowPage: React.FC = () => {
           <Card className="border-l-4 border-l-green-500">
             <div>
               <p className="text-sm font-medium text-gray-600">13-Week Projection</p>
-              <p className={`text-2xl font-bold ${summary.projectedBalance13Week >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p
+                className={`text-2xl font-bold ${summary.projectedBalance13Week >= 0 ? "text-green-600" : "text-red-600"}`}
+              >
                 {formatCurrency(summary.projectedBalance13Week)}
               </p>
             </div>
@@ -317,8 +320,8 @@ const CashFlowPage: React.FC = () => {
                 key={scenario.id}
                 className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                   selectedScenario === scenario.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-gray-300"
                 }`}
                 onClick={() => handleScenarioChange(scenario.id)}
               >
@@ -333,11 +336,15 @@ const CashFlowPage: React.FC = () => {
                 </div>
                 <p className="text-sm text-gray-600 mb-3">{scenario.description}</p>
                 <div className="flex justify-between text-sm">
-                  <span className={`font-medium ${scenario.impact.balanceChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {scenario.impact.balanceChange >= 0 ? '+' : ''}{formatCurrency(scenario.impact.balanceChange)}
+                  <span
+                    className={`font-medium ${scenario.impact.balanceChange >= 0 ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {scenario.impact.balanceChange >= 0 ? "+" : ""}
+                    {formatCurrency(scenario.impact.balanceChange)}
                   </span>
                   <span className="text-gray-500">
-                    {scenario.impact.runwayChange >= 0 ? '+' : ''}{scenario.impact.runwayChange} weeks
+                    {scenario.impact.runwayChange >= 0 ? "+" : ""}
+                    {scenario.impact.runwayChange} weeks
                   </span>
                 </div>
               </div>
@@ -395,12 +402,16 @@ const CashFlowPage: React.FC = () => {
                       <div className="text-sm font-medium text-red-600">({formatCurrency(week.outflows)})</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-sm font-medium ${week.closingBalance >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                      <div
+                        className={`text-sm font-medium ${week.closingBalance >= 0 ? "text-gray-900" : "text-red-600"}`}
+                      >
                         {formatCurrency(week.closingBalance)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(week.breachRisk)}`}>
+                      <span
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(week.breachRisk)}`}
+                      >
                         {week.breachRisk}
                       </span>
                     </td>

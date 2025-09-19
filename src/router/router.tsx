@@ -1,16 +1,16 @@
 import type { ReactElement, ComponentType } from "react";
 import { createBrowserRouter, RouteObject } from "react-router-dom";
 import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
-import { LandingPage } from "../pages/main/Landing.page";
-import AuthPage from "../pages/Auth.page";
-import XeroCallback from "../pages/XeroCallback.page";
+import { LandingPage } from "../pages/lame/Landing.page";
+import XeroAuthPage from "../pages/auth/xero/XeroAuth.page";
+import XeroCallback from "../pages/auth/xero/XeroCallback.page";
 import TenantSelector from "../components/TenantSelector";
-import DashboardPage from "../pages/dashboard/Dashboard.page";
-import CollectionsPage from "../pages/collections/Collections.page";
-import PaymentsPage from "../pages/payments/Payments.page";
-import ProfitabilityPage from "../pages/profitability/Profitability.page";
-import CashFlowPage from "../pages/cashflow/CashFlow.page";
-import SettingsPage from "../pages/settings/Settings.page";
+import DashboardPage from "../pages/main/Dashboard.page";
+import CollectionsPage from "../pages/main/Collections.page";
+import PaymentsPage from "../pages/main/Payments.page";
+import ProfitabilityPage from "../pages/main/Profitability.page";
+import CashFlowPage from "../pages/main/CashFlow.page";
+import SettingsPage from "../pages/main/Settings.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
@@ -63,7 +63,7 @@ export const lameRoutes: ExtendedRouteObject[] = [
     title: "Auth",
     routeObject: {
       path: `${ROOT_PATH}auth`,
-      element: <AuthPage />,
+      element: <XeroAuthPage />,
       errorElement: <ErrorBoundaryPage />,
     },
   },

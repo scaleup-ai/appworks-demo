@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import showToast from "../utils/toast";
-import { startXeroAuth } from "../apis/xero.api";
+import showToast from "../../../utils/toast";
+import { startXeroAuth } from "../../../apis/xero.api";
 
-const AuthPage: React.FC = () => {
+const XeroAuthPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleXeroAuth = async () => {
@@ -74,4 +74,4 @@ const AuthPage: React.FC = () => {
   );
 };
 
-export default AuthPage;
+export default XeroAuthPage;

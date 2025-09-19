@@ -1,9 +1,9 @@
 import React from "react";
 import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../../store/store";
-import { logout } from "../../store/authSlice";
+import type { AppDispatch } from "../../../store/store";
+import { logout } from "../../../store/authSlice";
 
-const SuccessPage: React.FC = () => {
+const XeroSuccessPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   return (
@@ -22,4 +22,4 @@ const SuccessPage: React.FC = () => {
   );
 };
 
-export default SuccessPage;
+export default XeroSuccessPage;

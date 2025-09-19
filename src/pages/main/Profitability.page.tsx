@@ -210,7 +210,7 @@ const ProfitabilityPage: React.FC = () => {
     >
       <div className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card className="border-l-4 border-l-green-500">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Revenue</p>
@@ -241,7 +241,7 @@ const ProfitabilityPage: React.FC = () => {
         </div>
 
         {/* Additional Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <Card className="border-l-4 border-l-orange-500">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Projects</p>
@@ -259,12 +259,12 @@ const ProfitabilityPage: React.FC = () => {
 
         {/* Time Entry Form Modal */}
         {showTimeEntryForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Add Time Entry</h3>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-md p-6 bg-white rounded-lg">
+              <h3 className="mb-4 text-lg font-semibold">Add Time Entry</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Project Code *</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">Project Code *</label>
                   <select
                     value={newTimeEntry.projectCode}
                     onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, projectCode: e.target.value }))}
@@ -280,7 +280,7 @@ const ProfitabilityPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User *</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">User *</label>
                   <input
                     type="text"
                     value={newTimeEntry.user}
@@ -291,7 +291,7 @@ const ProfitabilityPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">Role</label>
                   <select
                     value={newTimeEntry.role}
                     onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, role: e.target.value }))}
@@ -308,7 +308,7 @@ const ProfitabilityPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">Date *</label>
                     <input
                       type="date"
                       value={newTimeEntry.date}
@@ -318,7 +318,7 @@ const ProfitabilityPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Hours *</label>
+                    <label className="block mb-1 text-sm font-medium text-gray-700">Hours *</label>
                     <input
                       type="number"
                       value={newTimeEntry.hours}
@@ -337,14 +337,14 @@ const ProfitabilityPage: React.FC = () => {
                       type="checkbox"
                       checked={newTimeEntry.billable}
                       onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, billable: e.target.checked }))}
-                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Billable</span>
                   </label>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block mb-1 text-sm font-medium text-gray-700">Description</label>
                   <textarea
                     value={newTimeEntry.description}
                     onChange={(e) => setNewTimeEntry((prev) => ({ ...prev, description: e.target.value }))}
@@ -371,25 +371,25 @@ const ProfitabilityPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Project
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Revenue
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Costs
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Profit
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Margin
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Last Updated
                   </th>
                 </tr>
@@ -449,28 +449,28 @@ const ProfitabilityPage: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Project
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     User
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Role
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Hours
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Value
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Billable
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">
                     Description
                   </th>
                 </tr>
@@ -508,14 +508,14 @@ const ProfitabilityPage: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">{entry.description || "-"}</div>
+                      <div className="max-w-xs text-sm text-gray-900 truncate">{entry.description || "-"}</div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
             {timeEntries.length === 0 && (
-              <div className="text-center py-8 text-gray-500">No time entries recorded yet</div>
+              <div className="py-8 text-center text-gray-500">No time entries recorded yet</div>
             )}
           </div>
         </Card>

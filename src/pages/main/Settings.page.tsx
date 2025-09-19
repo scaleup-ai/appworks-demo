@@ -145,10 +145,10 @@ const SettingsPage: React.FC = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4">Settings</h1>
+      <h1 className="mb-4 text-2xl font-semibold">Settings</h1>
       <section className="mb-6">
         <h2 className="text-lg font-medium">Organization</h2>
-        <p className="text-sm text-gray-600 mb-2">Select which connected Xero organization to use for the app.</p>
+        <p className="mb-2 text-sm text-gray-600">Select which connected Xero organization to use for the app.</p>
         <div className="max-w-md">
           <select value={selected || ""} onChange={handleChange} className="w-full px-3 py-2 border rounded">
             <option value="">(none)</option>
@@ -159,17 +159,17 @@ const SettingsPage: React.FC = () => {
             ))}
           </select>
         </div>
-        <div className="text-sm text-gray-600 mt-2">Connected organizations: {orgs.length}</div>
+        <div className="mt-2 text-sm text-gray-600">Connected organizations: {orgs.length}</div>
       </section>
 
       <section>
         <h2 className="text-lg font-medium">Xero Integration</h2>
-        <p className="text-sm text-gray-600 mb-2">Current integration status and limits returned by the backend.</p>
-        <div className="bg-gray-50 p-3 rounded max-w-2xl">
+        <p className="mb-2 text-sm text-gray-600">Current integration status and limits returned by the backend.</p>
+        <div className="max-w-2xl p-3 rounded bg-gray-50">
           {loading ? (
             <div>Loading status…</div>
           ) : (
-            <pre className="text-xs overflow-auto">
+            <pre className="overflow-auto text-xs">
               {JSON.stringify(status ?? { organisations: orgs.length }, null, 2)}
             </pre>
           )}
