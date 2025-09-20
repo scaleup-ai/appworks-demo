@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSetAuth } from "../../store/hooks";
 import AppLayout from "../layouts/App.layout";
 import axiosClient from "../../apis/axios-client";
-import { NavTenant } from "../../store/store";
+import { NavTenant } from "../../store/auth.store";
 
 type Org = {
   id?: string;

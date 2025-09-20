@@ -1,0 +1,35 @@
+import { create } from 'zustand';
+export type NavTenant = {
+  tenantId: string;
+  tenantName?: string;
+  tenantType?: string;
+  clientId?: string;
+  organisationNumber?: string;
+  createdAt?: string;
+  displayLabel?: string;
+};
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  xeroConnected: boolean;
+  selectedTenantId: string | null;
+  tenants: NavTenant[];
+  setAuth: (auth: Partial<AuthState>) => void;
+  setSelectedTenantId: (tenantId: string) => void;
+  xeroLoading: boolean;
+  emailLoading: boolean;
+  paymentLoading: boolean;
+}
+// ...existing code...
+
+export const useAuthStore = create<AuthState>((set) => ({
+  isAuthenticated: false,
+  xeroConnected: false,
+  selectedTenantId: null,
+  tenants: [],
+  setAuth: (auth: Partial<AuthState>) => set((state: AuthState) => ({ ...state, ...auth })),
+  setSelectedTenantId: (tenantId: string) => set((state: AuthState) => ({ ...state, selectedTenantId: tenantId })),
+  xeroLoading: false,
+  emailLoading: false,
+  paymentLoading: false,
+}));

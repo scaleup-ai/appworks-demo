@@ -1,4 +1,5 @@
-import { AuthState, useAuthStore } from './store';
+import { AuthState, useAuthStore } from './auth.store';
+import { useCollectionsStore } from './collections.store';
 
 export const useIsAuthenticated = () => useAuthStore((state: AuthState) => state.isAuthenticated);
 export const useXeroConnected = () => useAuthStore((state: AuthState) => state.xeroConnected);
@@ -9,6 +10,6 @@ export const useSetSelectedTenantId = () => useAuthStore((state: AuthState) => s
 
 // Loading state hooks for DashboardLayout
 export const useXeroLoading = () => useAuthStore((state: AuthState) => state.xeroLoading);
-export const useCollectionsLoading = () => useAuthStore((state: AuthState) => state.collectionsLoading);
+export const useCollectionsLoading = () => useCollectionsStore((state) => state.collectionsLoading);
 export const useEmailLoading = () => useAuthStore((state: AuthState) => state.emailLoading);
 export const usePaymentLoading = () => useAuthStore((state: AuthState) => state.paymentLoading);

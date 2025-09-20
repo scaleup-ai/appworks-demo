@@ -135,12 +135,12 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
           className="px-2 py-1 text-sm bg-white border rounded"
           aria-label="Select organization"
         >
-          {(tenants || []).filter((t) => t && String(t.tenantId || "").length > 0).length === 0 && (
+          {(tenants || []).filter((t: any) => t && String(t.tenantId || "").length > 0).length === 0 && (
             <option value="">Select org</option>
           )}
           {(tenants || [])
-            .filter((t) => t && String(t.tenantId || "").length > 0)
-            .map((t) => {
+            .filter((t: any) => t && String(t.tenantId || "").length > 0)
+            .map((t: any) => {
               const tid = String(t.tenantId || "");
               const orgNo = t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "";
               const shortId = tid ? String(tid).slice(0, 8) : "";
