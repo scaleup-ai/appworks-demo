@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useXeroConnected, useSelectedTenantId } from "../../store/hooks";
+import { useXeroConnected, useSelectedTenantId, useCollectionsLoading } from "../../store/hooks";
+import { useCollectionsStore } from "../../store/collections.store";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -40,6 +41,7 @@ const CollectionsPage: React.FC = () => {
     scheduledReminders: 0,
     sentReminders: 0,
   });
+  const collectionsLoading = useCollectionsLoading();
   const [loading, setLoading] = useState(true);
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
   const [generatingEmails, setGeneratingEmails] = useState(false);
@@ -52,8 +54,20 @@ const CollectionsPage: React.FC = () => {
       const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
       const invoiceData = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 
-      // Load scheduled reminders
-      const scheduledReminders = await collectionsApi.getScheduledReminders();
+      // Load scheduled reminders via Zustand
+      let scheduledReminders: any[] = [];
+      await new Promise<void>((resolve, reject) => {
+        useCollectionsStore.getState().getScheduledReminders(
+          (res) => {
+            scheduledReminders = res;
+            resolve();
+          },
+          (err) => {
+            scheduledReminders = [];
+            reject(err);
+          }
+        );
+      });
 
       // Process invoices and calculate aging
       const now = new Date();
@@ -112,8 +126,14 @@ const CollectionsPage: React.FC = () => {
 
   const handleTriggerScan = async () => {
     try {
-      await collectionsApi.triggerScan();
-      showToast("Collections scan triggered successfully", { type: "success" });
+      await useCollectionsStore.getState().triggerScan(
+        () => {
+          showToast("Collections scan triggered successfully", { type: "success" });
+        },
+        () => {
+          showToast("Failed to trigger collections scan", { type: "error" });
+        }
+      );
       await loadCollectionsData(); // Refresh data
     } catch {
       showToast("Failed to trigger collections scan", { type: "error" });
@@ -258,7 +278,7 @@ const CollectionsPage: React.FC = () => {
     );
   }
 
-  if (loading) {
+  if (loading || collectionsLoading) {
     return (
       <DashboardLayout title="Collections">
         <div className="flex items-center justify-center py-12">
