@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 export type NavTenant = {
   tenantId: string;
   tenantName?: string;
@@ -20,16 +21,28 @@ export interface AuthState {
   emailLoading: boolean;
   paymentLoading: boolean;
 }
-// ...existing code...
 
-export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: false,
-  xeroConnected: false,
-  selectedTenantId: null,
-  tenants: [],
-  setAuth: (auth: Partial<AuthState>) => set((state: AuthState) => ({ ...state, ...auth })),
-  setSelectedTenantId: (tenantId: string) => set((state: AuthState) => ({ ...state, selectedTenantId: tenantId })),
-  xeroLoading: false,
-  emailLoading: false,
-  paymentLoading: false,
-}));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      isAuthenticated: false,
+      xeroConnected: false,
+      selectedTenantId: null,
+      tenants: [],
+      setAuth: (auth) => set((state) => ({ ...state, ...auth })),
+      setSelectedTenantId: (tenantId) => set((state) => ({ ...state, selectedTenantId: tenantId })),
+      xeroLoading: false,
+      emailLoading: false,
+      paymentLoading: false,
+    }),
+    {
+      name: 'auth-store',
+      partialize: (state) => ({
+        isAuthenticated: state.isAuthenticated,
+        xeroConnected: state.xeroConnected,
+        selectedTenantId: state.selectedTenantId,
+        tenants: state.tenants,
+      }),
+    }
+  )
+);
