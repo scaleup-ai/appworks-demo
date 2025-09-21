@@ -2,13 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { handleOAuthRedirect } from "../../../apis/xero.api";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
-import { useSetAuth } from "../../../store/hooks";
+import { useSetAuth, useXeroConnected, useSelectedTenantId } from "../../../store/hooks";
 import showToast from "../../../utils/toast";
 
 const XeroCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const setAuth = useSetAuth();
+  const xeroConnected = useXeroConnected();
+  const selectedTenantId = useSelectedTenantId();
   const [processing, setProcessing] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -57,9 +59,7 @@ const XeroCallback: React.FC = () => {
               localStorage.setItem("xeroConnected", "true");
               setAuth({ selectedTenantId: tid, xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
-              setTimeout(() => {
-                navigate("/dashboard", { replace: true });
-              }, 200);
+              // Navigation will be handled by state watcher below
               return;
             }
           }
@@ -70,9 +70,7 @@ const XeroCallback: React.FC = () => {
           localStorage.setItem("xeroConnected", "true");
           setAuth({ xeroConnected: true });
           showToast("Successfully connected to Xero!", { type: "success" });
-          setTimeout(() => {
-            navigate("/dashboard", { replace: true });
-          }, 200);
+          // Navigation will be handled by state watcher below
           return;
         }
         if (response.status === 409) {
@@ -85,9 +83,8 @@ const XeroCallback: React.FC = () => {
             if (isConnected) {
               localStorage.setItem("xeroConnected", "true");
               setAuth({ xeroConnected: true });
-              setTimeout(() => {
-                navigate("/dashboard", { replace: true });
-              }, 200);
+              showToast("Successfully connected to Xero!", { type: "success" });
+              // Navigation will be handled by state watcher below
               return;
             }
           } catch {}
@@ -122,7 +119,14 @@ const XeroCallback: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [searchParams, navigate]);
+  }, [searchParams, navigate, setAuth]);
+
+  // Watch for Zustand state changes and redirect only when both are set
+  useEffect(() => {
+    if (xeroConnected && selectedTenantId) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [xeroConnected, selectedTenantId, navigate]);
 
   if (processing) {
     return (
