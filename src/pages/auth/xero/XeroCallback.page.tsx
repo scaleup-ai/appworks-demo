@@ -123,9 +123,7 @@ const XeroCallback: React.FC = () => {
 
   // Watch for Zustand state changes and redirect only when both are set
   useEffect(() => {
-    const lsConnected = localStorage.getItem("xeroConnected") === "true";
-    const lsTenantId = localStorage.getItem("selectedTenantId");
-    if ((xeroConnected && selectedTenantId) || (lsConnected && lsTenantId)) {
+    if (xeroConnected && selectedTenantId) {
       navigate("/dashboard", { replace: true });
     }
   }, [xeroConnected, selectedTenantId, navigate]);

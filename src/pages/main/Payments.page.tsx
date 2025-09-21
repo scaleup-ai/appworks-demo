@@ -142,7 +142,7 @@ const PaymentsPage: React.FC = () => {
   const handleRunBulkReconciliation = async () => {
     try {
       // Get some invoices to create test payments for (scoped to tenant)
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      const tenantId = selectedTenantId;
       const invoices = await accountsReceivablesApi.listInvoices({ limit: 5, tenantId: tenantId || undefined });
 
       if (invoices.length === 0) {
@@ -186,8 +186,7 @@ const PaymentsPage: React.FC = () => {
   };
 
   useEffect(() => {
-    const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
-    if (!tenantId) {
+    if (!selectedTenantId) {
       navigate("/select-tenant", { replace: true });
       return;
     }

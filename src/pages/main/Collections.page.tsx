@@ -53,7 +53,7 @@ const CollectionsPage: React.FC = () => {
       setLoading(true);
 
       // Load invoices scoped to selected tenant (store first, fallback to localStorage)
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      const tenantId = selectedTenantId;
       const invoiceData = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 
       // Load scheduled reminders via Zustand
@@ -211,8 +211,7 @@ const CollectionsPage: React.FC = () => {
 
   useEffect(() => {
     if (xeroConnected) {
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
-      if (!tenantId) {
+      if (!selectedTenantId) {
         navigate("/select-tenant", { replace: true });
         return;
       }

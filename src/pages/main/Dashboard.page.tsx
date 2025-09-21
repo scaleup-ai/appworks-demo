@@ -40,7 +40,7 @@ const DashboardPage: React.FC = () => {
   // Zustand hydration gate
   const authStore = useAuthStore();
   const isHydrated = useStore(useAuthStore, (state) => !!state.setAuth);
-  const xeroConnected = useXeroConnected() || localStorage.getItem("xeroConnected") === "true";
+  const xeroConnected = useXeroConnected();
   const selectedTenantId = useSelectedTenantId();
   const setSelectedTenantId = useSetSelectedTenantId();
   const [stats, setStats] = useState<DashboardStats>({
@@ -73,8 +73,8 @@ const DashboardPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load invoices data scoped to selected tenant (store first, fallback to localStorage)
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      // Load invoices data scoped to selected tenant (Zustand only)
+      const tenantId = selectedTenantId;
       const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 
       // Load scheduled collections via Zustand

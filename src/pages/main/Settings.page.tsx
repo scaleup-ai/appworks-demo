@@ -19,11 +19,7 @@ const SettingsPage: React.FC = () => {
   const setAuth = useSetAuth();
   const [orgs, setOrgs] = useState<Org[]>([]);
   const [selected, setSelected] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem("selectedTenantId") || null;
-    } catch {
-      return null;
-    }
+    return null;
   });
   const [status, setStatus] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
