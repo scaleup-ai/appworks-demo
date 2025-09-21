@@ -58,7 +58,7 @@ const XeroCallback: React.FC = () => {
               setAuth({ selectedTenantId: tid, xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
               setTimeout(() => {
-                window.location.href = "/dashboard";
+                navigate("/dashboard", { replace: true });
               }, 200);
               return;
             }
@@ -71,7 +71,7 @@ const XeroCallback: React.FC = () => {
           setAuth({ xeroConnected: true });
           showToast("Successfully connected to Xero!", { type: "success" });
           setTimeout(() => {
-            window.location.href = "/dashboard";
+            navigate("/dashboard", { replace: true });
           }, 200);
           return;
         }
@@ -86,7 +86,7 @@ const XeroCallback: React.FC = () => {
               localStorage.setItem("xeroConnected", "true");
               setAuth({ xeroConnected: true });
               setTimeout(() => {
-                window.location.href = "/dashboard";
+                navigate("/dashboard", { replace: true });
               }, 200);
               return;
             }

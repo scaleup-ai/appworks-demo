@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useStore } from "zustand";
 import {
   useXeroConnected,
   useSelectedTenantId,
@@ -7,7 +9,6 @@ import {
 } from "../../store/hooks";
 import { useCollectionsStore } from "../../store/collections.store";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
-import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
 import * as paymentApi from "../../apis/payment.api";
 import Button from "../../components/ui/Button";
@@ -16,6 +17,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 // Zustand store hooks used instead of Redux
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
+import { useAuthStore } from "../../store/auth.store";
 
 interface DashboardStats {
   totalInvoices: number;
@@ -34,7 +36,10 @@ interface AgentStatus {
 }
 
 const DashboardPage: React.FC = () => {
-  // Fallback to localStorage for xeroConnected if Zustand is not ready
+  const navigate = useNavigate();
+  // Zustand hydration gate
+  const authStore = useAuthStore();
+  const isHydrated = useStore(useAuthStore, (state) => !!state.setAuth);
   const xeroConnected = useXeroConnected() || localStorage.getItem("xeroConnected") === "true";
   const selectedTenantId = useSelectedTenantId();
   const setSelectedTenantId = useSetSelectedTenantId();
@@ -181,6 +186,7 @@ const DashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
+    if (!isHydrated) return;
     initializeAgents();
     if (xeroConnected) {
       const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || "";
@@ -198,7 +204,7 @@ const DashboardPage: React.FC = () => {
       }
       setLoading(false);
     }
-  }, [xeroConnected, selectedTenantId]);
+  }, [xeroConnected, selectedTenantId, isHydrated]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -220,7 +226,7 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  if (loading || collectionsLoading) {
+  if (!isHydrated || loading || collectionsLoading) {
     return (
       <DashboardLayout title="Dashboard">
         <div className="flex items-center justify-center py-12">
@@ -275,7 +281,7 @@ const DashboardPage: React.FC = () => {
             Refresh Data
           </Button>
           {!xeroConnected && (
-            <Button onClick={() => (window.location.href = "/auth")} size="sm">
+            <Button onClick={() => navigate("/auth", { replace: true })} size="sm">
               Connect Xero
             </Button>
           )}

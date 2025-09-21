@@ -1,119 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useXeroConnected } from "../../store/hooks";
+import { useCashFlowStore } from "../../store/cashflow.store";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
-import showToast from "../../utils/toast";
-
-interface CashFlowForecast {
-  week: number;
-  startDate: string;
-  endDate: string;
-  openingBalance: number;
-  inflows: number;
-  outflows: number;
-  closingBalance: number;
-  breachRisk: "low" | "medium" | "high";
-}
-
-interface CashFlowSummary {
-  currentBalance: number;
-  projectedBalance13Week: number;
-  totalInflows13Week: number;
-  totalOutflows13Week: number;
-  breachWeeks: number;
-  runway: number; // weeks
-}
-
-interface Scenario {
-  id: string;
-  name: string;
-  description: string;
-  assumptions: {
-    collectionImprovement?: number; // percentage
-    paymentDelay?: number; // days
-    newRevenue?: number; // amount
-    costReduction?: number; // percentage
-  };
-  impact: {
-    balanceChange: number;
-    runwayChange: number;
-  };
-}
 
 const CashFlowPage: React.FC = () => {
+  const navigate = useNavigate();
   const xeroConnected = useXeroConnected();
-  const [forecast, setForecast] = useState<CashFlowForecast[]>([]);
-  const [summary, setSummary] = useState<CashFlowSummary>({
-    currentBalance: 0,
-    projectedBalance13Week: 0,
-    totalInflows13Week: 0,
-    totalOutflows13Week: 0,
-    breachWeeks: 0,
-    runway: 0,
-  });
-  const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedScenario, setSelectedScenario] = useState<string>("base");
-
-  const loadCashFlowData = async () => {
-    try {
-      setLoading(true);
-      // Fetch cash flow data from backend API
-      const res = await fetch("/api/v1/cashflow");
-      if (!res.ok) throw new Error("Failed to fetch cash flow data");
-      const data = await res.json();
-      setForecast(data.forecast || []);
-      setSummary(
-        data.summary || {
-          currentBalance: 0,
-          projectedBalance13Week: 0,
-          totalInflows13Week: 0,
-          totalOutflows13Week: 0,
-          breachWeeks: 0,
-          runway: 0,
-        }
-      );
-      setScenarios(data.scenarios || []);
-    } catch (error) {
-      console.error("Failed to load cash flow data:", error);
-      showToast("Failed to load cash flow data", { type: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGenerateForecast = async () => {
-    showToast("Regenerating 13-week cash flow forecast...", { type: "info" });
-    await loadCashFlowData();
-    showToast("Cash flow forecast updated", { type: "success" });
-  };
-
-  const handleExportForecast = () => {
-    const exportData = {
-      summary,
-      forecast,
-      scenarios,
-      generatedAt: new Date().toISOString(),
-      selectedScenario,
-    };
-
-    console.log("Cash flow forecast export:", exportData);
-    showToast("Cash flow forecast exported (check console)", { type: "success" });
-  };
-
-  const handleScenarioChange = (scenarioId: string) => {
-    setSelectedScenario(scenarioId);
-    const scenario = scenarios.find((s) => s.id === scenarioId);
-    if (scenario) {
-      showToast(`Viewing ${scenario.name} scenario`, { type: "info" });
-    }
-  };
+  const { forecast, summary, scenarios, loading, selectedScenario, loadCashFlowData, setSelectedScenario } =
+    useCashFlowStore();
 
   useEffect(() => {
     loadCashFlowData();
-  }, []);
+  }, [loadCashFlowData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -137,6 +39,18 @@ const CashFlowPage: React.FC = () => {
     }
   };
 
+  const handleExportForecast = () => {
+    const exportData = {
+      summary,
+      forecast,
+      scenarios,
+      generatedAt: new Date().toISOString(),
+      selectedScenario,
+    };
+    console.log("Cash flow forecast export:", exportData);
+    // Optionally: show toast
+  };
+
   if (!xeroConnected) {
     return (
       <DashboardLayout title="Cash Flow Management">
@@ -149,7 +63,7 @@ const CashFlowPage: React.FC = () => {
             <p className="mb-6 text-gray-600">
               Connect your Xero account to access cash flow forecasting and treasury data.
             </p>
-            <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
+            <Button onClick={() => navigate("/auth", { replace: true })}>Connect Xero</Button>
           </div>
         </Card>
       </DashboardLayout>
@@ -174,7 +88,7 @@ const CashFlowPage: React.FC = () => {
           <Button onClick={loadCashFlowData} variant="secondary" size="sm">
             Refresh
           </Button>
-          <Button onClick={handleGenerateForecast} size="sm">
+          <Button onClick={loadCashFlowData} size="sm">
             Regenerate Forecast
           </Button>
           <Button onClick={handleExportForecast} variant="secondary" size="sm">
@@ -230,14 +144,14 @@ const CashFlowPage: React.FC = () => {
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:border-gray-300"
                 }`}
-                onClick={() => handleScenarioChange(scenario.id)}
+                onClick={() => setSelectedScenario(scenario.id)}
               >
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-gray-900">{scenario.name}</h4>
                   <input
                     type="radio"
                     checked={selectedScenario === scenario.id}
-                    onChange={() => handleScenarioChange(scenario.id)}
+                    onChange={() => setSelectedScenario(scenario.id)}
                     className="w-4 h-4 text-blue-600"
                   />
                 </div>

@@ -11,9 +11,9 @@ const XeroAuthPage: React.FC = () => {
       // Start Xero OAuth flow (backend handles creds from env)
       const authResponse = await startXeroAuth("json");
 
-      if ("url" in authResponse && authResponse.url) {
-        // Redirect to Xero OAuth
-        window.location.href = authResponse.url;
+      if (typeof authResponse === "object" && "url" in authResponse && (authResponse as any).url) {
+        // External OAuth redirect, keep window.location.href
+        window.location.href = (authResponse as any).url;
       } else {
         throw new Error("No OAuth URL received");
       }

@@ -35,6 +35,7 @@ export const LandingPage: React.FC = () => {
                     try {
                       capturePostAuthRedirect();
                     } catch {}
+                    // External OAuth redirect, keep window.location.href
                     window.location.href = getXeroAuthUrl();
                   })
                 }

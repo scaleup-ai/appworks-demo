@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ApiError, CollectionsReminderEvent } from '../types/api.types';
+import { startCollections, stopCollections, triggerScan, getScheduledReminders } from '../apis/collections.api';
 
 export interface CollectionsState {
   collectionsLoading: boolean;
@@ -14,7 +15,6 @@ export const useCollectionsStore = create<CollectionsState>((set) => ({
   startCollections: async (onSuccess, onError) => {
     set((state) => ({ ...state, collectionsLoading: true }));
     try {
-      const { startCollections } = await import('../apis/collections.api');
       await startCollections();
       set((state) => ({ ...state, collectionsLoading: false }));
       onSuccess?.();
@@ -26,7 +26,6 @@ export const useCollectionsStore = create<CollectionsState>((set) => ({
   stopCollections: async (onSuccess, onError) => {
     set((state) => ({ ...state, collectionsLoading: true }));
     try {
-      const { stopCollections } = await import('../apis/collections.api');
       await stopCollections();
       set((state) => ({ ...state, collectionsLoading: false }));
       onSuccess?.();
@@ -38,7 +37,6 @@ export const useCollectionsStore = create<CollectionsState>((set) => ({
   triggerScan: async (onSuccess, onError) => {
     set((state) => ({ ...state, collectionsLoading: true }));
     try {
-      const { triggerScan } = await import('../apis/collections.api');
       const res = await triggerScan();
       set((state) => ({ ...state, collectionsLoading: false }));
       onSuccess?.(res);
@@ -50,7 +48,6 @@ export const useCollectionsStore = create<CollectionsState>((set) => ({
   getScheduledReminders: async (onSuccess, onError) => {
     set((state) => ({ ...state, collectionsLoading: true }));
     try {
-      const { getScheduledReminders } = await import('../apis/collections.api');
       const res = await getScheduledReminders();
       set((state) => ({ ...state, collectionsLoading: false }));
       onSuccess?.(res);

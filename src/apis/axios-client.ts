@@ -55,9 +55,10 @@ axiosClient.interceptors.response.use(
 
       // For protected routes, redirect to login
       const currentPath = window.location.pathname;
+      window.location.href = '/login';
       if (currentPath !== '/login' && currentPath !== '/') {
-        // Just redirect to login page for now
-        window.location.href = '/login';
+        // Use SPA navigation for internal login route
+        window.location.replace('/login');
       }
     }
 

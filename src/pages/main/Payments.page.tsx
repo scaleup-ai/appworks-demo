@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useXeroConnected, useSelectedTenantId } from "../../store/hooks";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card";
@@ -29,6 +30,7 @@ interface PaymentSummary {
 }
 
 const PaymentsPage: React.FC = () => {
+  const navigate = useNavigate();
   const xeroConnected = useXeroConnected();
   const selectedTenantId = useSelectedTenantId();
   const [reconciliationTests, setReconciliationTests] = useState<PaymentReconciliationTest[]>([]);
@@ -186,7 +188,7 @@ const PaymentsPage: React.FC = () => {
   useEffect(() => {
     const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
     if (!tenantId) {
-      window.location.href = "/select-tenant";
+      navigate("/select-tenant", { replace: true });
       return;
     }
     loadPaymentData();
@@ -222,7 +224,7 @@ const PaymentsPage: React.FC = () => {
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">Xero Connection Required</h3>
             <p className="text-gray-600 mb-6">Connect your Xero account to access payment reconciliation features.</p>
-            <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
+            <Button onClick={() => navigate("/auth", { replace: true })}>Connect Xero</Button>
           </div>
         </Card>
       </DashboardLayout>

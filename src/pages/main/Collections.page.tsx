@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useXeroConnected, useSelectedTenantId, useCollectionsLoading } from "../../store/hooks";
 import { useCollectionsStore } from "../../store/collections.store";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -31,6 +32,7 @@ interface CollectionsSummary {
 }
 
 const CollectionsPage: React.FC = () => {
+  const navigate = useNavigate();
   const xeroConnected = useXeroConnected();
   const selectedTenantId = useSelectedTenantId();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -211,7 +213,7 @@ const CollectionsPage: React.FC = () => {
     if (xeroConnected) {
       const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
       if (!tenantId) {
-        window.location.href = "/select-tenant";
+        navigate("/select-tenant", { replace: true });
         return;
       }
       loadCollectionsData();
@@ -271,7 +273,7 @@ const CollectionsPage: React.FC = () => {
             </div>
             <h3 className="mb-2 text-lg font-medium text-gray-900">Xero Connection Required</h3>
             <p className="mb-6 text-gray-600">Connect your Xero account to access collections and invoice data.</p>
-            <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
+            <Button onClick={() => navigate("/auth", { replace: true })}>Connect Xero</Button>
           </div>
         </Card>
       </DashboardLayout>

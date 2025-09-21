@@ -31,6 +31,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
       } catch (err) {
         console.warn("capturePostAuthRedirect failed", err);
       }
+      // External OAuth redirect, keep window.location.href
       window.location.href = getXeroAuthUrl();
     } catch (err) {
       console.warn("startXeroAuth failed", err);
