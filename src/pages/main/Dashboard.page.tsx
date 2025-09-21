@@ -186,25 +186,25 @@ const DashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
+    // Only proceed once Zustand is hydrated
     if (!isHydrated) return;
     initializeAgents();
-    if (xeroConnected) {
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || "";
-      if (!tenantId) {
-        setShowTenantPrompt(true);
-        setLoading(false);
-        return;
-      }
-      loadDashboardData();
-    } else {
-      // If localStorage says we're connected, force reload to sync Zustand
-      if (localStorage.getItem("xeroConnected") === "true") {
-        window.location.reload();
-        return;
-      }
-      setLoading(false);
+    // Use Zustand as the single source of truth for auth state
+    if (!xeroConnected) {
+      // If not connected, redirect to /auth
+      navigate("/auth", { replace: true });
+      return;
     }
-  }, [xeroConnected, selectedTenantId, isHydrated]);
+    if (!selectedTenantId) {
+      setShowTenantPrompt(true);
+      setLoading(false);
+      return;
+    }
+    loadDashboardData();
+    // Consideration for future JWT-based auth:
+    // If using JWT, validate token here and refresh if expired.
+    // For now, rely on Zustand state only.
+  }, [xeroConnected, selectedTenantId, isHydrated, navigate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
