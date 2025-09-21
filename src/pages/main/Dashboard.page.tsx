@@ -34,7 +34,8 @@ interface AgentStatus {
 }
 
 const DashboardPage: React.FC = () => {
-  const xeroConnected = useXeroConnected();
+  // Fallback to localStorage for xeroConnected if Zustand is not ready
+  const xeroConnected = useXeroConnected() || localStorage.getItem("xeroConnected") === "true";
   const selectedTenantId = useSelectedTenantId();
   const setSelectedTenantId = useSetSelectedTenantId();
   const [stats, setStats] = useState<DashboardStats>({
@@ -190,6 +191,11 @@ const DashboardPage: React.FC = () => {
       }
       loadDashboardData();
     } else {
+      // If localStorage says we're connected, force reload to sync Zustand
+      if (localStorage.getItem("xeroConnected") === "true") {
+        window.location.reload();
+        return;
+      }
       setLoading(false);
     }
   }, [xeroConnected, selectedTenantId]);

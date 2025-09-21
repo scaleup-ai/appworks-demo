@@ -54,9 +54,12 @@ const XeroCallback: React.FC = () => {
             const tid = t.tenantId || t.tenant_id || "";
             if (tid) {
               localStorage.setItem("selectedTenantId", tid);
-              setAuth({ selectedTenantId: tid });
+              localStorage.setItem("xeroConnected", "true");
+              setAuth({ selectedTenantId: tid, xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
-              setTimeout(() => window.location.replace("/dashboard"), 200);
+              setTimeout(() => {
+                window.location.href = "/dashboard";
+              }, 200);
               return;
             }
           }
@@ -64,9 +67,12 @@ const XeroCallback: React.FC = () => {
             navigate("/select-tenant", { state: { tenants } });
             return;
           }
+          localStorage.setItem("xeroConnected", "true");
           setAuth({ xeroConnected: true });
           showToast("Successfully connected to Xero!", { type: "success" });
-          navigate("/dashboard");
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 200);
           return;
         }
         if (response.status === 409) {
@@ -77,8 +83,11 @@ const XeroCallback: React.FC = () => {
             // Check connection status using statusResp directly
             const isConnected = statusResp.connected === true || Boolean(statusResp.tenantId);
             if (isConnected) {
+              localStorage.setItem("xeroConnected", "true");
               setAuth({ xeroConnected: true });
-              navigate("/dashboard");
+              setTimeout(() => {
+                window.location.href = "/dashboard";
+              }, 200);
               return;
             }
           } catch {}
