@@ -8,6 +8,11 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import { downloadJson, formatCurrency } from "../../handlers/helper.handler";
+import {
+  makeHandleGenerateForecast,
+  makeHandleExportForecast,
+  makeHandleScenarioChange,
+} from "../../handlers/cashflow.handler";
 
 interface CashFlowForecast {
   week: number;
@@ -88,32 +93,15 @@ const CashFlowPage: React.FC = () => {
     }
   };
 
-  const handleGenerateForecast = async () => {
-    showToast("Regenerating 13-week cash flow forecast...", { type: "info" });
-    await loadCashFlowData();
-    showToast("Cash flow forecast updated", { type: "success" });
-  };
-
-  const handleExportForecast = () => {
-    const exportData = {
-      summary,
-      forecast,
-      scenarios,
-      generatedAt: new Date().toISOString(),
-      selectedScenario,
-    };
-
-    console.log("Cash flow forecast export:", exportData);
-    showToast("Cash flow forecast exported (check console)", { type: "success" });
-  };
-
-  const handleScenarioChange = (scenarioId: string) => {
-    setSelectedScenario(scenarioId);
-    const scenario = scenarios.find((s) => s.id === scenarioId);
-    if (scenario) {
-      showToast(`Viewing ${scenario.name} scenario`, { type: "info" });
-    }
-  };
+  const handleGenerateForecast = makeHandleGenerateForecast(loadCashFlowData);
+  const handleExportForecast = makeHandleExportForecast(() => ({
+    summary,
+    forecast,
+    scenarios,
+    generatedAt: new Date().toISOString(),
+    selectedScenario,
+  }));
+  const handleScenarioChange = makeHandleScenarioChange(setSelectedScenario, () => scenarios);
 
   useEffect(() => {
     loadCashFlowData();

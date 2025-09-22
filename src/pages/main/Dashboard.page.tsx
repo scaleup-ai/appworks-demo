@@ -11,6 +11,12 @@ import { RootState } from "../../store/store";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { copyToClipboard, downloadJson } from "../../handlers/helper.handler";
+import {
+  makeHandleRefreshData,
+  makeHandleTriggerCollectionsScan,
+  makeHandleTestEmailGeneration,
+  makeHandleTestPaymentReconciliation,
+} from "../../handlers/dashboard.handler";
 
 interface DashboardStats {
   totalInvoices: number;
@@ -97,62 +103,10 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleRefreshData = async () => {
-    setRefreshing(true);
-    try {
-      await loadDashboardData();
-      showToast("Dashboard data refreshed", { type: "success" });
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleTriggerCollectionsScan = async () => {
-    try {
-      await collectionsApi.triggerScan();
-      showToast("Collections scan triggered", { type: "success" });
-      await loadDashboardData(); // Refresh data
-    } catch {
-      showToast("Failed to trigger collections scan", { type: "error" });
-    }
-  };
-
-  const handleTestEmailGeneration = async () => {
-    try {
-      const testRequest = {
-        invoiceId: "test-invoice-001",
-        amount: 1500,
-        // keep payload minimal; let backend determine dates when generating drafts
-        stage: "overdue_stage_1",
-        customerName: "Test Customer Ltd",
-      };
-
-      const draft = await emailApi.generateEmailDraft(testRequest);
-      showToast("Email draft generated successfully", { type: "success" });
-
-      // Show preview in console for now
-      console.log("Generated email draft:", draft);
-    } catch {
-      showToast("Failed to generate email draft", { type: "error" });
-    }
-  };
-
-  const handleTestPaymentReconciliation = async () => {
-    try {
-      const testRequest = {
-        paymentId: "test-payment-001",
-        amount: 1500,
-        reference: "INV-001",
-      };
-
-      const result = await paymentApi.reconcilePayment(testRequest);
-      showToast(`Payment reconciliation: ${result.matched ? "Matched" : "Unmatched"}`, {
-        type: result.matched ? "success" : "warning",
-      });
-    } catch {
-      showToast("Failed to reconcile payment", { type: "error" });
-    }
-  };
+  const handleRefreshData = makeHandleRefreshData(loadDashboardData, setRefreshing);
+  const handleTriggerCollectionsScan = makeHandleTriggerCollectionsScan(collectionsApi.triggerScan, loadDashboardData);
+  const handleTestEmailGeneration = makeHandleTestEmailGeneration(emailApi.generateEmailDraft);
+  const handleTestPaymentReconciliation = makeHandleTestPaymentReconciliation(paymentApi.reconcilePayment);
 
   useEffect(() => {
     initializeAgents();

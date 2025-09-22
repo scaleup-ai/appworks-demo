@@ -8,6 +8,12 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
+import {
+  makeHandleTriggerScan,
+  makeHandleGenerateEmails,
+  makeHandleSelectInvoice,
+  makeHandleSelectAll,
+} from "../../handlers/collections.handler";
 import * as emailApi from "../../apis/email.api";
 
 interface Invoice {
@@ -110,82 +116,16 @@ const CollectionsPage: React.FC = () => {
     }
   };
 
-  const handleTriggerScan = async () => {
-    try {
-      await collectionsApi.triggerScan();
-      showToast("Collections scan triggered successfully", { type: "success" });
-      await loadCollectionsData(); // Refresh data
-    } catch {
-      showToast("Failed to trigger collections scan", { type: "error" });
-    }
-  };
-
-  const handleGenerateEmails = async () => {
-    if (selectedInvoices.size === 0) {
-      showToast("Please select invoices to generate emails for", { type: "warning" });
-      return;
-    }
-
-    setGeneratingEmails(true);
-    try {
-      const selectedInvoiceData = invoices.filter((inv) => selectedInvoices.has(inv.invoiceId));
-      const emailPromises = selectedInvoiceData.map(async (invoice) => {
-        try {
-          const draft = await emailApi.generateEmailDraft({
-            invoiceId: invoice.invoiceId,
-            amount: invoice.amount,
-            dueDate: invoice.dueDate || undefined,
-            stage: invoice.reminderStage || "overdue_stage_1",
-            customerName: `Customer for ${invoice.number}`,
-          });
-          return { invoice, draft, success: true };
-        } catch (error) {
-          return { invoice, error, success: false };
-        }
-      });
-
-      const results = await Promise.all(emailPromises);
-      const successful = results.filter((r) => r.success).length;
-      const failed = results.filter((r) => !r.success).length;
-
-      if (successful > 0) {
-        showToast(`Generated ${successful} email drafts successfully`, { type: "success" });
-        console.log(
-          "Generated email drafts:",
-          results.filter((r) => r.success)
-        );
-      }
-      if (failed > 0) {
-        showToast(`Failed to generate ${failed} email drafts`, { type: "warning" });
-      }
-
-      setSelectedInvoices(new Set()); // Clear selection
-    } catch (error) {
-      console.error("Failed to generate email drafts:", error);
-      showToast("Failed to generate email drafts", { type: "error" });
-    } finally {
-      setGeneratingEmails(false);
-    }
-  };
-
-  const handleSelectInvoice = (invoiceId: string) => {
-    const newSelection = new Set(selectedInvoices);
-    if (newSelection.has(invoiceId)) {
-      newSelection.delete(invoiceId);
-    } else {
-      newSelection.add(invoiceId);
-    }
-    setSelectedInvoices(newSelection);
-  };
-
-  const handleSelectAll = () => {
-    const overdueInvoices = invoices.filter((inv) => inv.status !== "PAID" && (inv.daysPastDue || 0) > 0);
-    if (selectedInvoices.size === overdueInvoices.length) {
-      setSelectedInvoices(new Set());
-    } else {
-      setSelectedInvoices(new Set(overdueInvoices.map((inv) => inv.invoiceId)));
-    }
-  };
+  const handleTriggerScan = makeHandleTriggerScan(collectionsApi.triggerScan, loadCollectionsData);
+  const handleGenerateEmails = makeHandleGenerateEmails(
+    selectedInvoices,
+    invoices,
+    emailApi.generateEmailDraft,
+    setSelectedInvoices,
+    setGeneratingEmails
+  );
+  const handleSelectInvoice = makeHandleSelectInvoice(selectedInvoices, setSelectedInvoices);
+  const handleSelectAll = makeHandleSelectAll(invoices, selectedInvoices, setSelectedInvoices);
 
   useEffect(() => {
     if (xeroConnected) {

@@ -5,6 +5,7 @@ import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
+import { makeHandleAddTimeEntry, makeHandleGenerateReport } from "../../handlers/profitability.handler";
 
 interface Project {
   id: string;
@@ -96,42 +97,13 @@ const ProfitabilityPage: React.FC = () => {
     }
   };
 
-  const handleAddTimeEntry = async () => {
-    if (!newTimeEntry.projectCode || !newTimeEntry.user || !newTimeEntry.hours) {
-      showToast("Please fill in all required fields", { type: "warning" });
-      return;
-    }
-
-    try {
-      const timeEntry: TimeEntry = {
-        id: Date.now().toString(),
-        ...newTimeEntry,
-        hours: parseFloat(newTimeEntry.hours),
-        hourlyRate: getRoleRate(newTimeEntry.role),
-      };
-
-      setTimeEntries((prev) => [timeEntry, ...prev]);
-
-      // Reset form
-      setNewTimeEntry({
-        projectCode: "",
-        user: "",
-        role: "",
-        date: new Date().toISOString().split("T")[0],
-        hours: "",
-        billable: true,
-        description: "",
-      });
-
-      setShowTimeEntryForm(false);
-      showToast("Time entry added successfully", { type: "success" });
-
-      // Refresh data
-      await loadProfitabilityData();
-    } catch {
-      showToast("Failed to add time entry", { type: "error" });
-    }
-  };
+  const handleAddTimeEntry = makeHandleAddTimeEntry(
+    () => newTimeEntry,
+    setTimeEntries as any,
+    setNewTimeEntry as any,
+    setShowTimeEntryForm,
+    loadProfitabilityData
+  );
 
   const getRoleRate = (role: string): number => {
     const rates: Record<string, number> = {
@@ -144,18 +116,11 @@ const ProfitabilityPage: React.FC = () => {
     return rates[role] || 100;
   };
 
-  const handleGenerateReport = () => {
-    // In a real implementation, this would generate and download a report
-    const reportData = {
-      summary,
-      projects,
-      timeEntries,
-      // Do not synthesize timestamps for reports; let callers add metadata as needed
-    };
-
-    console.log("Generated profitability report:", reportData);
-    showToast("Profitability report generated (check console)", { type: "success" });
-  };
+  const handleGenerateReport = makeHandleGenerateReport(
+    () => summary,
+    () => projects,
+    () => timeEntries
+  );
 
   useEffect(() => {
     loadProfitabilityData();

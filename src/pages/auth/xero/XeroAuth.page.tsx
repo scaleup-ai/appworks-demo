@@ -1,31 +1,12 @@
 import React, { useState } from "react";
 import showToast from "../../../utils/toast";
 import { startXeroAuth } from "../../../apis/xero.api";
+import { makeHandleXeroAuth } from "../../../handlers/xero.handler";
 
 const XeroAuthPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleXeroAuth = async () => {
-    setIsLoading(true);
-    try {
-      // Start Xero OAuth flow (backend handles creds from env)
-      const authResponse = await startXeroAuth("json");
-
-      if ("url" in authResponse && authResponse.url) {
-        // Redirect to Xero OAuth
-        window.location.href = authResponse.url;
-      } else {
-        throw new Error("No OAuth URL received");
-      }
-    } catch (error) {
-      console.error("Xero auth failed:", error);
-      showToast(`Xero authentication failed: ${error instanceof Error ? error.message : "Unknown error"}`, {
-        type: "error",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const handleXeroAuth = makeHandleXeroAuth();
 
   return (
     <div className="flex flex-col justify-center min-h-screen py-12 bg-gray-50 sm:px-6 lg:px-8">

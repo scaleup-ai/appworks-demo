@@ -8,6 +8,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
 import * as paymentApi from "../../apis/payment.api";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
+import { makeHandleTestPaymentReconciliation, makeHandleRunBulkReconciliation } from "../../handlers/payments.handler";
 
 interface PaymentReconciliationTest {
   id: string;
@@ -78,110 +79,22 @@ const PaymentsPage: React.FC = () => {
     }
   };
 
-  const handleTestPaymentReconciliation = async () => {
-    if (!testPayment.paymentId || !testPayment.amount) {
-      showToast("Please fill in payment ID and amount", { type: "warning" });
-      return;
-    }
+  const handleTestPaymentReconciliation = makeHandleTestPaymentReconciliation(
+    testPayment,
+    setTestingPayment,
+    (updater) => setReconciliationTests(updater as any),
+    paymentApi.reconcilePayment,
+    loadPaymentData,
+    setTestPayment
+  );
 
-    setTestingPayment(true);
-    try {
-      const request = {
-        paymentId: testPayment.paymentId,
-        amount: parseFloat(testPayment.amount),
-        reference: testPayment.reference || undefined,
-      };
-
-      // Add pending test to the list
-      const newTest: PaymentReconciliationTest = {
-        id: Date.now().toString(),
-        ...request,
-        timestamp: new Date().toISOString(),
-        status: "pending",
-      };
-
-      setReconciliationTests((prev) => [newTest, ...prev]);
-
-      // Call the API
-      const result = await paymentApi.reconcilePayment(request);
-
-      // Update the test with results
-      setReconciliationTests((prev) =>
-        prev.map((test) => (test.id === newTest.id ? { ...test, result, status: "completed" as const } : test))
-      );
-
-      showToast(
-        `Payment reconciliation: ${result.matched ? "Matched" : "Unmatched"}${
-          result.invoiceId ? ` to invoice ${result.invoiceId}` : ""
-        }`,
-        { type: result.matched ? "success" : "warning" }
-      );
-
-      // Clear form
-      setTestPayment({ paymentId: "", amount: "", reference: "" });
-
-      // Refresh summary
-      await loadPaymentData();
-    } catch {
-      // Update test as failed
-      setReconciliationTests((prev) =>
-        prev.map((test) =>
-          test.paymentId === testPayment.paymentId && test.status === "pending"
-            ? { ...test, status: "failed" as const }
-            : test
-        )
-      );
-      showToast("Failed to reconcile payment", { type: "error" });
-    } finally {
-      setTestingPayment(false);
-    }
-  };
-
-  const handleRunBulkReconciliation = async () => {
-    try {
-      // Get some invoices to create test payments for (scoped to tenant)
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
-      const invoices = await accountsReceivablesApi.listInvoices({ limit: 5, tenantId: tenantId || undefined });
-
-      if (invoices.length === 0) {
-        showToast("No invoices available for bulk reconciliation test", { type: "warning" });
-        return;
-      }
-
-      showToast("Starting bulk reconciliation test...", { type: "info" });
-
-      // Create test payments for the first few invoices
-      const testPayments = invoices.slice(0, 3).map((invoice, index) => ({
-        paymentId: `BULK-PAY-${Date.now()}-${index}`,
-        amount: invoice.amount,
-        reference: invoice.number,
-      }));
-
-      // Process each payment
-      for (const payment of testPayments) {
-        try {
-          const result = await paymentApi.reconcilePayment(payment);
-
-          const newTest: PaymentReconciliationTest = {
-            id: `${payment.paymentId}-${Date.now()}`,
-            ...payment,
-            result,
-            timestamp: new Date().toISOString(),
-            status: "completed",
-          };
-
-          setReconciliationTests((prev) => [newTest, ...prev]);
-        } catch (error) {
-          console.error(`Failed to reconcile payment ${payment.paymentId}:`, error);
-        }
-      }
-
-      showToast(`Bulk reconciliation completed for ${testPayments.length} payments`, { type: "success" });
-      await loadPaymentData();
-    } catch {
-      showToast("Failed to run bulk reconciliation", { type: "error" });
-    }
-  };
+  const handleRunBulkReconciliation = makeHandleRunBulkReconciliation(
+    accountsReceivablesApi.listInvoices,
+    paymentApi.reconcilePayment,
+    () => selectedTenantId ?? null,
+    (updater) => setReconciliationTests(updater as any),
+    loadPaymentData
+  );
 
   useEffect(() => {
     const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;

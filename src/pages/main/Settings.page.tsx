@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import axiosClient from "../../apis/axios-client";
 import { selectTenant, setTenants } from "../../store/authSlice";
+import { makeHandleChange } from "../../handlers/settings.handler";
 import AppLayout from "../layouts/App.layout";
 
 type Org = {
@@ -129,19 +130,8 @@ const SettingsPage: React.FC = () => {
   }, [dispatch]);
 
   const handleChange = (ev: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = ev.target.value || null;
-    try {
-      if (val) {
-        localStorage.setItem("selectedTenantId", val);
-        dispatch(selectTenant(val));
-      } else {
-        localStorage.removeItem("selectedTenantId");
-        dispatch(selectTenant(null));
-      }
-      setSelected(val);
-    } catch (e) {
-      console.warn("Failed to persist tenant selection", e);
-    }
+    makeHandleChange(dispatch, selectTenant)(ev);
+    setSelected(ev.target.value || null);
   };
 
   return (
