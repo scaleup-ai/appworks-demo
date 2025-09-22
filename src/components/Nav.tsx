@@ -14,6 +14,8 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
   const selId = useSelectedTenantId();
   const tenants = useTenants();
   const setAuth = useSetAuth();
+  // Dynamic sign-in state
+  const isAuthenticated = Boolean(selId && tenants && tenants.length > 0);
 
   const handleLinkClick = () => {
     try {
@@ -64,53 +66,9 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
   };
 
   useEffect(() => {
-    if (selId && (!tenants || tenants.length === 0)) {
-      (async () => {
-        try {
-          const resp = await axiosClient.get("/api/v1/xero/organisations");
-          const data: OrgResponse[] = resp.data || [];
-          const tenantsArr: NavTenant[] = data.map((t: OrgResponse) => {
-            let clientId = t.clientId || undefined;
-            let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
-            if (t.id) {
-              const parts = String(t.id).split(":");
-              if (parts.length === 2) {
-                clientId = clientId || parts[0];
-                tenantIdRaw = parts[1];
-              } else {
-                tenantIdRaw = String(t.id);
-              }
-            }
-            const orgNo = t.organisationNumber || t.organisation_number || undefined;
-            const name = t.tenantName || t.tenant_name || clientId || undefined;
-            const shortTid = tenantIdRaw ? String(tenantIdRaw).slice(0, 8) : undefined;
-            const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortTid ? ` • ${shortTid}` : ""}`;
-            return {
-              tenantId: String(tenantIdRaw || ""),
-              tenantName: name,
-              tenantType: t.tenantType || t.type || undefined,
-              clientId,
-              organisationNumber: orgNo,
-              createdAt: t.createdAt || t.created_at || undefined,
-              displayLabel,
-            };
-          });
-          // dedupe by tenantId before dispatching
-          const map = new Map<string, NavTenant>();
-          for (const m of tenantsArr) {
-            if (!map.has(m.tenantId)) map.set(m.tenantId, m);
-            else {
-              const ex = map.get(m.tenantId)!;
-              ex.tenantName = ex.tenantName || m.tenantName;
-              ex.organisationNumber = ex.organisationNumber || m.organisationNumber;
-              ex.clientId = ex.clientId || m.clientId;
-            }
-          }
-          setAuth({ tenants: Array.from(map.values()) });
-        } catch (err) {
-          console.warn("Failed to fetch organisations for Nav", err);
-        }
-      })();
+    // Auto-select tenant if only one
+    if (tenants && tenants.length === 1 && !selId) {
+      setAuth({ selectedTenantId: tenants[0].tenantId });
     }
   }, [selId, tenants, setAuth]);
 
@@ -128,33 +86,40 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
 
   return (
     <div className={className + " flex items-center gap-4"}>
-      {/* Tenant selector / display */}
-      <div className={linkClass}>
-        <select
-          value={selId || ""}
-          onChange={handleSelectChange}
-          className="px-2 py-1 text-sm bg-white border rounded"
-          aria-label="Select organization"
-        >
-          {(tenants || []).filter((t: any) => t && String(t.tenantId || "").length > 0).length === 0 && (
-            <option value="">Select org</option>
-          )}
-          {(tenants || [])
-            .filter((t: any) => t && String(t.tenantId || "").length > 0)
-            .map((t: any) => {
-              const tid = String(t.tenantId || "");
-              const orgNo = t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "";
-              const shortId = tid ? String(tid).slice(0, 8) : "";
-              const labelBase = t.tenantName || t.displayLabel || t.clientId || (shortId ? `...${shortId}` : "Unknown");
-              const label = `${labelBase}${orgNo}`;
-              return (
-                <option key={tid} value={tid}>
-                  {label}
-                </option>
-              );
-            })}
-        </select>
-      </div>
+      {/* Dynamic sign-in and tenant selector */}
+      {!isAuthenticated ? (
+        <button onClick={startXeroAuth} className="px-3 py-1 text-sm text-white bg-blue-600 rounded">
+          Sign in with Xero
+        </button>
+      ) : (
+        <div className={linkClass}>
+          <select
+            value={selId || ""}
+            onChange={handleSelectChange}
+            className="px-2 py-1 text-sm bg-white border rounded"
+            aria-label="Select organization"
+          >
+            {(tenants || []).filter((t: any) => t && String(t.tenantId || "").length > 0).length === 0 && (
+              <option value="">Select org</option>
+            )}
+            {(tenants || [])
+              .filter((t: any) => t && String(t.tenantId || "").length > 0)
+              .map((t: any) => {
+                const tid = String(t.tenantId || "");
+                const orgNo = t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "";
+                const shortId = tid ? String(tid).slice(0, 8) : "";
+                const labelBase =
+                  t.tenantName || t.displayLabel || t.clientId || (shortId ? `...${shortId}` : "Unknown");
+                const label = `${labelBase}${orgNo}`;
+                return (
+                  <option key={tid} value={tid}>
+                    {label}
+                  </option>
+                );
+              })}
+          </select>
+        </div>
+      )}
       <Link to="/" onClick={handleLinkClick} className={linkClass}>
         Home
       </Link>
