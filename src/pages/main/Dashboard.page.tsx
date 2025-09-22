@@ -51,10 +51,7 @@ const DashboardPage: React.FC = () => {
   };
   const navigate = useNavigate();
   // Tenant prompt state: only one declaration, clean initialization
-  const [showTenantPrompt, setShowTenantPrompt] = useState(() => {
-    const navState = window.history.state?.usr;
-    return !!(navState && navState.showTenantPrompt);
-  });
+  const [showTenantPrompt, setShowTenantPrompt] = useState(false);
   // Zustand hydration gate
   const authStore = useAuthStore();
   const isHydrated = useStore(useAuthStore, (state) => !!state.setAuth);
@@ -93,7 +90,6 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   // (removed duplicate declaration)
-  const [tenantInput, setTenantInput] = useState("");
 
   // Replace local implementations with handler calls
   const initializeAgentsHandler = () => initializeAgents(setAgents);
@@ -111,13 +107,13 @@ const DashboardPage: React.FC = () => {
     }
     // Tenant selection logic
     if (!selectedTenantId) {
-      if (!showTenantPrompt) setShowTenantPrompt(true);
+      setShowTenantPrompt(true);
       setLoading(false);
       return;
     }
-    if (showTenantPrompt) setShowTenantPrompt(false);
+    setShowTenantPrompt(false);
     loadDashboardDataHandler();
-  }, [xeroConnected, selectedTenantId, isHydrated, navigate, showTenantPrompt]);
+  }, [xeroConnected, selectedTenantId, isHydrated, navigate]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
