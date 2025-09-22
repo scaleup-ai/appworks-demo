@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 // no redux selector required for this view
 import DashboardLayout from "../layouts/DashboardLayout";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import Card from "../../components/ui/Card.component";
+import Button from "../../components/ui/Button.component";
+import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
 
 interface Project {

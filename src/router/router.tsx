@@ -4,7 +4,7 @@ import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/lame/Landing.page";
 import XeroAuthPage from "../pages/auth/xero/XeroAuth.page";
 import XeroCallback from "../pages/auth/xero/XeroCallback.page";
-import TenantSelector from "../components/TenantSelector";
+import TenantSelector from "../components/TenantSelector.component";
 import DashboardPage from "../pages/main/Dashboard.page";
 import CollectionsPage from "../pages/main/Collections.page";
 import PaymentsPage from "../pages/main/Payments.page";

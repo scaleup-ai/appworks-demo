@@ -4,12 +4,13 @@ import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
 import * as paymentApi from "../../apis/payment.api";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import Button from "../../components/ui/Button.component";
+import Card from "../../components/ui/Card.component";
+import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import { RootState } from "../../store/store";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
+import { copyToClipboard, downloadJson } from "../../handlers/helper.handler";
 
 interface DashboardStats {
   totalInvoices: number;
@@ -247,6 +248,29 @@ const DashboardPage: React.FC = () => {
               Connect Xero
             </Button>
           )}
+          <Button
+            onClick={() => {
+              const snapshot = { stats, agents, generatedAt: new Date().toISOString() };
+              downloadJson("dashboard-snapshot.json", snapshot);
+              showToast("Dashboard snapshot downloaded", { type: "success" });
+            }}
+            size="sm"
+            variant="secondary"
+          >
+            Export Snapshot
+          </Button>
+          <Button
+            onClick={() => {
+              const snapshotText = JSON.stringify({ stats, agents }, null, 2);
+              copyToClipboard(snapshotText);
+              showToast("Copied snapshot to clipboard", {
+                type: "success",
+              });
+            }}
+            size="sm"
+          >
+            Copy Snapshot
+          </Button>
         </div>
       }
     >
@@ -363,7 +387,15 @@ const DashboardPage: React.FC = () => {
             </Button>
 
             <Button
-              onClick={() => window.open("/collections", "_blank")}
+              onClick={() => {
+                // open demo collections in a new tab using handlers
+                import("../../handlers/helper.handler")
+                  .then((h) => h.openExternal("/collections", "_blank"))
+                  .catch((e) => {
+                    console.warn("Failed to open collections", e);
+                    window.open("/collections", "_blank");
+                  });
+              }}
               className="flex flex-col items-start h-auto p-4 text-left"
               variant="ghost"
             >

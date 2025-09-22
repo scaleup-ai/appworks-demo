@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import DashboardLayout from "../layouts/DashboardLayout";
-import Card from "../../components/ui/Card";
-import Button from "../../components/ui/Button";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import Card from "../../components/ui/Card.component";
+import Button from "../../components/ui/Button.component";
+import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
+import { useNavigate } from "react-router-dom";
+import { downloadJson, formatCurrency } from "../../handlers/helper.handler";
 
 interface CashFlowForecast {
   week: number;
@@ -44,6 +46,7 @@ interface Scenario {
 }
 
 const CashFlowPage: React.FC = () => {
+  const navigate = useNavigate();
   const { xeroConnected } = useSelector((state: RootState) => state.auth);
   const [forecast, setForecast] = useState<CashFlowForecast[]>([]);
   const [summary, setSummary] = useState<CashFlowSummary>({
@@ -116,15 +119,6 @@ const CashFlowPage: React.FC = () => {
     loadCashFlowData();
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const getRiskColor = (risk: "low" | "medium" | "high") => {
     switch (risk) {
       case "low":
@@ -150,7 +144,13 @@ const CashFlowPage: React.FC = () => {
             <p className="mb-6 text-gray-600">
               Connect your Xero account to access cash flow forecasting and treasury data.
             </p>
-            <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
+            <Button
+              onClick={() => {
+                navigate("/connect-xero");
+              }}
+            >
+              Connect Xero
+            </Button>
           </div>
         </Card>
       </DashboardLayout>
@@ -178,7 +178,14 @@ const CashFlowPage: React.FC = () => {
           <Button onClick={handleGenerateForecast} size="sm">
             Regenerate Forecast
           </Button>
-          <Button onClick={handleExportForecast} variant="secondary" size="sm">
+          <Button
+            onClick={() => {
+              downloadJson("cashflow-forecast.json", { summary, forecast, scenarios });
+              showToast("Cash flow forecast downloaded", { type: "success" });
+            }}
+            variant="secondary"
+            size="sm"
+          >
             Export
           </Button>
         </div>

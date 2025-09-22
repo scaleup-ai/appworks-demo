@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { handleOAuthRedirect } from "../../../apis/xero.api";
 import { setXeroConnected, selectTenant } from "../../../store/authSlice";
 import showToast from "../../../utils/toast";
-import LoadingSpinner from "../../../components/ui/LoadingSpinner";
+import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
 
 const XeroCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
