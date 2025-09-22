@@ -43,6 +43,16 @@ const DashboardPage: React.FC = () => {
   const xeroConnected = useXeroConnected();
   const selectedTenantId = useSelectedTenantId();
   const setSelectedTenantId = useSetSelectedTenantId();
+  // Debug logging for troubleshooting redirect issue
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[Dashboard Debug] Zustand state:", {
+      isHydrated,
+      xeroConnected,
+      selectedTenantId,
+      authStore,
+    });
+  }, [isHydrated, xeroConnected, selectedTenantId]);
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
     outstandingAmount: 0,
