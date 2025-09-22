@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { handleOAuthRedirect } from "../../../apis/xero.api";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner";
 import { useSetAuth, useXeroConnected, useSelectedTenantId } from "../../../store/hooks";
+import { useAuthStore } from "../../../store/auth.store";
 import showToast from "../../../utils/toast";
 
 const XeroCallback: React.FC = () => {
@@ -11,10 +12,17 @@ const XeroCallback: React.FC = () => {
   const setAuth = useSetAuth();
   const xeroConnected = useXeroConnected();
   const selectedTenantId = useSelectedTenantId();
+  const [hydrated, setHydrated] = useState(false);
   const [processing, setProcessing] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Zustand hydration check
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
     let mounted = true;
     const code = searchParams.get("code") || undefined;
     const state = searchParams.get("state") || undefined;
@@ -57,7 +65,10 @@ const XeroCallback: React.FC = () => {
             if (tid) {
               setAuth({ selectedTenantId: tid, xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
-              window.location.replace("/dashboard");
+              // Wait for Zustand state to update before redirect
+              setTimeout(() => {
+                window.location.replace("/dashboard");
+              }, 100);
               return;
             }
           }
@@ -67,7 +78,9 @@ const XeroCallback: React.FC = () => {
           }
           setAuth({ xeroConnected: true });
           showToast("Successfully connected to Xero!", { type: "success" });
-          window.location.replace("/dashboard");
+          setTimeout(() => {
+            window.location.replace("/dashboard");
+          }, 100);
           return;
         }
         if (response.status === 409) {
@@ -80,7 +93,9 @@ const XeroCallback: React.FC = () => {
             if (isConnected) {
               setAuth({ xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
-              window.location.replace("/dashboard");
+              setTimeout(() => {
+                window.location.replace("/dashboard");
+              }, 100);
               return;
             }
           } catch {}
@@ -115,7 +130,7 @@ const XeroCallback: React.FC = () => {
     return () => {
       mounted = false;
     };
-  }, [searchParams, navigate, setAuth]);
+  }, [hydrated, searchParams, navigate, setAuth]);
 
   // Watch for Zustand state changes and redirect only when both are set
   // Removed watcher: direct navigation after setAuth for reliability
