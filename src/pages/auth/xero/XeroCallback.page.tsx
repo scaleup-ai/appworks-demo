@@ -59,13 +59,14 @@ const XeroCallback: React.FC = () => {
         if (response.status === 200) {
           const payload = response.data || {};
           const tenants = Array.isArray(payload.tenants) ? payload.tenants : [];
+          // Always set tenants in Zustand
+          setAuth({ tenants, xeroConnected: true, isAuthenticated: true });
           if (tenants.length === 1) {
             const t = tenants[0];
             const tid = t.tenantId || t.tenant_id || "";
             if (tid) {
-              setAuth({ selectedTenantId: tid, xeroConnected: true, isAuthenticated: true });
+              setAuth({ selectedTenantId: tid });
               showToast("Successfully connected to Xero!", { type: "success" });
-              // Wait for Zustand state to update before redirect
               setTimeout(() => {
                 window.location.replace("/dashboard");
               }, 100);
@@ -73,14 +74,13 @@ const XeroCallback: React.FC = () => {
             }
           }
           if (tenants.length > 1) {
-            // Move tenant selection to dedicated auth flow page
             navigate("/select-tenant", { state: { tenants } });
             return;
           }
-          setAuth({ xeroConnected: true, isAuthenticated: true });
-          showToast("Successfully connected to Xero!", { type: "success" });
+          // If no tenants, treat as error
+          showToast("No tenants found after authentication", { type: "error" });
           setTimeout(() => {
-            window.location.replace("/dashboard");
+            navigate("/auth", { replace: true });
           }, 100);
           return;
         }
