@@ -50,6 +50,11 @@ const DashboardPage: React.FC = () => {
     }
   };
   const navigate = useNavigate();
+  // Tenant prompt state: only one declaration, clean initialization
+  const [showTenantPrompt, setShowTenantPrompt] = useState(() => {
+    const navState = window.history.state?.usr;
+    return !!(navState && navState.showTenantPrompt);
+  });
   // Zustand hydration gate
   const authStore = useAuthStore();
   const isHydrated = useStore(useAuthStore, (state) => !!state.setAuth);
@@ -87,7 +92,7 @@ const DashboardPage: React.FC = () => {
   const collectionsLoading = useCollectionsLoading();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showTenantPrompt, setShowTenantPrompt] = useState(false);
+  // (removed duplicate declaration)
   const [tenantInput, setTenantInput] = useState("");
 
   // Replace local implementations with handler calls
@@ -98,25 +103,21 @@ const DashboardPage: React.FC = () => {
   const handleTestPaymentReconciliationHandler = () => handleTestPaymentReconciliation();
 
   useEffect(() => {
-    // Only proceed once Zustand is hydrated
     if (!isHydrated) return;
     initializeAgentsHandler();
-    // Use Zustand as the single source of truth for auth state
     if (!xeroConnected) {
-      // If not connected, redirect to /auth
       navigate("/auth", { replace: true });
       return;
     }
+    // Tenant selection logic
     if (!selectedTenantId) {
-      setShowTenantPrompt(true);
+      if (!showTenantPrompt) setShowTenantPrompt(true);
       setLoading(false);
       return;
     }
+    if (showTenantPrompt) setShowTenantPrompt(false);
     loadDashboardDataHandler();
-    // Consideration for future JWT-based auth:
-    // If using JWT, validate token here and refresh if expired.
-    // For now, rely on Zustand state only.
-  }, [xeroConnected, selectedTenantId, isHydrated, navigate]);
+  }, [xeroConnected, selectedTenantId, isHydrated, navigate, showTenantPrompt]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {

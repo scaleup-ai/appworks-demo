@@ -24,11 +24,22 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
     console.log("[AuthProtected Debug] hydrated:", hydrated, "isAuthenticated:", isAuthenticated, store);
   }, [hydrated, isAuthenticated, store]);
 
+  // After hydration and authentication, check tenant selection
   useEffect(() => {
-    if (hydrated && !isAuthenticated) {
+    if (!hydrated) return;
+    if (!isAuthenticated) {
       navigate("/auth");
+      return;
     }
-  }, [hydrated, isAuthenticated, navigate]);
+    // Check tenant selection and redirect if needed
+    const selectedTenantId = store.selectedTenantId;
+    const tenants = store.tenants;
+    if (!selectedTenantId || !tenants?.length) {
+      // If no tenant selected, redirect to tenant selection or dashboard with prompt
+      navigate("/dashboard", { state: { showTenantPrompt: true }, replace: true });
+      return;
+    }
+  }, [hydrated, isAuthenticated, store, navigate]);
 
   if (!hydrated) {
     return null;
