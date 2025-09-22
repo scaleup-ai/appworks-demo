@@ -63,7 +63,7 @@ const XeroCallback: React.FC = () => {
             const t = tenants[0];
             const tid = t.tenantId || t.tenant_id || "";
             if (tid) {
-              setAuth({ selectedTenantId: tid, xeroConnected: true });
+              setAuth({ selectedTenantId: tid, xeroConnected: true, isAuthenticated: true });
               showToast("Successfully connected to Xero!", { type: "success" });
               // Wait for Zustand state to update before redirect
               setTimeout(() => {
@@ -77,7 +77,7 @@ const XeroCallback: React.FC = () => {
             navigate("/select-tenant", { state: { tenants } });
             return;
           }
-          setAuth({ xeroConnected: true });
+          setAuth({ xeroConnected: true, isAuthenticated: true });
           showToast("Successfully connected to Xero!", { type: "success" });
           setTimeout(() => {
             window.location.replace("/dashboard");
@@ -92,7 +92,7 @@ const XeroCallback: React.FC = () => {
             // Check connection status using statusResp directly
             const isConnected = statusResp.connected === true || Boolean(statusResp.tenantId);
             if (isConnected) {
-              setAuth({ xeroConnected: true });
+              setAuth({ xeroConnected: true, isAuthenticated: true });
               showToast("Successfully connected to Xero!", { type: "success" });
               setTimeout(() => {
                 window.location.replace("/dashboard");
