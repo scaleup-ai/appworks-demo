@@ -6,8 +6,11 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import showToast from "../../utils/toast";
-import * as paymentApi from "../../apis/payment.api";
-import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
+import {
+  loadPaymentData,
+  handleTestPaymentReconciliation,
+  handleRunBulkReconciliation,
+} from "../../handlers/payments.handler";
 
 interface PaymentReconciliationTest {
   id: string;
@@ -50,147 +53,24 @@ const PaymentsPage: React.FC = () => {
     reference: "",
   });
 
-  const loadPaymentData = async () => {
-    try {
-      setLoading(true);
-
-      // Load reconciliation history from API when available. Keep empty state if none.
-      // No server endpoint for reconciliation history currently available.
-      // Keep empty history to avoid fabricating demo data in the UI.
-      const history: PaymentReconciliationTest[] = [];
-      setReconciliationTests([]);
-
-      // Calculate summary from fetched reconciliation history
-      const completed = history.filter((t) => t.status === "completed");
-      const matched = completed.filter((t) => t.result?.matched);
-      const unmatched = completed.filter((t) => t.result && !t.result.matched);
-      const totalAmount = completed.reduce((sum, t) => sum + t.amount, 0);
-
-      setSummary({
-        totalProcessed: completed.length,
-        matchedPayments: matched.length,
-        unmatchedPayments: unmatched.length,
-        totalAmount,
-      });
-    } catch (error) {
-      console.error("Failed to load payment data:", error);
-      showToast("Failed to load payment data", { type: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTestPaymentReconciliation = async () => {
-    if (!testPayment.paymentId || !testPayment.amount) {
-      showToast("Please fill in payment ID and amount", { type: "warning" });
-      return;
-    }
-
-    setTestingPayment(true);
-    try {
-      const request = {
-        paymentId: testPayment.paymentId,
-        amount: parseFloat(testPayment.amount),
-        reference: testPayment.reference || undefined,
-      };
-
-      // Add pending test to the list
-      const newTest: PaymentReconciliationTest = {
-        id: Date.now().toString(),
-        ...request,
-        timestamp: new Date().toISOString(),
-        status: "pending",
-      };
-
-      setReconciliationTests((prev) => [newTest, ...prev]);
-
-      // Call the API
-      const result = await paymentApi.reconcilePayment(request);
-
-      // Update the test with results
-      setReconciliationTests((prev) =>
-        prev.map((test) => (test.id === newTest.id ? { ...test, result, status: "completed" as const } : test))
-      );
-
-      showToast(
-        `Payment reconciliation: ${result.matched ? "Matched" : "Unmatched"}${
-          result.invoiceId ? ` to invoice ${result.invoiceId}` : ""
-        }`,
-        { type: result.matched ? "success" : "warning" }
-      );
-
-      // Clear form
-      setTestPayment({ paymentId: "", amount: "", reference: "" });
-
-      // Refresh summary
-      await loadPaymentData();
-    } catch {
-      // Update test as failed
-      setReconciliationTests((prev) =>
-        prev.map((test) =>
-          test.paymentId === testPayment.paymentId && test.status === "pending"
-            ? { ...test, status: "failed" as const }
-            : test
-        )
-      );
-      showToast("Failed to reconcile payment", { type: "error" });
-    } finally {
-      setTestingPayment(false);
-    }
-  };
-
-  const handleRunBulkReconciliation = async () => {
-    try {
-      // Get some invoices to create test payments for (scoped to tenant)
-      const tenantId = selectedTenantId;
-      const invoices = await accountsReceivablesApi.listInvoices({ limit: 5, tenantId: tenantId || undefined });
-
-      if (invoices.length === 0) {
-        showToast("No invoices available for bulk reconciliation test", { type: "warning" });
-        return;
-      }
-
-      showToast("Starting bulk reconciliation test...", { type: "info" });
-
-      // Create test payments for the first few invoices
-      const testPayments = invoices.slice(0, 3).map((invoice, index) => ({
-        paymentId: `BULK-PAY-${Date.now()}-${index}`,
-        amount: invoice.amount,
-        reference: invoice.number,
-      }));
-
-      // Process each payment
-      for (const payment of testPayments) {
-        try {
-          const result = await paymentApi.reconcilePayment(payment);
-
-          const newTest: PaymentReconciliationTest = {
-            id: `${payment.paymentId}-${Date.now()}`,
-            ...payment,
-            result,
-            timestamp: new Date().toISOString(),
-            status: "completed",
-          };
-
-          setReconciliationTests((prev) => [newTest, ...prev]);
-        } catch (error) {
-          console.error(`Failed to reconcile payment ${payment.paymentId}:`, error);
-        }
-      }
-
-      showToast(`Bulk reconciliation completed for ${testPayments.length} payments`, { type: "success" });
-      await loadPaymentData();
-    } catch {
-      showToast("Failed to run bulk reconciliation", { type: "error" });
-    }
-  };
+  const loadPaymentDataHandler = () => loadPaymentData(setReconciliationTests, setSummary, setLoading);
+  const handleTestPaymentReconciliationHandler = () =>
+    handleTestPaymentReconciliation(
+      testPayment,
+      setTestingPayment,
+      setReconciliationTests,
+      setTestPayment,
+      loadPaymentDataHandler
+    );
+  const handleRunBulkReconciliationHandler = () =>
+    handleRunBulkReconciliation(selectedTenantId, setReconciliationTests, showToast, loadPaymentDataHandler);
 
   useEffect(() => {
     if (!selectedTenantId) {
       navigate("/select-tenant", { replace: true });
       return;
     }
-    loadPaymentData();
+    loadPaymentDataHandler();
   }, []);
 
   const formatCurrency = (amount: number) => {
@@ -235,11 +115,11 @@ const PaymentsPage: React.FC = () => {
       title="Payment Reconciliation"
       actions={
         <div className="flex gap-2">
-          <Button onClick={loadPaymentData} variant="secondary" size="sm">
+          <Button onClick={loadPaymentDataHandler} variant="secondary" size="sm">
             Refresh
           </Button>
-          <Button onClick={handleRunBulkReconciliation} size="sm">
-            Run Bulk Test
+          <Button onClick={handleRunBulkReconciliationHandler} size="sm">
+            Bulk Reconcile
           </Button>
         </div>
       }
@@ -278,44 +158,51 @@ const PaymentsPage: React.FC = () => {
 
         {/* Test Payment Reconciliation */}
         <Card title="Test Payment Reconciliation" description="Test the Payment Reconciliation Agent">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Payment ID</label>
-              <input
-                type="text"
-                value={testPayment.paymentId}
-                onChange={(e) => setTestPayment((prev) => ({ ...prev, paymentId: e.target.value }))}
-                placeholder="PAY-001"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleTestPaymentReconciliationHandler();
+            }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment ID</label>
+                <input
+                  type="text"
+                  value={testPayment.paymentId}
+                  onChange={(e) => setTestPayment((prev) => ({ ...prev, paymentId: e.target.value }))}
+                  placeholder="PAY-001"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                <input
+                  type="number"
+                  value={testPayment.amount}
+                  onChange={(e) => setTestPayment((prev) => ({ ...prev, amount: e.target.value }))}
+                  placeholder="1500.00"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reference (Optional)</label>
+                <input
+                  type="text"
+                  value={testPayment.reference}
+                  onChange={(e) => setTestPayment((prev) => ({ ...prev, reference: e.target.value }))}
+                  placeholder="INV-001 or description"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={handleTestPaymentReconciliationHandler} loading={testingPayment} className="w-full">
+                  Test Reconciliation
+                </Button>
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-              <input
-                type="number"
-                value={testPayment.amount}
-                onChange={(e) => setTestPayment((prev) => ({ ...prev, amount: e.target.value }))}
-                placeholder="1500.00"
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Reference (Optional)</label>
-              <input
-                type="text"
-                value={testPayment.reference}
-                onChange={(e) => setTestPayment((prev) => ({ ...prev, reference: e.target.value }))}
-                placeholder="INV-001 or description"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button onClick={handleTestPaymentReconciliation} loading={testingPayment} className="w-full">
-                Test Reconciliation
-              </Button>
-            </div>
-          </div>
+          </form>
           <div className="text-sm text-gray-600">
             <p>The Payment Reconciliation Agent will attempt to match this payment to existing invoices based on:</p>
             <ul className="list-disc list-inside mt-1 space-y-1">

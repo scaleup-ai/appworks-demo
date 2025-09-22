@@ -7,9 +7,7 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import showToast from "../../utils/toast";
-import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
-import * as collectionsApi from "../../apis/collections.api";
-import * as emailApi from "../../apis/email.api";
+import { loadCollectionsData, handleTriggerScan, handleGenerateEmails } from "../../handlers/collections.handler";
 
 interface Invoice {
   invoiceId: string;
@@ -48,165 +46,36 @@ const CollectionsPage: React.FC = () => {
   const [selectedInvoices, setSelectedInvoices] = useState<Set<string>>(new Set());
   const [generatingEmails, setGeneratingEmails] = useState(false);
 
-  const loadCollectionsData = async () => {
-    try {
-      setLoading(true);
-
-      // Load invoices scoped to selected tenant (Zustand only)
-      const tenantId = selectedTenantId;
-      const invoiceData = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
-
-      // Load scheduled reminders via Zustand
-      let scheduledReminders: any[] = [];
-      await new Promise<void>((resolve, reject) => {
-        useCollectionsStore.getState().getScheduledReminders(
-          (res) => {
-            scheduledReminders = res;
-            resolve();
-          },
-          (err) => {
-            scheduledReminders = [];
-            reject(err);
-          }
-        );
-      });
-
-      // Process invoices and calculate aging
-      const now = new Date();
-      const processedInvoices = invoiceData.map((invoice) => {
-        let daysPastDue = 0;
-        let reminderStage = "current";
-
-        if (invoice.dueDate && invoice.status !== "PAID") {
-          const dueDate = new Date(invoice.dueDate);
-          const diffTime = now.getTime() - dueDate.getTime();
-          daysPastDue = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-          if (daysPastDue > 0) {
-            if (daysPastDue <= 30) {
-              reminderStage = "overdue_stage_1";
-            } else if (daysPastDue <= 60) {
-              reminderStage = "overdue_stage_2";
-            } else {
-              reminderStage = "overdue_stage_3";
-            }
-          } else if (daysPastDue > -7) {
-            reminderStage = "pre_due";
-          }
-        }
-
-        return {
-          ...invoice,
-          daysPastDue: Math.max(0, daysPastDue),
-          reminderStage,
-        };
-      });
-
-      // Calculate summary
-      const unpaidInvoices = processedInvoices.filter((inv) => inv.status !== "PAID");
-      const totalOutstanding = unpaidInvoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
-      const overdueAmount = unpaidInvoices
-        .filter((inv) => (inv.daysPastDue || 0) > 0)
-        .reduce((sum, inv) => sum + (inv.amount || 0), 0);
-      const currentAmount = totalOutstanding - overdueAmount;
-
-      setInvoices(processedInvoices);
-      setSummary({
-        totalOutstanding,
-        overdueAmount,
-        currentAmount,
-        scheduledReminders: scheduledReminders.length,
-        sentReminders: 0, // Would need to track this from event history
-      });
-    } catch {
-      console.error("Failed to load collections data");
-      showToast("Failed to load collections data", { type: "error" });
-    } finally {
-      setLoading(false);
-    }
+  // Handler wrappers for correct usage
+  const loadCollectionsDataHandler = () => loadCollectionsData(selectedTenantId, setInvoices, setSummary, setLoading);
+  const handleTriggerScanHandler = async () => {
+    await handleTriggerScan(() => loadCollectionsDataHandler());
+  };
+  const handleGenerateEmailsHandler = async () => {
+    await handleGenerateEmails(selectedInvoices, invoices, setGeneratingEmails);
   };
 
-  const handleTriggerScan = async () => {
-    try {
-      await useCollectionsStore.getState().triggerScan(
-        () => {
-          showToast("Collections scan triggered successfully", { type: "success" });
-        },
-        () => {
-          showToast("Failed to trigger collections scan", { type: "error" });
-        }
-      );
-      await loadCollectionsData(); // Refresh data
-    } catch {
-      showToast("Failed to trigger collections scan", { type: "error" });
-    }
-  };
-
-  const handleGenerateEmails = async () => {
-    if (selectedInvoices.size === 0) {
-      showToast("Please select invoices to generate emails for", { type: "warning" });
-      return;
-    }
-
-    setGeneratingEmails(true);
-    try {
-      const selectedInvoiceData = invoices.filter((inv) => selectedInvoices.has(inv.invoiceId));
-      const emailPromises = selectedInvoiceData.map(async (invoice) => {
-        try {
-          const draft = await emailApi.generateEmailDraft({
-            invoiceId: invoice.invoiceId,
-            amount: invoice.amount,
-            dueDate: invoice.dueDate || undefined,
-            stage: invoice.reminderStage || "overdue_stage_1",
-            customerName: `Customer for ${invoice.number}`,
-          });
-          return { invoice, draft, success: true };
-        } catch (error) {
-          return { invoice, error, success: false };
-        }
-      });
-
-      const results = await Promise.all(emailPromises);
-      const successful = results.filter((r) => r.success).length;
-      const failed = results.filter((r) => !r.success).length;
-
-      if (successful > 0) {
-        showToast(`Generated ${successful} email drafts successfully`, { type: "success" });
-        console.log(
-          "Generated email drafts:",
-          results.filter((r) => r.success)
-        );
-      }
-      if (failed > 0) {
-        showToast(`Failed to generate ${failed} email drafts`, { type: "warning" });
-      }
-
-      setSelectedInvoices(new Set()); // Clear selection
-    } catch (error) {
-      console.error("Failed to generate email drafts:", error);
-      showToast("Failed to generate email drafts", { type: "error" });
-    } finally {
-      setGeneratingEmails(false);
+  const handleSelectAll = () => {
+    if (selectedInvoices.size > 0) {
+      setSelectedInvoices(new Set());
+    } else {
+      const overdue = invoices
+        .filter((inv) => (inv.daysPastDue || 0) > 0 && inv.status !== "PAID")
+        .map((inv) => inv.invoiceId);
+      setSelectedInvoices(new Set(overdue));
     }
   };
 
   const handleSelectInvoice = (invoiceId: string) => {
-    const newSelection = new Set(selectedInvoices);
-    if (newSelection.has(invoiceId)) {
-      newSelection.delete(invoiceId);
-    } else {
-      newSelection.add(invoiceId);
-    }
-    setSelectedInvoices(newSelection);
-  };
-
-  const handleSelectAll = () => {
-    const overdueInvoices = invoices.filter((inv) => inv.status !== "PAID" && (inv.daysPastDue || 0) > 0);
-    if (selectedInvoices.size === overdueInvoices.length) {
-      setSelectedInvoices(new Set());
-    } else {
-      setSelectedInvoices(new Set(overdueInvoices.map((inv) => inv.invoiceId)));
-    }
+    setSelectedInvoices((prev) => {
+      const next = new Set(prev);
+      if (next.has(invoiceId)) {
+        next.delete(invoiceId);
+      } else {
+        next.add(invoiceId);
+      }
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -215,7 +84,7 @@ const CollectionsPage: React.FC = () => {
         navigate("/select-tenant", { replace: true });
         return;
       }
-      loadCollectionsData();
+      loadCollectionsDataHandler();
     } else {
       setLoading(false);
     }
@@ -291,14 +160,17 @@ const CollectionsPage: React.FC = () => {
 
   return (
     <DashboardLayout
-      title="Collections Management"
+      title="Collections"
       actions={
         <div className="flex gap-2">
-          <Button onClick={loadCollectionsData} variant="secondary" size="sm">
+          <Button onClick={loadCollectionsDataHandler} variant="secondary" size="sm">
             Refresh
           </Button>
-          <Button onClick={handleTriggerScan} size="sm">
+          <Button onClick={handleTriggerScanHandler} size="sm">
             Trigger Scan
+          </Button>
+          <Button onClick={handleGenerateEmailsHandler} size="sm" disabled={generatingEmails}>
+            Generate Emails
           </Button>
         </div>
       }
@@ -348,7 +220,11 @@ const CollectionsPage: React.FC = () => {
                 </span>
               )}
             </div>
-            <Button onClick={handleGenerateEmails} loading={generatingEmails} disabled={selectedInvoices.size === 0}>
+            <Button
+              onClick={handleGenerateEmailsHandler}
+              loading={generatingEmails}
+              disabled={selectedInvoices.size === 0}
+            >
               Generate Email Reminders
             </Button>
           </div>
