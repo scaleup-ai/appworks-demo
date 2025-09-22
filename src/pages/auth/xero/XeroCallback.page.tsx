@@ -73,6 +73,7 @@ const XeroCallback: React.FC = () => {
             }
           }
           if (tenants.length > 1) {
+            // Move tenant selection to dedicated auth flow page
             navigate("/select-tenant", { state: { tenants } });
             return;
           }

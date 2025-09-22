@@ -52,7 +52,7 @@ const CollectionsPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load invoices scoped to selected tenant (store first, fallback to localStorage)
+      // Load invoices scoped to selected tenant (Zustand only)
       const tenantId = selectedTenantId;
       const invoiceData = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 

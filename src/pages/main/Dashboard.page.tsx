@@ -53,6 +53,16 @@ const DashboardPage: React.FC = () => {
       authStore,
     });
   }, [isHydrated, xeroConnected, selectedTenantId]);
+  // Debug logging for troubleshooting redirect issue
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[Dashboard Debug] Zustand state:", {
+      isHydrated,
+      xeroConnected,
+      selectedTenantId,
+      authStore,
+    });
+  }, [isHydrated, xeroConnected, selectedTenantId]);
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
     outstandingAmount: 0,
@@ -246,36 +256,15 @@ const DashboardPage: React.FC = () => {
     );
   }
 
+  // Remove dashboard tenant prompt. Tenant selection must happen in auth flow.
   if (showTenantPrompt) {
     return (
       <DashboardLayout title="Dashboard">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="w-full max-w-md p-8 text-center bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Select Tenant</h2>
-            <p className="mb-6 text-gray-700">
-              Please enter or select your organisation/tenant ID to view dashboard data.
-            </p>
-            <input
-              type="text"
-              value={tenantInput}
-              onChange={(e) => setTenantInput(e.target.value)}
-              placeholder="Tenant ID"
-              className="w-full px-4 py-2 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={() => {
-                if (tenantInput.trim()) {
-                  localStorage.setItem("selectedTenantId", tenantInput.trim());
-                  setSelectedTenantId(tenantInput.trim());
-                  setShowTenantPrompt(false);
-                  setLoading(true);
-                  setTimeout(() => loadDashboardData(), 100);
-                }
-              }}
-              className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-            >
-              Confirm Tenant
-            </button>
+            <h2 className="mb-4 text-xl font-semibold text-gray-900">No tenant selected</h2>
+            <p className="mb-6 text-gray-700">Please sign in and select a tenant in the authentication flow.</p>
+            <Button onClick={() => navigate("/auth", { replace: true })}>Go to Auth</Button>
           </div>
         </div>
       </DashboardLayout>

@@ -119,7 +119,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     try {
       setAuth({ selectedTenantId: val });
       if (val === null) {
-        localStorage.removeItem("selectedTenantId");
+        // Removed localStorage usage; rely on Zustand only
       }
     } catch (e) {
       console.warn("Failed to persist tenant selection", e);

@@ -18,6 +18,12 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
     setHydrated(true);
   }, []);
 
+  // Debug logging for hydration and auth state
+  useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log("[AuthProtected Debug] hydrated:", hydrated, "isAuthenticated:", isAuthenticated, store);
+  }, [hydrated, isAuthenticated, store]);
+
   useEffect(() => {
     if (hydrated && !isAuthenticated) {
       navigate("/auth");

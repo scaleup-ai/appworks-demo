@@ -108,10 +108,10 @@ const SettingsPage: React.FC = () => {
     const val = ev.target.value || null;
     try {
       if (val) {
-        localStorage.setItem("selectedTenantId", val);
+        // Removed localStorage usage; rely on Zustand only
         setAuth({ selectedTenantId: val });
       } else {
-        localStorage.removeItem("selectedTenantId");
+        // Removed localStorage usage; rely on Zustand only
         setAuth({ selectedTenantId: null });
       }
       setSelected(val);

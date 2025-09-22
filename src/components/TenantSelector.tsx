@@ -115,13 +115,7 @@ const TenantSelector: React.FC = () => {
   }, [tenants]);
 
   const handleSelect = (tenantId: string) => {
-    try {
-      if (tenantId) localStorage.setItem("selectedTenantId", tenantId);
-      else localStorage.removeItem("selectedTenantId");
-    } catch {
-      // ignore storage errors
-    }
-    // dispatch null when no id
+    // Only persist to Zustand
     if (tenantId && tenantId.length > 0) {
       setSelectedTenantId(tenantId);
     } else {
