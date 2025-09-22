@@ -8,9 +8,6 @@ import {
   useCollectionsLoading,
 } from "../../store/hooks";
 import { useCollectionsStore } from "../../store/collections.store";
-import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
-import * as emailApi from "../../apis/email.api";
-import * as paymentApi from "../../apis/payment.api";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
@@ -18,6 +15,13 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useAuthStore } from "../../store/auth.store";
+import {
+  initializeAgents,
+  loadDashboardData,
+  handleTriggerCollectionsScan,
+  handleTestEmailGeneration,
+  handleTestPaymentReconciliation,
+} from "../../handlers/dashboard.handler";
 
 interface DashboardStats {
   totalInvoices: number;
@@ -36,6 +40,15 @@ interface AgentStatus {
 }
 
 const DashboardPage: React.FC = () => {
+  const handleRefreshDataHandler = async () => {
+    setRefreshing(true);
+    try {
+      await loadDashboardDataHandler();
+      showToast("Dashboard data refreshed", { type: "success" });
+    } finally {
+      setRefreshing(false);
+    }
+  } 
   const navigate = useNavigate();
   // Zustand hydration gate
   const authStore = useAuthStore();
@@ -78,137 +91,17 @@ const DashboardPage: React.FC = () => {
   const [showTenantPrompt, setShowTenantPrompt] = useState(false);
   const [tenantInput, setTenantInput] = useState("");
 
-  const initializeAgents = async () => {
-    try {
-      // Fetch real agent status from backend
-      const agentList = await import("../../apis/agents.api").then((m) => m.listAgents());
-      setAgents(agentList);
-    } catch (err) {
-      setAgents([]);
-      showToast("Failed to load agent status", { type: "error" });
-    }
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-
-      // Load invoices data scoped to selected tenant (Zustand only)
-      const tenantId = selectedTenantId;
-      const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
-
-      // Load scheduled collections via Zustand
-      let scheduledReminders: any[] = [];
-      await new Promise<void>((resolve, reject) => {
-        useCollectionsStore.getState().getScheduledReminders(
-          (res) => {
-            scheduledReminders = res;
-            resolve();
-          },
-          (err) => {
-            scheduledReminders = [];
-            reject(err);
-          }
-        );
-      });
-
-      // Calculate stats from the data
-      const totalInvoices = invoices.length;
-      const outstandingAmount = invoices
-        .filter((inv) => inv.status !== "PAID")
-        .reduce((sum, inv) => sum + (inv.amount || 0), 0);
-
-      const now = new Date();
-      const overdueAmount = invoices
-        .filter((inv) => {
-          if (inv.status === "PAID" || !inv.dueDate) return false;
-          return new Date(inv.dueDate) < now;
-        })
-        .reduce((sum, inv) => sum + (inv.amount || 0), 0);
-
-      setStats({
-        totalInvoices,
-        outstandingAmount,
-        overdueAmount,
-        collectedThisMonth: 0, // Would need payment history to calculate
-        scheduledReminders: scheduledReminders.length,
-        unmatchedPayments: 0, // Would need payment reconciliation data
-      });
-    } catch {
-      console.error("Failed to load dashboard data:");
-      showToast("Failed to load dashboard data", { type: "error" });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRefreshData = async () => {
-    setRefreshing(true);
-    try {
-      await loadDashboardData();
-      showToast("Dashboard data refreshed", { type: "success" });
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  const handleTriggerCollectionsScan = async () => {
-    try {
-      await useCollectionsStore.getState().triggerScan(
-        () => {
-          showToast("Collections scan triggered", { type: "success" });
-        },
-        () => {
-          showToast("Failed to trigger collections scan", { type: "error" });
-        }
-      );
-      await loadDashboardData(); // Refresh data
-    } catch {
-      showToast("Failed to trigger collections scan", { type: "error" });
-    }
-  };
-
-  const handleTestEmailGeneration = async () => {
-    try {
-      const testRequest = {
-        invoiceId: "test-invoice-001",
-        amount: 1500,
-        // keep payload minimal; let backend determine dates when generating drafts
-        stage: "overdue_stage_1",
-        customerName: "Test Customer Ltd",
-      };
-
-      const draft = await emailApi.generateEmailDraft(testRequest);
-      showToast("Email draft generated successfully", { type: "success" });
-
-      // Show preview in console for now
-      console.log("Generated email draft:", draft);
-    } catch {
-      showToast("Failed to generate email draft", { type: "error" });
-    }
-  };
-
-  const handleTestPaymentReconciliation = async () => {
-    try {
-      const testRequest = {
-        paymentId: "test-payment-001",
-        amount: 1500,
-        reference: "INV-001",
-      };
-
-      const result = await paymentApi.reconcilePayment(testRequest);
-      showToast(`Payment reconciliation: ${result.matched ? "Matched" : "Unmatched"}`, {
-        type: result.matched ? "success" : "warning",
-      });
-    } catch {
-      showToast("Failed to reconcile payment", { type: "error" });
-    }
-  };
+  // Replace local implementations with handler calls
+  const initializeAgentsHandler = () => initializeAgents(setAgents);
+  const loadDashboardDataHandler = () => loadDashboardData(selectedTenantId, setStats, setLoading);
+  const handleTriggerCollectionsScanHandler = () => handleTriggerCollectionsScan(loadDashboardDataHandler);
+  const handleTestEmailGenerationHandler = () => handleTestEmailGeneration();
+  const handleTestPaymentReconciliationHandler = () => handleTestPaymentReconciliation();
 
   useEffect(() => {
     // Only proceed once Zustand is hydrated
     if (!isHydrated) return;
-    initializeAgents();
+    initializeAgentsHandler();
     // Use Zustand as the single source of truth for auth state
     if (!xeroConnected) {
       // If not connected, redirect to /auth
@@ -220,7 +113,7 @@ const DashboardPage: React.FC = () => {
       setLoading(false);
       return;
     }
-    loadDashboardData();
+    loadDashboardDataHandler();
     // Consideration for future JWT-based auth:
     // If using JWT, validate token here and refresh if expired.
     // For now, rely on Zustand state only.
@@ -276,7 +169,7 @@ const DashboardPage: React.FC = () => {
       title="Autopilot Receivables Dashboard"
       actions={
         <div className="flex gap-2">
-          <Button onClick={handleRefreshData} loading={refreshing} size="sm" variant="secondary">
+          <Button onClick={handleRefreshDataHandler} loading={refreshing} size="sm" variant="secondary">
             Refresh Data
           </Button>
           {!xeroConnected && (
@@ -370,7 +263,7 @@ const DashboardPage: React.FC = () => {
         <Card title="Agent Actions" description="Test and trigger agent operations">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Button
-              onClick={handleTriggerCollectionsScan}
+              onClick={handleTriggerCollectionsScanHandler}
               className="flex flex-col items-start h-auto p-4 text-left"
               variant="ghost"
             >
@@ -380,7 +273,7 @@ const DashboardPage: React.FC = () => {
             </Button>
 
             <Button
-              onClick={handleTestEmailGeneration}
+              onClick={handleTestEmailGenerationHandler}
               className="flex flex-col items-start h-auto p-4 text-left"
               variant="ghost"
             >
@@ -390,7 +283,7 @@ const DashboardPage: React.FC = () => {
             </Button>
 
             <Button
-              onClick={handleTestPaymentReconciliation}
+              onClick={handleTestPaymentReconciliationHandler}
               className="flex flex-col items-start h-auto p-4 text-left"
               variant="ghost"
             >
