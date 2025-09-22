@@ -48,14 +48,13 @@ const DashboardPage: React.FC = () => {
     } finally {
       setRefreshing(false);
     }
-  } 
+  };
   const navigate = useNavigate();
   // Zustand hydration gate
   const authStore = useAuthStore();
   const isHydrated = useStore(useAuthStore, (state) => !!state.setAuth);
   const xeroConnected = useXeroConnected();
   const selectedTenantId = useSelectedTenantId();
-  const setSelectedTenantId = useSetSelectedTenantId();
   // Debug logging for troubleshooting redirect issue
   useEffect(() => {
     // eslint-disable-next-line no-console
