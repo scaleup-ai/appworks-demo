@@ -55,11 +55,9 @@ const XeroCallback: React.FC = () => {
             const t = tenants[0];
             const tid = t.tenantId || t.tenant_id || "";
             if (tid) {
-              localStorage.setItem("selectedTenantId", tid);
-              localStorage.setItem("xeroConnected", "true");
               setAuth({ selectedTenantId: tid, xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
-              // Navigation will be handled by state watcher below
+              navigate("/dashboard", { replace: true });
               return;
             }
           }
@@ -67,10 +65,9 @@ const XeroCallback: React.FC = () => {
             navigate("/select-tenant", { state: { tenants } });
             return;
           }
-          localStorage.setItem("xeroConnected", "true");
           setAuth({ xeroConnected: true });
           showToast("Successfully connected to Xero!", { type: "success" });
-          // Navigation will be handled by state watcher below
+          navigate("/dashboard", { replace: true });
           return;
         }
         if (response.status === 409) {
@@ -81,10 +78,9 @@ const XeroCallback: React.FC = () => {
             // Check connection status using statusResp directly
             const isConnected = statusResp.connected === true || Boolean(statusResp.tenantId);
             if (isConnected) {
-              localStorage.setItem("xeroConnected", "true");
               setAuth({ xeroConnected: true });
               showToast("Successfully connected to Xero!", { type: "success" });
-              // Navigation will be handled by state watcher below
+              navigate("/dashboard", { replace: true });
               return;
             }
           } catch {}
@@ -122,11 +118,7 @@ const XeroCallback: React.FC = () => {
   }, [searchParams, navigate, setAuth]);
 
   // Watch for Zustand state changes and redirect only when both are set
-  useEffect(() => {
-    if (xeroConnected && selectedTenantId) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [xeroConnected, selectedTenantId, navigate]);
+  // Removed watcher: direct navigation after setAuth for reliability
 
   if (processing) {
     return (
