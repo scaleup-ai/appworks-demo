@@ -6,6 +6,7 @@ import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
 import { makeHandleAddTimeEntry, makeHandleGenerateReport } from "../../handlers/profitability.handler";
+import { formatCurrency } from "../../handlers/helper.handler";
 
 interface Project {
   id: string;
@@ -126,12 +127,7 @@ const ProfitabilityPage: React.FC = () => {
     loadProfitabilityData();
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  // use shared formatCurrency from helper.handler
 
   const getStatusColor = (status: Project["status"]) => {
     switch (status) {

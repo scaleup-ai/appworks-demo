@@ -166,14 +166,7 @@ const CashFlowPage: React.FC = () => {
           <Button onClick={handleGenerateForecast} size="sm">
             Regenerate Forecast
           </Button>
-          <Button
-            onClick={() => {
-              downloadJson("cashflow-forecast.json", { summary, forecast, scenarios });
-              showToast("Cash flow forecast downloaded", { type: "success" });
-            }}
-            variant="secondary"
-            size="sm"
-          >
+          <Button onClick={handleExportForecast} variant="secondary" size="sm">
             Export
           </Button>
         </div>

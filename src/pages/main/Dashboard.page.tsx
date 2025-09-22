@@ -10,7 +10,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import { RootState } from "../../store/store";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
-import { copyToClipboard, downloadJson } from "../../handlers/helper.handler";
+import { copyToClipboard, downloadJson, formatCurrency } from "../../handlers/helper.handler";
 import {
   makeHandleRefreshData,
   makeHandleTriggerCollectionsScan,
@@ -123,12 +123,7 @@ const DashboardPage: React.FC = () => {
     }
   }, [xeroConnected, selectedTenantId]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  // use shared formatCurrency from helper.handler
 
   const getStatusColor = (status: AgentStatus["status"]) => {
     switch (status) {

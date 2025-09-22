@@ -9,6 +9,7 @@ import showToast from "../../utils/toast";
 import * as paymentApi from "../../apis/payment.api";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import { makeHandleTestPaymentReconciliation, makeHandleRunBulkReconciliation } from "../../handlers/payments.handler";
+import { formatCurrency } from "../../handlers/helper.handler";
 
 interface PaymentReconciliationTest {
   id: string;
@@ -105,12 +106,7 @@ const PaymentsPage: React.FC = () => {
     loadPaymentData();
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  // use shared formatCurrency from helper.handler
 
   const getStatusColor = (status: PaymentReconciliationTest["status"]) => {
     switch (status) {

@@ -1,4 +1,5 @@
 import showToast from "../utils/toast";
+import { EmailDraftRequest, EmailDraftResponse, PaymentReconciliationRequest, PaymentReconciliationResponse } from "../types/api.types";
 
 type AsyncFn<T = unknown> = () => Promise<T>;
 
@@ -26,7 +27,7 @@ export function makeHandleTriggerCollectionsScan(triggerScan: AsyncFn, loadDashb
   };
 }
 
-export function makeHandleTestEmailGeneration<Req = unknown, Res = unknown>(generateEmailDraft: (req: Req) => Promise<Res>) {
+export function makeHandleTestEmailGeneration(generateEmailDraft: (req: EmailDraftRequest) => Promise<EmailDraftResponse>) {
   return async function handleTestEmailGeneration() {
     try {
       const testRequest = {
@@ -35,7 +36,7 @@ export function makeHandleTestEmailGeneration<Req = unknown, Res = unknown>(gene
         stage: "overdue_stage_1",
         customerName: "Test Customer Ltd",
       };
-      const draft = await generateEmailDraft(testRequest as unknown as Req);
+      const draft = await generateEmailDraft(testRequest);
       showToast("Email draft generated successfully", { type: "success" });
       console.log("Generated email draft:", draft);
     } catch {
@@ -44,14 +45,11 @@ export function makeHandleTestEmailGeneration<Req = unknown, Res = unknown>(gene
   };
 }
 
-type ReconcileResult = { matched?: boolean; invoiceId?: string };
-
-export function makeHandleTestPaymentReconciliation<Req = unknown, Res = unknown>(reconcilePayment: (req: Req) => Promise<Res>) {
+export function makeHandleTestPaymentReconciliation(reconcilePayment: (req: PaymentReconciliationRequest) => Promise<PaymentReconciliationResponse>) {
   return async function handleTestPaymentReconciliation() {
     try {
       const testRequest = { paymentId: "test-payment-001", amount: 1500, reference: "INV-001" };
-      const resultRaw = await reconcilePayment(testRequest as unknown as Req);
-      const result = (resultRaw as ReconcileResult) || {};
+      const result = await reconcilePayment(testRequest as PaymentReconciliationRequest);
       showToast(`Payment reconciliation: ${result.matched ? "Matched" : "Unmatched"}`, {
         type: result.matched ? "success" : "warning",
       });

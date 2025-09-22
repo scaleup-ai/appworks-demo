@@ -8,7 +8,7 @@ export function makeHandleGenerateForecast(loadCashFlowData: () => Promise<void>
   };
 }
 
-export function makeHandleExportForecast(getExportData: () => any) {
+export function makeHandleExportForecast(getExportData: () => unknown) {
   return function handleExportForecast() {
     const exportData = getExportData();
     console.log("Cash flow forecast export:", exportData);
@@ -16,10 +16,14 @@ export function makeHandleExportForecast(getExportData: () => any) {
   };
 }
 
-export function makeHandleScenarioChange(setSelectedScenario: (s: string) => void, scenariosGetter: () => any[], showToastFn = showToast) {
+export function makeHandleScenarioChange<T extends { id?: string; name?: string }>(
+  setSelectedScenario: (s: string) => void,
+  scenariosGetter: () => T[],
+  showToastFn = showToast
+) {
   return function handleScenarioChange(scenarioId: string) {
     setSelectedScenario(scenarioId);
     const scenario = scenariosGetter().find((s) => s.id === scenarioId);
-    if (scenario) showToastFn(`Viewing ${scenario.name} scenario`, { type: "info" });
+    if (scenario) showToastFn(`Viewing ${scenario.name as string} scenario`, { type: "info" });
   };
 }

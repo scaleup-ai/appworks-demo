@@ -1,9 +1,12 @@
 import showToast from "../utils/toast";
 
+export type NewTimeEntry = { projectCode: string; user: string; role: string; hours: string; date: string; billable: boolean; description: string };
+export type TimeEntry = Omit<NewTimeEntry, "hours"> & { id: string; hours: number; hourlyRate: number };
+
 export function makeHandleAddTimeEntry(
-  getNewTimeEntry: () => { projectCode: string; user: string; role: string; hours: string; date: string; billable: boolean; description: string },
-  setTimeEntries: (updater: (prev: any[]) => any[]) => void,
-  setNewTimeEntry: (v: any) => void,
+  getNewTimeEntry: () => NewTimeEntry,
+  setTimeEntries: (updater: (prev: TimeEntry[]) => TimeEntry[]) => void,
+  setNewTimeEntry: (v: NewTimeEntry) => void,
   setShowTimeEntryForm: (b: boolean) => void,
   loadProfitabilityData: () => Promise<void>
 ) {
@@ -23,10 +26,15 @@ export function makeHandleAddTimeEntry(
         "QA Engineer": 90,
       };
 
-      const timeEntry = {
+      const timeEntry: TimeEntry = {
         id: Date.now().toString(),
-        ...newTimeEntry,
-        hours: parseFloat(newTimeEntry.hours as unknown as string),
+        projectCode: newTimeEntry.projectCode,
+        user: newTimeEntry.user,
+        role: newTimeEntry.role,
+        date: newTimeEntry.date,
+        billable: newTimeEntry.billable,
+        description: newTimeEntry.description,
+        hours: parseFloat(newTimeEntry.hours),
         hourlyRate: hourlyRateMap[newTimeEntry.role] || 100,
       };
 
@@ -52,7 +60,7 @@ export function makeHandleAddTimeEntry(
   };
 }
 
-export function makeHandleGenerateReport(getSummary: () => any, getProjects: () => any[], getTimeEntries: () => any[]) {
+export function makeHandleGenerateReport(getSummary: () => unknown, getProjects: () => unknown[], getTimeEntries: () => TimeEntry[]) {
   return function handleGenerateReport() {
     const reportData = {
       summary: getSummary(),

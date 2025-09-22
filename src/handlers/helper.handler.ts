@@ -75,11 +75,11 @@ export const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const handlers = {
+const helperHandles = {
   downloadJson,
   copyToClipboard,
   openExternal,
   formatCurrency,
 };
 
-export default handlers;
+export default helperHandles;

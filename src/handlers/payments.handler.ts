@@ -1,6 +1,9 @@
 import showToast from "../utils/toast";
+import { PaymentReconciliationRequest, PaymentReconciliationResponse } from "../types/api.types";
 
-type ReconcileResult = { matched?: boolean; invoiceId?: string };
+type InvoiceSummary = { invoiceId: string; number?: string; amount?: number; dueDate?: string | null; status?: string | null };
+
+type ReconcileResult = PaymentReconciliationResponse;
 
 type PaymentReconciliationTest = {
   id: string;
@@ -12,11 +15,11 @@ type PaymentReconciliationTest = {
   status: "pending" | "completed" | "failed";
 };
 
-export function makeHandleTestPaymentReconciliation<Req = unknown, Res = unknown>(
+export function makeHandleTestPaymentReconciliation(
   testPaymentState: { paymentId: string; amount: string; reference: string },
   setTestingPayment: (b: boolean) => void,
   setReconciliationTests: (updater: (prev: PaymentReconciliationTest[]) => PaymentReconciliationTest[]) => void,
-  paymentApiReconcile: (req: Req) => Promise<Res>,
+  paymentApiReconcile: (req: PaymentReconciliationRequest) => Promise<PaymentReconciliationResponse>,
   loadPaymentData: () => Promise<unknown>,
   setTestPayment: (s: { paymentId: string; amount: string; reference: string }) => void
 ) {
@@ -45,8 +48,7 @@ export function makeHandleTestPaymentReconciliation<Req = unknown, Res = unknown
 
       setReconciliationTests((prev) => [newTest, ...prev]);
 
-      const resultRaw = await paymentApiReconcile(request as unknown as Req);
-      const result = (resultRaw as ReconcileResult) || {};
+      const result = await paymentApiReconcile(request as PaymentReconciliationRequest);
 
       setReconciliationTests((prev) => prev.map((test) => (test.id === newTest.id ? { ...test, result, status: "completed" } : test)));
 
@@ -68,9 +70,9 @@ export function makeHandleTestPaymentReconciliation<Req = unknown, Res = unknown
   };
 }
 
-export function makeHandleRunBulkReconciliation<Req = unknown, Res = unknown>(
-  accountsReceivablesList: (opts?: Record<string, unknown>) => Promise<unknown[]>,
-  paymentApiReconcile: (req: Req) => Promise<Res>,
+export function makeHandleRunBulkReconciliation(
+  accountsReceivablesList: (opts?: { tenantId?: string; limit?: number }) => Promise<InvoiceSummary[]>,
+  paymentApiReconcile: (req: PaymentReconciliationRequest) => Promise<PaymentReconciliationResponse>,
   selectedTenantIdGetter: () => string | null,
   setReconciliationTests: (updater: (prev: PaymentReconciliationTest[]) => PaymentReconciliationTest[]) => void,
   loadPaymentData: () => Promise<unknown>
@@ -100,7 +102,7 @@ export function makeHandleRunBulkReconciliation<Req = unknown, Res = unknown>(
 
       for (const payment of testPayments) {
         try {
-          const result = await paymentApiReconcile(payment as unknown as Req);
+          const result = await paymentApiReconcile(payment as PaymentReconciliationRequest);
           const newTest: PaymentReconciliationTest = {
             id: `${payment.paymentId}-${Date.now()}`,
             paymentId: payment.paymentId,

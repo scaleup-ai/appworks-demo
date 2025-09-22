@@ -15,6 +15,7 @@ import {
   makeHandleSelectAll,
 } from "../../handlers/collections.handler";
 import * as emailApi from "../../apis/email.api";
+import { formatCurrency } from "../../handlers/helper.handler";
 
 interface Invoice {
   invoiceId: string;
@@ -140,12 +141,7 @@ const CollectionsPage: React.FC = () => {
     }
   }, [xeroConnected]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
+  // use shared formatCurrency from helper.handler
 
   const getReminderStageColor = (stage: string) => {
     switch (stage) {

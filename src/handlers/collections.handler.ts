@@ -1,6 +1,9 @@
 import showToast from "../utils/toast";
+import { EmailDraftRequest, EmailDraftResponse } from "../types/api.types";
 
-export function makeHandleTriggerScan(triggerScan: () => Promise<any>, loadCollectionsData: () => Promise<any>) {
+type InvoiceView = { invoiceId: string; number?: string; amount: number; dueDate?: string | null; status?: string | null; reminderStage?: string };
+
+export function makeHandleTriggerScan(triggerScan: () => Promise<unknown>, loadCollectionsData: () => Promise<unknown>) {
   return async function handleTriggerScan() {
     try {
       await triggerScan();
@@ -12,10 +15,10 @@ export function makeHandleTriggerScan(triggerScan: () => Promise<any>, loadColle
   };
 }
 
-export function makeHandleGenerateEmails<Req = unknown, Res = unknown>(
+export function makeHandleGenerateEmails(
   selectedInvoices: Set<string>,
-  invoices: Array<Record<string, any>>,
-  emailApiGenerate: (req: Req) => Promise<Res>,
+  invoices: InvoiceView[],
+  emailApiGenerate: (req: EmailDraftRequest) => Promise<EmailDraftResponse>,
   setSelectedInvoices: (s: Set<string>) => void,
   setGenerating: (b: boolean) => void
 ) {
@@ -27,7 +30,7 @@ export function makeHandleGenerateEmails<Req = unknown, Res = unknown>(
 
     setGenerating(true);
     try {
-      const selectedInvoiceData = invoices.filter((inv) => selectedInvoices.has(inv.invoiceId));
+      const selectedInvoiceData = invoices.filter((inv) => inv.invoiceId && selectedInvoices.has(inv.invoiceId));
       const emailPromises = selectedInvoiceData.map(async (invoice) => {
         try {
           const draft = await emailApiGenerate({
@@ -35,8 +38,8 @@ export function makeHandleGenerateEmails<Req = unknown, Res = unknown>(
             amount: invoice.amount,
             dueDate: invoice.dueDate || undefined,
             stage: invoice.reminderStage || "overdue_stage_1",
-            customerName: `Customer for ${invoice.number}`,
-          } as unknown as Req);
+            customerName: invoice.number || "",
+          });
           return { invoice, draft, success: true };
         } catch (error) {
           return { invoice, error, success: false };
@@ -69,13 +72,22 @@ export function makeHandleSelectInvoice(selectedInvoices: Set<string>, setSelect
   };
 }
 
-export function makeHandleSelectAll(invoices: Array<Record<string, any>>, selectedInvoices: Set<string>, setSelectedInvoices: (s: Set<string>) => void) {
+export function makeHandleSelectAll<InvoiceT extends { invoiceId: string; status?: string | null; daysPastDue?: number }>(
+  invoices: InvoiceT[],
+  selectedInvoices: Set<string>,
+  setSelectedInvoices: (s: Set<string>) => void
+) {
   return function handleSelectAll() {
-    const overdueInvoices = invoices.filter((inv) => inv.status !== "PAID" && (inv.daysPastDue || 0) > 0);
+    const overdueInvoices = invoices.filter((inv) => {
+      const i = inv as Record<string, unknown>;
+      const status = (i.status as string | null | undefined) ?? null;
+      const daysPastDue = (i.daysPastDue as number | undefined) || 0;
+      return status !== "PAID" && daysPastDue > 0;
+    });
     if (selectedInvoices.size === overdueInvoices.length) {
       setSelectedInvoices(new Set());
     } else {
-      setSelectedInvoices(new Set(overdueInvoices.map((inv) => inv.invoiceId)));
+      setSelectedInvoices(new Set(overdueInvoices.map((inv) => (inv as Record<string, unknown>).invoiceId as string)));
     }
   };
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import axiosClient from "../../apis/axios-client";
 import { selectTenant, setTenants } from "../../store/authSlice";
@@ -129,10 +129,13 @@ const SettingsPage: React.FC = () => {
     void fetch();
   }, [dispatch]);
 
-  const handleChange = (ev: React.ChangeEvent<HTMLSelectElement>) => {
-    makeHandleChange(dispatch, selectTenant)(ev);
-    setSelected(ev.target.value || null);
-  };
+  const handleChange = useMemo(() => {
+    const base = makeHandleChange(dispatch, selectTenant);
+    return (ev: React.ChangeEvent<HTMLSelectElement>) => {
+      base(ev);
+      setSelected(ev.target.value || null);
+    };
+  }, [dispatch]);
 
   return (
     <AppLayout>
