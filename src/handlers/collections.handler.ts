@@ -1,4 +1,5 @@
 import showToast from "../utils/toast";
+import { withLoading, apiErrorToast } from "./shared.handler";
 import { EmailDraftRequest, EmailDraftResponse } from "../types/api.types";
 
 type InvoiceView = { invoiceId: string; number?: string; amount: number; dueDate?: string | null; status?: string | null; reminderStage?: string };
@@ -27,39 +28,38 @@ export function makeHandleGenerateEmails(
       showToast("Please select invoices to generate emails for", { type: "warning" });
       return;
     }
+    await withLoading(setGenerating, async () => {
+      const handleError = apiErrorToast(showToast, "Failed to generate email drafts");
+      try {
+        const selectedInvoiceData = invoices.filter((inv) => inv.invoiceId && selectedInvoices.has(inv.invoiceId));
+        const emailPromises = selectedInvoiceData.map(async (invoice) => {
+          try {
+            const draft = await emailApiGenerate({
+              invoiceId: invoice.invoiceId,
+              amount: invoice.amount,
+              dueDate: invoice.dueDate || undefined,
+              stage: invoice.reminderStage || "overdue_stage_1",
+              customerName: invoice.number || "",
+            });
+            return { invoice, draft, success: true };
+          } catch (error) {
+            return { invoice, error, success: false };
+          }
+        });
 
-    setGenerating(true);
-    try {
-      const selectedInvoiceData = invoices.filter((inv) => inv.invoiceId && selectedInvoices.has(inv.invoiceId));
-      const emailPromises = selectedInvoiceData.map(async (invoice) => {
-        try {
-          const draft = await emailApiGenerate({
-            invoiceId: invoice.invoiceId,
-            amount: invoice.amount,
-            dueDate: invoice.dueDate || undefined,
-            stage: invoice.reminderStage || "overdue_stage_1",
-            customerName: invoice.number || "",
-          });
-          return { invoice, draft, success: true };
-        } catch (error) {
-          return { invoice, error, success: false };
-        }
-      });
+        const results = await Promise.all(emailPromises);
+        const successful = results.filter((r) => r.success).length;
+        const failed = results.filter((r) => !r.success).length;
 
-      const results = await Promise.all(emailPromises);
-      const successful = results.filter((r) => r.success).length;
-      const failed = results.filter((r) => !r.success).length;
+        if (successful > 0) showToast(`Generated ${successful} email drafts successfully`, { type: "success" });
+        if (failed > 0) showToast(`Failed to generate ${failed} email drafts`, { type: "warning" });
 
-      if (successful > 0) showToast(`Generated ${successful} email drafts successfully`, { type: "success" });
-      if (failed > 0) showToast(`Failed to generate ${failed} email drafts`, { type: "warning" });
-
-      setSelectedInvoices(new Set());
-    } catch (error) {
-      console.error("Failed to generate email drafts:", error);
-      showToast("Failed to generate email drafts", { type: "error" });
-    } finally {
-      setGenerating(false);
-    }
+        setSelectedInvoices(new Set());
+      } catch (err) {
+        console.error("Failed to generate email drafts:", err);
+        handleError(err);
+      }
+    });
   };
 }
 

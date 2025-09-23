@@ -10,7 +10,7 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import { RootState } from "../../store/store";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
-import { copyToClipboard, downloadJson, formatCurrency } from "../../handlers/helper.handler";
+import { copyToClipboard, downloadJson, formatCurrency } from "../../helpers/ui.helper";
 import {
   makeHandleRefreshData,
   makeHandleTriggerCollectionsScan,
@@ -338,7 +338,7 @@ const DashboardPage: React.FC = () => {
             <Button
               onClick={() => {
                 // open demo collections in a new tab using handlers
-                import("../../handlers/helper.handler")
+                import("../../helpers/ui.helper")
                   .then((h) => h.openExternal("/collections", "_blank"))
                   .catch((e) => {
                     console.warn("Failed to open collections", e);

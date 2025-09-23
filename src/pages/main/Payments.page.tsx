@@ -8,8 +8,11 @@ import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
 import * as paymentApi from "../../apis/payment.api";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
-import { makeHandleTestPaymentReconciliation, makeHandleRunBulkReconciliation } from "../../handlers/payments.handler";
-import { formatCurrency } from "../../handlers/helper.handler";
+import {
+  makeHandleTestPaymentReconciliation,
+  makeHandleRunBulkReconciliation,
+} from "../../handlers/reconciliation.handler";
+import { formatCurrency } from "../../helpers/ui.helper";
 
 interface PaymentReconciliationTest {
   id: string;

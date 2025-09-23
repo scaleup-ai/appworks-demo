@@ -4,6 +4,8 @@ import { useSelector, useDispatch } from "react-redux";
 import { setTenants, selectTenant } from "../store/authSlice";
 import axiosClient from "../apis/axios-client";
 import { RootState } from "../store/store";
+import { makeHandleStartXeroAuth, makeHandleSignOut } from "../handlers/auth.handler";
+import { useNavigate } from "react-router-dom";
 
 interface NavProps {
   className?: string;
@@ -24,30 +26,24 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     }
   };
 
-  const startXeroAuth = async () => {
-    try {
-      const { getXeroAuthUrl, capturePostAuthRedirect } = await import("../apis/xero.api");
-      try {
-        capturePostAuthRedirect();
-      } catch (err) {
-        // non-fatal; best-effort only
-        console.warn("capturePostAuthRedirect failed", err);
-      }
-      window.location.href = getXeroAuthUrl();
-    } catch (err) {
-      console.warn("startXeroAuth failed", err);
-    }
-  };
+  // auth handlers (moved to handlers for reuse)
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  const handleStartXeroAuth = makeHandleStartXeroAuth();
+  const handleSignOut = makeHandleSignOut(dispatch, navigate);
+
+  const [menuOpen, setMenuOpen] = React.useState(false);
 
   // tenant change is handled elsewhere (Nav only displays friendly name)
 
   // read tenant state at top-level so we can show friendly names and fetch missing metadata
   const selId = useSelector((s: RootState) => s.auth.selectedTenantId);
   const tenants = useSelector((s: RootState) => s.auth.tenants || []);
+  const xeroConnected = useSelector((s: RootState) => s.auth.xeroConnected);
 
-  type OrgResponse = {
+  type OrganizationDetails = {
     id?: string;
     clientId?: string;
     tenantId?: string;
@@ -78,7 +74,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             createdAt?: string;
             displayLabel?: string;
           };
-          const tenantsArr = (data as OrgResponse[]).map((t) => {
+          const tenantsArr = (data as OrganizationDetails[]).map((t) => {
             let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
             let clientId = t.clientId || undefined;
             if (!tenantIdRaw && t.id) {
@@ -153,8 +149,10 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     }
   };
 
+  // sign-out handled by makeHandleSignOut (wired below)
+
   return (
-    <div className={className + " flex items-center gap-4"}>
+    <div className={className + " flex items-center gap-4 relative"}>
       {/* Tenant selector / display */}
       <div className={linkClass}>
         <select
@@ -215,12 +213,48 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
         Settings
       </Link>
 
-      <button
-        onClick={startXeroAuth}
-        className={mobile ? "text-sm font-medium text-blue-600 mt-2" : "text-sm font-medium text-blue-600"}
-      >
-        Sign in
-      </button>
+      {!xeroConnected ? (
+        <button
+          onClick={handleStartXeroAuth}
+          className={mobile ? "text-sm font-medium text-blue-600 mt-2" : "text-sm font-medium text-blue-600"}
+        >
+          Sign in
+        </button>
+      ) : (
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className={mobile ? "text-sm font-medium text-blue-600 mt-2" : "text-sm font-medium text-blue-600"}
+            aria-haspopup="true"
+            aria-expanded={menuOpen}
+          >
+            Account ▾
+          </button>
+          {menuOpen && (
+            <div className="absolute right-0 z-50 w-40 mt-2 bg-white border rounded shadow-md">
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  navigate("/settings");
+                  handleLinkClick();
+                }}
+                className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+              >
+                Settings
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  void handleSignOut();
+                }}
+                className="w-full px-4 py-2 text-sm text-left text-red-600 hover:bg-gray-100"
+              >
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

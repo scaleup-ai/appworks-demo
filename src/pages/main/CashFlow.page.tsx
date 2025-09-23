@@ -7,12 +7,12 @@ import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
-import { downloadJson, formatCurrency } from "../../handlers/helper.handler";
+import { downloadJson, formatCurrency } from "../../helpers/ui.helper";
 import {
   makeHandleGenerateForecast,
   makeHandleExportForecast,
   makeHandleScenarioChange,
-} from "../../handlers/cashflow.handler";
+} from "../../handlers/forecast.handler";
 
 interface CashFlowForecast {
   week: number;

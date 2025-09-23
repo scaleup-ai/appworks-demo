@@ -5,8 +5,8 @@ import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
-import { makeHandleAddTimeEntry, makeHandleGenerateReport } from "../../handlers/profitability.handler";
-import { formatCurrency } from "../../handlers/helper.handler";
+import { makeHandleAddTimeEntry, makeHandleGenerateReport } from "../../handlers/reporting.handler";
+import { formatCurrency } from "../../helpers/ui.helper";
 
 interface Project {
   id: string;

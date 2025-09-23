@@ -15,7 +15,7 @@ import {
   makeHandleSelectAll,
 } from "../../handlers/collections.handler";
 import * as emailApi from "../../apis/email.api";
-import { formatCurrency } from "../../handlers/helper.handler";
+import { formatCurrency } from "../../helpers/ui.helper";
 
 interface Invoice {
   invoiceId: string;
