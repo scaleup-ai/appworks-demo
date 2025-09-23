@@ -5,6 +5,10 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
+import TenantPrompt from "../../components/ui/TenantPrompt.component";
+import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
+import ActionBar from "../../components/ui/ActionBar.component";
+import StatusBadge from "../../components/ui/StatusBadge.component";
 import showToast from "../../utils/toast";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
@@ -180,16 +184,17 @@ const CollectionsPage: React.FC = () => {
   if (!xeroConnected) {
     return (
       <DashboardLayout title="Collections">
-        <Card>
-          <div className="py-12 text-center">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 text-2xl bg-yellow-100 rounded-full">
-              🔗
-            </div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900">Xero Connection Required</h3>
-            <p className="mb-6 text-gray-600">Connect your Xero account to access collections and invoice data.</p>
-            <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
+        <div className="py-12">
+          <div className="max-w-md mx-auto">
+            <TenantPrompt
+              title="Xero Connection Required"
+              message="Connect your Xero account to access collections and invoice data."
+              showInput={false}
+              onConfirm={() => (window.location.href = "/auth")}
+              ctaText="Connect Xero"
+            />
           </div>
-        </Card>
+        </div>
       </DashboardLayout>
     );
   }
@@ -208,47 +213,42 @@ const CollectionsPage: React.FC = () => {
     <DashboardLayout
       title="Collections Management"
       actions={
-        <div className="flex gap-2">
+        <ActionBar>
           <Button onClick={loadCollectionsData} variant="secondary" size="sm">
             Refresh
           </Button>
           <Button onClick={handleTriggerScan} size="sm">
             Trigger Scan
           </Button>
-        </div>
+        </ActionBar>
       }
     >
       <div className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-blue-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Outstanding</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary.totalOutstanding)}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-red-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Overdue Amount</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.overdueAmount)}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-green-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Current Amount</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(summary.currentAmount)}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Scheduled Reminders</p>
-              <p className="text-2xl font-bold text-purple-600">{summary.scheduledReminders}</p>
-            </div>
-          </Card>
-        </div>
+        <SummaryCardGrid
+          items={[
+            {
+              title: "Total Outstanding",
+              value: formatCurrency(summary.totalOutstanding),
+              className: "border-l-4 border-l-blue-500",
+            },
+            {
+              title: "Overdue Amount",
+              value: formatCurrency(summary.overdueAmount),
+              className: "border-l-4 border-l-red-500",
+            },
+            {
+              title: "Current Amount",
+              value: formatCurrency(summary.currentAmount),
+              className: "border-l-4 border-l-green-500",
+            },
+            {
+              title: "Scheduled Reminders",
+              value: summary.scheduledReminders,
+              className: "border-l-4 border-l-purple-500",
+            },
+          ]}
+        />
 
         {/* Actions Bar */}
         <Card>
@@ -330,11 +330,23 @@ const CollectionsPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getReminderStageColor(invoice.reminderStage || "current")}`}
+                        <StatusBadge
+                          variant={
+                            invoice.reminderStage === "current"
+                              ? "green"
+                              : invoice.reminderStage === "pre_due"
+                                ? "blue"
+                                : invoice.reminderStage === "overdue_stage_1"
+                                  ? "yellow"
+                                  : invoice.reminderStage === "overdue_stage_2"
+                                    ? "orange"
+                                    : invoice.reminderStage === "overdue_stage_3"
+                                      ? "red"
+                                      : "gray"
+                          }
                         >
                           {getReminderStageLabel(invoice.reminderStage || "current")}
-                        </span>
+                        </StatusBadge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className="text-sm text-gray-900">{invoice.status || "Unknown"}</span>

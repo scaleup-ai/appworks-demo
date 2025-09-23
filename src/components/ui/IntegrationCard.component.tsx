@@ -1,5 +1,6 @@
 import React from "react";
 import TenantsList from "../TenantsList.component";
+import StatusBadge from "./StatusBadge.component";
 
 export default function IntegrationCard({
   status,
@@ -25,9 +26,9 @@ export default function IntegrationCard({
               <div className="text-sm text-gray-600">Integration</div>
               <div className="mt-1 text-lg font-semibold">
                 {(status && (status.integrationStatus as any)?.success) === true ? (
-                  <span className="inline-flex items-center gap-2 text-green-700">Connected</span>
+                  <StatusBadge variant="green">Connected</StatusBadge>
                 ) : (
-                  <span className="inline-flex items-center gap-2 text-red-700">Not connected</span>
+                  <StatusBadge variant="red">Not connected</StatusBadge>
                 )}
               </div>
               <div className="text-sm text-gray-500 mt-1">

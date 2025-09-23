@@ -5,8 +5,11 @@ import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import showToast from "../../utils/toast";
+import ActionBar from "../../components/ui/ActionBar.component";
+import StatusBadge from "../../components/ui/StatusBadge.component";
 import { makeHandleAddTimeEntry, makeHandleGenerateReport } from "../../handlers/reporting.handler";
 import { formatCurrency } from "../../helpers/ui.helper";
+import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
 
 interface Project {
   id: string;
@@ -156,7 +159,7 @@ const ProfitabilityPage: React.FC = () => {
     <DashboardLayout
       title="Project Profitability"
       actions={
-        <div className="flex gap-2">
+        <ActionBar>
           <Button onClick={loadProfitabilityData} variant="secondary" size="sm">
             Refresh
           </Button>
@@ -166,40 +169,35 @@ const ProfitabilityPage: React.FC = () => {
           <Button onClick={handleGenerateReport} variant="secondary" size="sm">
             Generate Report
           </Button>
-        </div>
+        </ActionBar>
       }
     >
       <div className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-green-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-green-600">{formatCurrency(summary.totalRevenue)}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-red-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Costs</p>
-              <p className="text-2xl font-bold text-red-600">{formatCurrency(summary.totalCosts)}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-blue-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Profit</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary.totalProfit)}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Average Margin</p>
-              <p className="text-2xl font-bold text-purple-600">{summary.averageMargin.toFixed(1)}%</p>
-            </div>
-          </Card>
-        </div>
+        <SummaryCardGrid
+          items={[
+            {
+              title: "Total Revenue",
+              value: formatCurrency(summary.totalRevenue),
+              className: "border-l-4 border-l-green-500",
+            },
+            {
+              title: "Total Costs",
+              value: formatCurrency(summary.totalCosts),
+              className: "border-l-4 border-l-red-500",
+            },
+            {
+              title: "Total Profit",
+              value: formatCurrency(summary.totalProfit),
+              className: "border-l-4 border-l-blue-500",
+            },
+            {
+              title: "Average Margin",
+              value: `${summary.averageMargin.toFixed(1)}%`,
+              className: "border-l-4 border-l-purple-500",
+            },
+          ]}
+        />
 
         {/* Additional Metrics */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -385,11 +383,13 @@ const ProfitabilityPage: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(project.status)}`}
+                        <StatusBadge
+                          variant={
+                            project.status === "active" ? "green" : project.status === "completed" ? "blue" : "yellow"
+                          }
                         >
                           {project.status}
-                        </span>
+                        </StatusBadge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
@@ -460,13 +460,9 @@ const ProfitabilityPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          entry.billable ? "text-green-600 bg-green-100" : "text-gray-600 bg-gray-100"
-                        }`}
-                      >
+                      <StatusBadge variant={entry.billable ? "green" : "gray"}>
                         {entry.billable ? "Yes" : "No"}
-                      </span>
+                      </StatusBadge>
                     </td>
                     <td className="px-6 py-4">
                       <div className="max-w-xs text-sm text-gray-900 truncate">{entry.description || "-"}</div>

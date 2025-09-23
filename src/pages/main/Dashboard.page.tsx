@@ -7,6 +7,10 @@ import * as paymentApi from "../../apis/payment.api";
 import Button from "../../components/ui/Button.component";
 import Card from "../../components/ui/Card.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
+import StatusBadge from "../../components/ui/StatusBadge.component";
+import TenantPrompt from "../../components/ui/TenantPrompt.component";
+import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
+import ActionBar from "../../components/ui/ActionBar.component";
 import { RootState } from "../../store/store";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -152,32 +156,24 @@ const DashboardPage: React.FC = () => {
     return (
       <DashboardLayout title="Dashboard">
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-full max-w-md p-8 text-center bg-white rounded-lg shadow-md">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">Select Tenant</h2>
-            <p className="mb-6 text-gray-700">
-              Please enter or select your organisation/tenant ID to view dashboard data.
-            </p>
-            <input
-              type="text"
+          <div className="w-full max-w-md">
+            <TenantPrompt
+              title="Select Tenant"
+              message="Please enter or select your organisation/tenant ID to view dashboard data."
               value={tenantInput}
-              onChange={(e) => setTenantInput(e.target.value)}
-              placeholder="Tenant ID"
-              className="w-full px-4 py-2 mb-4 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              onClick={() => {
-                if (tenantInput.trim()) {
-                  localStorage.setItem("selectedTenantId", tenantInput.trim());
-                  dispatch({ type: "auth/selectTenant", payload: tenantInput.trim() });
+              onChange={(v) => setTenantInput(v)}
+              onConfirm={(v) => {
+                if (v && String(v).trim()) {
+                  const val = String(v).trim();
+                  localStorage.setItem("selectedTenantId", val);
+                  dispatch({ type: "auth/selectTenant", payload: val });
                   setShowTenantPrompt(false);
                   setLoading(true);
                   setTimeout(() => loadDashboardData(), 100);
                 }
               }}
-              className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-            >
-              Confirm Tenant
-            </button>
+              ctaText="Confirm Tenant"
+            />
           </div>
         </div>
       </DashboardLayout>
@@ -188,7 +184,7 @@ const DashboardPage: React.FC = () => {
     <DashboardLayout
       title="Autopilot Receivables Dashboard"
       actions={
-        <div className="flex gap-2">
+        <ActionBar>
           <Button onClick={handleRefreshData} loading={refreshing} size="sm" variant="secondary">
             Refresh Data
           </Button>
@@ -220,7 +216,7 @@ const DashboardPage: React.FC = () => {
           >
             Copy Snapshot
           </Button>
-        </div>
+        </ActionBar>
       }
     >
       <div className="space-y-8">
@@ -240,47 +236,34 @@ const DashboardPage: React.FC = () => {
         )}
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-blue-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Invoices</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.totalInvoices}</p>
-              </div>
-              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">📄</div>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-yellow-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Outstanding</p>
-                <p className="text-2xl font-bold text-yellow-600">{formatCurrency(stats.outstandingAmount)}</p>
-              </div>
-              <div className="flex items-center justify-center w-8 h-8 bg-yellow-100 rounded-full">💰</div>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-red-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Overdue</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(stats.overdueAmount)}</p>
-              </div>
-              <div className="flex items-center justify-center w-8 h-8 bg-red-100 rounded-full">⚠️</div>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-green-500">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Scheduled Reminders</p>
-                <p className="text-2xl font-bold text-green-600">{stats.scheduledReminders}</p>
-              </div>
-              <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">📧</div>
-            </div>
-          </Card>
-        </div>
+        <SummaryCardGrid
+          items={[
+            {
+              title: "Total Invoices",
+              value: stats.totalInvoices,
+              className: "border-l-4 border-l-blue-500",
+              icon: "📄",
+            },
+            {
+              title: "Outstanding",
+              value: formatCurrency(stats.outstandingAmount),
+              className: "border-l-4 border-l-yellow-500",
+              icon: "💰",
+            },
+            {
+              title: "Overdue",
+              value: formatCurrency(stats.overdueAmount),
+              className: "border-l-4 border-l-red-500",
+              icon: "⚠️",
+            },
+            {
+              title: "Scheduled Reminders",
+              value: stats.scheduledReminders,
+              className: "border-l-4 border-l-green-500",
+              icon: "📧",
+            },
+          ]}
+        />
 
         {/* Agent Status */}
         <Card title="Agent Status" description="Monitor the status of all autopilot agents">
@@ -289,9 +272,11 @@ const DashboardPage: React.FC = () => {
               <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-gray-900">{agent.name}</h4>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(agent.status)}`}>
+                  <StatusBadge
+                    variant={agent.status === "active" ? "green" : agent.status === "inactive" ? "gray" : "red"}
+                  >
                     {agent.status}
-                  </span>
+                  </StatusBadge>
                 </div>
                 <p className="mb-2 text-sm text-gray-600">{agent.description}</p>
                 {agent.lastRun && (

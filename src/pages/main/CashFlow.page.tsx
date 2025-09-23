@@ -5,6 +5,10 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
+import StatusBadge from "../../components/ui/StatusBadge.component";
+import TenantPrompt from "../../components/ui/TenantPrompt.component";
+import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
+import ActionBar from "../../components/ui/ActionBar.component";
 import showToast from "../../utils/toast";
 import { useNavigate } from "react-router-dom";
 import { downloadJson, formatCurrency } from "../../helpers/ui.helper";
@@ -123,24 +127,17 @@ const CashFlowPage: React.FC = () => {
   if (!xeroConnected) {
     return (
       <DashboardLayout title="Cash Flow Management">
-        <Card>
-          <div className="py-12 text-center">
-            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 text-2xl bg-yellow-100 rounded-full">
-              🔗
-            </div>
-            <h3 className="mb-2 text-lg font-medium text-gray-900">Xero Connection Required</h3>
-            <p className="mb-6 text-gray-600">
-              Connect your Xero account to access cash flow forecasting and treasury data.
-            </p>
-            <Button
-              onClick={() => {
-                navigate("/connect-xero");
-              }}
-            >
-              Connect Xero
-            </Button>
+        <div className="py-12">
+          <div className="max-w-md mx-auto">
+            <TenantPrompt
+              title="Xero Connection Required"
+              message="Connect your Xero account to access cash flow forecasting and treasury data."
+              showInput={false}
+              onConfirm={() => navigate("/connect-xero")}
+              ctaText="Connect Xero"
+            />
           </div>
-        </Card>
+        </div>
       </DashboardLayout>
     );
   }
@@ -159,7 +156,7 @@ const CashFlowPage: React.FC = () => {
     <DashboardLayout
       title="Cash Flow Management"
       actions={
-        <div className="flex gap-2">
+        <ActionBar>
           <Button onClick={loadCashFlowData} variant="secondary" size="sm">
             Refresh
           </Button>
@@ -169,44 +166,33 @@ const CashFlowPage: React.FC = () => {
           <Button onClick={handleExportForecast} variant="secondary" size="sm">
             Export
           </Button>
-        </div>
+        </ActionBar>
       }
     >
       <div className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-l-4 border-l-blue-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Current Balance</p>
-              <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary.currentBalance)}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-green-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">13-Week Projection</p>
-              <p
-                className={`text-2xl font-bold ${summary.projectedBalance13Week >= 0 ? "text-green-600" : "text-red-600"}`}
-              >
-                {formatCurrency(summary.projectedBalance13Week)}
-              </p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Cash Runway</p>
-              <p className="text-2xl font-bold text-purple-600">{summary.runway} weeks</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-red-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Breach Risk Weeks</p>
-              <p className="text-2xl font-bold text-red-600">{summary.breachWeeks}</p>
-            </div>
-          </Card>
-        </div>
+        <SummaryCardGrid
+          items={[
+            {
+              title: "Current Balance",
+              value: formatCurrency(summary.currentBalance),
+              className: "border-l-4 border-l-blue-500",
+            },
+            {
+              title: "13-Week Projection",
+              value: (
+                <span
+                  className={`text-2xl font-bold ${summary.projectedBalance13Week >= 0 ? "text-green-600" : "text-red-600"}`}
+                >
+                  {formatCurrency(summary.projectedBalance13Week)}
+                </span>
+              ),
+              className: "border-l-4 border-l-green-500",
+            },
+            { title: "Cash Runway", value: `${summary.runway} weeks`, className: "border-l-4 border-l-purple-500" },
+            { title: "Breach Risk Weeks", value: summary.breachWeeks, className: "border-l-4 border-l-red-500" },
+          ]}
+        />
 
         {/* Scenario Selector */}
         <Card title="Scenario Analysis" description="Compare different cash flow scenarios">
@@ -305,11 +291,11 @@ const CashFlowPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRiskColor(week.breachRisk)}`}
+                      <StatusBadge
+                        variant={week.breachRisk === "low" ? "green" : week.breachRisk === "medium" ? "yellow" : "red"}
                       >
                         {week.breachRisk}
-                      </span>
+                      </StatusBadge>
                     </td>
                   </tr>
                 ))}

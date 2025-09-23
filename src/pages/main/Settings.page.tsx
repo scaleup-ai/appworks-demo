@@ -4,6 +4,8 @@ import axiosClient from "../../apis/axios-client";
 import { selectTenant, setTenants } from "../../store/authSlice";
 import { makeHandleChange } from "../../handlers/settings.handler";
 import AppLayout from "../layouts/App.layout";
+import TenantListItem from "../../components/ui/TenantListItem.component";
+import StatusBadge from "../../components/ui/StatusBadge.component";
 
 type Org = {
   id?: string;
@@ -52,7 +54,8 @@ const SettingsPage: React.FC = () => {
               tenantName: (t.tenantName as string | undefined) || (t.tenant_name as string | undefined) || undefined,
               clientId: t.clientId as string | undefined,
               organisationNumber: t.organisationNumber as string | undefined,
-              displayLabel: (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
+              displayLabel:
+                (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
             };
           });
           setOrgs(mapped);
@@ -67,7 +70,8 @@ const SettingsPage: React.FC = () => {
               tenantName: (t.tenantName as string | undefined) || (t.tenant_name as string | undefined) || undefined,
               clientId: t.clientId as string | undefined,
               organisationNumber: t.organisationNumber as string | undefined,
-              displayLabel: (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
+              displayLabel:
+                (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
             }));
             setOrgs(mapped);
           } catch (innerErr) {
@@ -126,33 +130,9 @@ const SettingsPage: React.FC = () => {
                     <div className="text-sm text-gray-600">Integration</div>
                     <div className="mt-1 text-lg font-semibold">
                       {(status && (status.integrationStatus as any)?.success) === true ? (
-                        <span className="inline-flex items-center gap-2 text-green-700">
-                          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" />
-                            <path
-                              d="M4.5 8.5l1.75 1.75L11.5 5"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          Connected
-                        </span>
+                        <StatusBadge variant="green">Connected</StatusBadge>
                       ) : (
-                        <span className="inline-flex items-center gap-2 text-red-700">
-                          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="2" />
-                            <path
-                              d="M5 5l6 6M11 5l-6 6"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                          Not connected
-                        </span>
+                        <StatusBadge variant="red">Not connected</StatusBadge>
                       )}
                     </div>
                     <div className="mt-1 text-sm text-gray-500">
@@ -172,17 +152,13 @@ const SettingsPage: React.FC = () => {
                 <div className="mb-3">
                   <div className="mb-2 text-sm text-gray-600">Connected organizations</div>
                   <ul className="space-y-2">
-                    {(status && Array.isArray(status.tenants) ? (status.tenants as any[]) : orgs).map((t: any) => (
-                      <li
-                        key={String(t.tenantId || t.id || String(t.clientId || Math.random()))}
-                        className="p-2 border rounded bg-gray-50"
-                      >
-                        <div className="text-sm font-medium">
-                          {t.displayLabel || t.tenantName || t.clientId || t.tenantId}
-                        </div>
-                        <div className="mt-1 text-xs text-gray-500">Tenant ID: {String(t.tenantId || t.id || "—")}</div>
-                      </li>
-                    ))}
+                    {(status && Array.isArray(status.tenants) ? (status.tenants as any[]) : orgs).map((t: any) => {
+                      const key = String(t.tenantId || t.id || String(t.clientId || Math.random()));
+                      const title = t.displayLabel || t.tenantName || t.clientId || t.tenantId;
+                      const subtitle = `Tenant ID: ${String(t.tenantId || t.id || "—")}`;
+                      const meta = t.organisationNumber ? `Org no: ${t.organisationNumber}` : undefined;
+                      return <TenantListItem key={key} title={title} subtitle={subtitle} meta={meta} />;
+                    })}
                     {status && (status.tenants as any[])?.length === 0 && orgs.length === 0 && (
                       <li className="text-sm text-gray-500">No connected organizations found.</li>
                     )}

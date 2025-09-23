@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import AppLayout from "../layouts/App.layout";
+import ConnectButton from "../../components/ui/ConnectButton.component";
 import { ROOT_PATH } from "../../router/router";
 
 export const LandingPage: React.FC = () => {
@@ -28,23 +29,7 @@ export const LandingPage: React.FC = () => {
         </p>
 
         <div className="flex items-center justify-center gap-4">
-          {(() => {
-            return (
-              <button
-                onClick={() =>
-                  import("../../apis/xero.api").then(({ getXeroAuthUrl, capturePostAuthRedirect }) => {
-                    try {
-                      capturePostAuthRedirect();
-                    } catch {}
-                    window.location.href = getXeroAuthUrl();
-                  })
-                }
-                className="inline-block px-6 py-3 font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                Connect Xero
-              </button>
-            );
-          })()}
+          <ConnectButton />
 
           <a
             href="https://developer.xero.com/"

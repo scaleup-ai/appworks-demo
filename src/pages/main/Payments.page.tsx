@@ -5,6 +5,10 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
+import StatusBadge from "../../components/ui/StatusBadge.component";
+import TenantPrompt from "../../components/ui/TenantPrompt.component";
+import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
+import ActionBar from "../../components/ui/ActionBar.component";
 import showToast from "../../utils/toast";
 import * as paymentApi from "../../apis/payment.api";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
@@ -127,16 +131,17 @@ const PaymentsPage: React.FC = () => {
   if (!xeroConnected) {
     return (
       <DashboardLayout title="Payments">
-        <Card>
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center text-2xl">
-              🔗
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Xero Connection Required</h3>
-            <p className="text-gray-600 mb-6">Connect your Xero account to access payment reconciliation features.</p>
-            <Button onClick={() => (window.location.href = "/auth")}>Connect Xero</Button>
+        <div className="py-12">
+          <div className="max-w-md mx-auto">
+            <TenantPrompt
+              title="Xero Connection Required"
+              message="Connect your Xero account to access payment reconciliation features."
+              showInput={false}
+              onConfirm={() => (window.location.href = "/auth")}
+              ctaText="Connect Xero"
+            />
           </div>
-        </Card>
+        </div>
       </DashboardLayout>
     );
   }
@@ -145,47 +150,34 @@ const PaymentsPage: React.FC = () => {
     <DashboardLayout
       title="Payment Reconciliation"
       actions={
-        <div className="flex gap-2">
+        <ActionBar>
           <Button onClick={loadPaymentData} variant="secondary" size="sm">
             Refresh
           </Button>
           <Button onClick={handleRunBulkReconciliation} size="sm">
             Run Bulk Test
           </Button>
-        </div>
+        </ActionBar>
       }
     >
       <div className="space-y-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-l-4 border-l-blue-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Processed</p>
-              <p className="text-2xl font-bold text-blue-600">{summary.totalProcessed}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-green-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Matched Payments</p>
-              <p className="text-2xl font-bold text-green-600">{summary.matchedPayments}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-yellow-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Unmatched Payments</p>
-              <p className="text-2xl font-bold text-yellow-600">{summary.unmatchedPayments}</p>
-            </div>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Total Amount</p>
-              <p className="text-2xl font-bold text-purple-600">{formatCurrency(summary.totalAmount)}</p>
-            </div>
-          </Card>
-        </div>
+        <SummaryCardGrid
+          items={[
+            { title: "Total Processed", value: summary.totalProcessed, className: "border-l-4 border-l-blue-500" },
+            { title: "Matched Payments", value: summary.matchedPayments, className: "border-l-4 border-l-green-500" },
+            {
+              title: "Unmatched Payments",
+              value: summary.unmatchedPayments,
+              className: "border-l-4 border-l-yellow-500",
+            },
+            {
+              title: "Total Amount",
+              value: formatCurrency(summary.totalAmount),
+              className: "border-l-4 border-l-purple-500",
+            },
+          ]}
+        />
 
         {/* Test Payment Reconciliation */}
         <Card title="Test Payment Reconciliation" description="Test the Payment Reconciliation Agent">
@@ -285,13 +277,9 @@ const PaymentsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {test.result ? (
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              test.result.matched ? "text-green-600 bg-green-100" : "text-yellow-600 bg-yellow-100"
-                            }`}
-                          >
+                          <StatusBadge variant={test.result.matched ? "green" : "yellow"}>
                             {test.result.matched ? "Matched" : "Unmatched"}
-                          </span>
+                          </StatusBadge>
                         ) : (
                           <span className="text-sm text-gray-500">-</span>
                         )}
@@ -300,11 +288,11 @@ const PaymentsPage: React.FC = () => {
                         <div className="text-sm text-gray-900">{test.result?.invoiceId || "-"}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(test.status)}`}
+                        <StatusBadge
+                          variant={test.status === "completed" ? "green" : test.status === "pending" ? "yellow" : "red"}
                         >
                           {test.status}
-                        </span>
+                        </StatusBadge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{new Date(test.timestamp).toLocaleString()}</div>
