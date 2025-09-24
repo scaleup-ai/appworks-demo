@@ -122,7 +122,7 @@ const SettingsPage: React.FC = () => {
           <h2 className="text-lg font-medium">Xero Integration</h2>
           <p className="mb-2 text-sm text-gray-600">Current integration status and connected organizations.</p>
 
-          <div className="max-w-2xl p-4 bg-white border rounded">
+          <div className="max-w-2xl space-y-4">
             <XeroIntegrationCard
               status={status}
               orgs={orgs}
@@ -130,9 +130,7 @@ const SettingsPage: React.FC = () => {
               showRaw={showRaw}
               setShowRaw={setShowRaw}
             />
-            <div className="mt-4">
-              <GoogleIntegrationCard />
-            </div>
+            <GoogleIntegrationCard />
           </div>
         </section>
       </div>
