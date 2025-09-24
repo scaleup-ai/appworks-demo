@@ -4,6 +4,7 @@ import { ErrorBoundaryPage } from "../pages/error/ErrorBoundary.page";
 import { LandingPage } from "../pages/lame/Landing.page";
 import XeroAuthPage from "../pages/auth/xero/XeroAuth.page";
 import XeroCallback from "../pages/auth/xero/XeroCallback.page";
+import GoogleCallback from "../pages/auth/google/GoogleCallback.page";
 import TenantSelector from "../components/TenantSelector.component";
 import DashboardPage from "../pages/main/Dashboard.page";
 import CollectionsPage from "../pages/main/Collections.page";
@@ -32,7 +33,7 @@ export interface ExtendedRouteObject {
   category?: string;
 }
 
-const utilityRoutes: ExtendedRouteObject[] = [
+const authRoutes: ExtendedRouteObject[] = [
   // Frontend route used only to mount the OAuth callback handler when the
   // OAuth provider redirects the browser to a frontend callback path such as
   // /xero/oauth2/redirect. This component will handle the OAuth flow completion.
@@ -42,6 +43,14 @@ const utilityRoutes: ExtendedRouteObject[] = [
     routeObject: {
       path: `${ROOT_PATH}xero/oauth2/redirect/:state?`,
       element: <XeroCallback />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
+  {
+    title: "Google OAuth Callback Handler",
+    routeObject: {
+      path: `${ROOT_PATH}google/oauth2/redirect/:state?`,
+      element: <GoogleCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
   },
@@ -131,7 +140,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
 // Compose the final routes list: utility routes first (so callback is mounted),
 // then the main app routes.
 export const routes: ExtendedRouteObject[] = [
-  ...utilityRoutes,
+  ...authRoutes,
   ...lameRoutes, // Hide lame routes from nav
   ...mainAppRoutes.map((r) => ({
     ...r,

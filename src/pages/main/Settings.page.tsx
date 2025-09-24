@@ -31,6 +31,7 @@ const SettingsPage: React.FC = () => {
   const [status, setStatus] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -81,6 +82,23 @@ const SettingsPage: React.FC = () => {
       } catch (err) {
         console.warn("Failed to fetch organisations or status", err);
       } finally {
+        // After initial status fetch, probe Google connection state if not present in the status payload
+        try {
+          const g = (status && (status as any).google) as any | undefined;
+          if (g && typeof g.connected === "boolean") {
+            setGoogleConnected(Boolean(g.connected));
+          } else {
+            // fallback probe
+            try {
+              const resp = await axiosClient.get("/api/v1/google/status");
+              setGoogleConnected(Boolean(resp.data && resp.data.connected));
+            } catch (inner) {
+              setGoogleConnected(false);
+            }
+          }
+        } catch {
+          /* ignore */
+        }
         setLoading(false);
       }
     };
@@ -155,7 +173,7 @@ const SettingsPage: React.FC = () => {
                     {(status && Array.isArray(status.tenants) ? (status.tenants as any[]) : orgs).map((t: any) => {
                       const key = String(t.tenantId || t.id || String(t.clientId || Math.random()));
                       const title = t.displayLabel || t.tenantName || t.clientId || t.tenantId;
-                      const subtitle = `Tenant ID: ${String(t.tenantId || t.id || "—")}`;
+                      const subtitle = `Tenant ID: ${String(t.tenantId || t.id || " ")}`;
                       const meta = t.organisationNumber ? `Org no: ${t.organisationNumber}` : undefined;
                       return <TenantListItem key={key} title={title} subtitle={subtitle} meta={meta} />;
                     })}
@@ -166,6 +184,28 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <div className="text-sm text-gray-600">Google</div>
+                      <div className="mt-1">
+                        {googleConnected === null ? (
+                          <span className="text-sm text-gray-500">Checking…</span>
+                        ) : googleConnected === true ? (
+                          <StatusBadge variant="green">Connected</StatusBadge>
+                        ) : (
+                          <StatusBadge variant="red">Not connected</StatusBadge>
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <button
+                        onClick={() => window.open("/api/v1/google/connect", "_blank")}
+                        className="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700"
+                      >
+                        Connect Google
+                      </button>
+                    </div>
+                  </div>
                   <button
                     onClick={() => setShowRaw((s) => !s)}
                     className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
@@ -174,6 +214,17 @@ const SettingsPage: React.FC = () => {
                   </button>
                   <div className="text-xs text-gray-500">You can view the raw integration payload for debugging.</div>
                 </div>
+
+                {/* Show a lightweight toast/alert if Google not connected */}
+                {googleConnected === false && (
+                  <div className="p-3 mt-3 text-sm text-yellow-800 border-l-4 border-yellow-400 rounded bg-yellow-50">
+                    Google is not connected. Click{" "}
+                    <button onClick={() => window.open("/api/v1/google/connect", "_blank")} className="underline">
+                      Connect Google
+                    </button>{" "}
+                    to enable features, or go to Settings &gt; Google.
+                  </div>
+                )}
 
                 {showRaw && (
                   <div className="p-2 mt-3 text-xs border rounded bg-gray-50">
