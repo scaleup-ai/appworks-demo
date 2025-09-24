@@ -1,8 +1,8 @@
 import React from "react";
-import TenantsList from "../TenantsList.component";
-import StatusBadge from "./StatusBadge.component";
+import TenantsList from "../../TenantsList.component";
+import StatusBadge from "../StatusBadge.component";
 
-export default function IntegrationCard({
+export default function XeroIntegrationCard({
   status,
   orgs,
   loading,

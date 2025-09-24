@@ -6,6 +6,8 @@ import { makeHandleChange } from "../../handlers/settings.handler";
 import AppLayout from "../layouts/App.layout";
 import TenantListItem from "../../components/ui/TenantListItem.component";
 import StatusBadge from "../../components/ui/StatusBadge.component";
+import GoogleIntegrationCard from "../../components/ui/settings/GoogleIntegrationCard.component";
+import XeroIntegrationCard from "../../components/ui/settings/XeroIntegrationCard.component";
 
 type Org = {
   id?: string;
@@ -31,7 +33,6 @@ const SettingsPage: React.FC = () => {
   const [status, setStatus] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
-  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -82,23 +83,7 @@ const SettingsPage: React.FC = () => {
       } catch (err) {
         console.warn("Failed to fetch organisations or status", err);
       } finally {
-        // After initial status fetch, probe Google connection state if not present in the status payload
-        try {
-          const g = (status && (status as any).google) as any | undefined;
-          if (g && typeof g.connected === "boolean") {
-            setGoogleConnected(Boolean(g.connected));
-          } else {
-            // fallback probe
-            try {
-              const resp = await axiosClient.get("/api/v1/google/status");
-              setGoogleConnected(Boolean(resp.data && resp.data.connected));
-            } catch (inner) {
-              setGoogleConnected(false);
-            }
-          }
-        } catch {
-          /* ignore */
-        }
+        // After initial status fetch, Google connection is handled by the dedicated component.
         setLoading(false);
       }
     };
@@ -138,103 +123,16 @@ const SettingsPage: React.FC = () => {
           <p className="mb-2 text-sm text-gray-600">Current integration status and connected organizations.</p>
 
           <div className="max-w-2xl p-4 bg-white border rounded">
-            {loading ? (
-              <div className="text-sm text-gray-600">Loading status…</div>
-            ) : (
-              <div>
-                {/* Integration summary */}
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <div className="text-sm text-gray-600">Integration</div>
-                    <div className="mt-1 text-lg font-semibold">
-                      {(status && (status.integrationStatus as any)?.success) === true ? (
-                        <StatusBadge variant="green">Connected</StatusBadge>
-                      ) : (
-                        <StatusBadge variant="red">Not connected</StatusBadge>
-                      )}
-                    </div>
-                    <div className="mt-1 text-sm text-gray-500">
-                      {(status && (status.integrationStatus as any)?.message) || "Status unknown"}
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-sm text-gray-600">Tenants</div>
-                    <div className="mt-1 text-sm font-semibold">
-                      {((status && (status.tenants as any[])?.length) || orgs.length) + " connected"}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tenants list */}
-                <div className="mb-3">
-                  <div className="mb-2 text-sm text-gray-600">Connected organizations</div>
-                  <ul className="space-y-2">
-                    {(status && Array.isArray(status.tenants) ? (status.tenants as any[]) : orgs).map((t: any) => {
-                      const key = String(t.tenantId || t.id || String(t.clientId || Math.random()));
-                      const title = t.displayLabel || t.tenantName || t.clientId || t.tenantId;
-                      const subtitle = `Tenant ID: ${String(t.tenantId || t.id || " ")}`;
-                      const meta = t.organisationNumber ? `Org no: ${t.organisationNumber}` : undefined;
-                      return <TenantListItem key={key} title={title} subtitle={subtitle} meta={meta} />;
-                    })}
-                    {status && (status.tenants as any[])?.length === 0 && orgs.length === 0 && (
-                      <li className="text-sm text-gray-500">No connected organizations found.</li>
-                    )}
-                  </ul>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <div className="text-sm text-gray-600">Google</div>
-                      <div className="mt-1">
-                        {googleConnected === null ? (
-                          <span className="text-sm text-gray-500">Checking…</span>
-                        ) : googleConnected === true ? (
-                          <StatusBadge variant="green">Connected</StatusBadge>
-                        ) : (
-                          <StatusBadge variant="red">Not connected</StatusBadge>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <button
-                        onClick={() => window.open("/api/v1/google/connect", "_blank")}
-                        className="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700"
-                      >
-                        Connect Google
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setShowRaw((s) => !s)}
-                    className="px-3 py-1 text-sm bg-gray-100 rounded hover:bg-gray-200"
-                  >
-                    {showRaw ? "Hide raw JSON" : "Show raw JSON"}
-                  </button>
-                  <div className="text-xs text-gray-500">You can view the raw integration payload for debugging.</div>
-                </div>
-
-                {/* Show a lightweight toast/alert if Google not connected */}
-                {googleConnected === false && (
-                  <div className="p-3 mt-3 text-sm text-yellow-800 border-l-4 border-yellow-400 rounded bg-yellow-50">
-                    Google is not connected. Click{" "}
-                    <button onClick={() => window.open("/api/v1/google/connect", "_blank")} className="underline">
-                      Connect Google
-                    </button>{" "}
-                    to enable features, or go to Settings &gt; Google.
-                  </div>
-                )}
-
-                {showRaw && (
-                  <div className="p-2 mt-3 text-xs border rounded bg-gray-50">
-                    <pre className="overflow-auto">
-                      {JSON.stringify(status ?? { organisations: orgs.length }, null, 2)}
-                    </pre>
-                  </div>
-                )}
-              </div>
-            )}
+            <XeroIntegrationCard
+              status={status}
+              orgs={orgs}
+              loading={loading}
+              showRaw={showRaw}
+              setShowRaw={setShowRaw}
+            />
+            <div className="mt-4">
+              <GoogleIntegrationCard />
+            </div>
           </div>
         </section>
       </div>
