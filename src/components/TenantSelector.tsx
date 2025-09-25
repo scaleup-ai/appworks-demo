@@ -44,82 +44,67 @@ const TenantSelector: React.FC = () => {
     () => (location.state as { tenants?: Tenant[] })?.tenants || []
   );
 
-  useEffect(() => {
-    // If no tenants passed via route state, fetch available organisations from backend
-    let mounted = true;
-    const fetchTenants = async () => {
-      if (tenants && tenants.length > 0) return;
-      try {
-        const resp = await axiosClient.get("/api/v1/xero/organisations");
-        const data = resp.data || [];
-        const mapped = (data as OrgResponse[]).map((t) => {
-          // If backend returned id as `${clientId}:${tenantId}`, parse tenantId
-          let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
-          if (!tenantIdRaw && t.id) {
-            const parts = String(t.id).split(":");
-            if (parts.length === 2) tenantIdRaw = parts[1];
-            else tenantIdRaw = String(t.id);
-          }
-          const clientId = t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined);
-          const orgNo = t.organisationNumber || t.organisation_number || undefined;
-          const name = t.tenantName || t.tenant_name || clientId || undefined;
-          const shortTid = tenantIdRaw ? String(tenantIdRaw).slice(0, 8) : undefined;
-          const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortTid ? ` • ${shortTid}` : ""}`;
-          return {
-            tenantId: String(tenantIdRaw || ""),
-            tenantName: name,
-            tenantType: t.tenantType || t.type || undefined,
-            clientId,
-            organisationNumber: orgNo,
-            createdAt: t.createdAt || t.created_at || undefined,
-            // helpful display label used in UI
-            displayLabel,
-          } as unknown as Tenant;
-        });
+  // Fetch tenants from backend
+  const fetchTenants = async () => {
+    try {
+      const resp = await axiosClient.get("/api/v1/xero/organisations");
+      const data = resp.data || [];
+      const mapped = (data as OrgResponse[]).map((t) => {
+        let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
+        if (!tenantIdRaw && t.id) {
+          const parts = String(t.id).split(":");
+          if (parts.length === 2) tenantIdRaw = parts[1];
+          else tenantIdRaw = String(t.id);
+        }
+        const clientId = t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined);
+        const orgNo = t.organisationNumber || t.organisation_number || undefined;
+        const name = t.tenantName || t.tenant_name || clientId || undefined;
+        const shortTid = tenantIdRaw ? String(tenantIdRaw).slice(0, 8) : undefined;
+        const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortTid ? ` • ${shortTid}` : ""}`;
+        return {
+          tenantId: String(tenantIdRaw || ""),
+          tenantName: name,
+          tenantType: t.tenantType || t.type || undefined,
+          clientId,
+          organisationNumber: orgNo,
+          createdAt: t.createdAt || t.created_at || undefined,
+          displayLabel,
+        } as Tenant;
+      });
+      // dedupe by tenantId while preserving metadata
+      const deduped = Array.from(new Map(mapped.map((t) => [t.tenantId, t])).values());
+      setLocalTenants(deduped);
+      // Persist rich shape to Zustand store
+      setAuth({ tenants: deduped });
+    } catch (err) {
+      console.log("Failed to fetch tenants:", err);
+      setLocalTenants([]);
+    }
+  };
 
-        // dedupe by tenantId while preserving metadata
-        const map = new Map<string, (typeof mapped)[number]>();
-        for (const m of mapped) {
-          const key = String(m.tenantId || "");
-          if (!map.has(key)) map.set(key, { ...m, tenantId: key });
-          else {
-            const ex = map.get(key)!;
-            ex.tenantName = ex.tenantName || m.tenantName;
-            ex.organisationNumber = ex.organisationNumber || m.organisationNumber;
-            ex.clientId = ex.clientId || m.clientId;
-          }
-        }
-        // Also dedupe by displayLabel to avoid showing multiple identical-looking entries
-        const byLabel = new Map<string, (typeof mapped)[number]>();
-        for (const v of Array.from(map.values())) {
-          const key = v.displayLabel || String(v.tenantId || "");
-          if (!byLabel.has(key)) byLabel.set(key, v);
-        }
-        const tenantsArr = Array.from(byLabel.values());
-        if (mounted) setLocalTenants(tenantsArr as unknown as Tenant[]);
-        // Persist rich shape to Zustand store
-        // Ensure all tenantId are strings (never undefined)
-        const navTenants = tenantsArr.map((t) => ({
-          ...t,
-          tenantId: String(t.tenantId || ""),
-        }));
-        setAuth({ tenants: navTenants });
-      } catch (err) {
-        console.warn("Failed to fetch organisations", err);
-      }
-    };
-    fetchTenants();
-    return () => {
-      mounted = false;
-    };
-  }, [tenants]);
+  // Sync organizations from Xero, then refetch tenants
+  const handleRefreshOrgs = async () => {
+    try {
+      await axiosClient.post("/api/v1/xero/syncContacts");
+      await fetchTenants();
+    } catch (err) {
+      console.log("Failed to refresh organizations:", err);
+      await fetchTenants();
+    }
+  };
+
+  useEffect(() => {
+    if (!tenants || tenants.length === 0) fetchTenants();
+    // ...existing code...
+  }, []);
+
+  // ...existing code...
 
   const handleSelect = (tenantId: string) => {
-    // Only persist to Zustand
     if (tenantId && tenantId.length > 0) {
       setSelectedTenantId(tenantId);
     } else {
-      setSelectedTenantId(""); // Clear selection with empty string
+      setSelectedTenantId("");
     }
     navigate("/dashboard");
   };
@@ -131,11 +116,13 @@ const TenantSelector: React.FC = () => {
   });
 
   if (!visibleTenants || visibleTenants.length === 0) {
-    // Nothing to select
     return (
       <div className="p-6">
         <h3 className="text-lg font-medium">No organizations found</h3>
-        <p className="text-sm text-gray-600">No tenants were returned after authentication.</p>
+        <button onClick={handleRefreshOrgs} className="px-4 py-2 mt-4 text-white bg-blue-600 rounded hover:bg-blue-700">
+          Refresh Organizations
+        </button>
+        <p className="mt-2 text-sm text-gray-600">No tenants were returned after authentication.</p>
       </div>
     );
   }
@@ -145,8 +132,11 @@ const TenantSelector: React.FC = () => {
       <div className="w-full max-w-md p-6 bg-white rounded shadow">
         <h2 className="mb-4 text-xl font-semibold">Select an Organization</h2>
         <p className="mb-4 text-sm text-gray-600">Choose which Xero organization you want to use for this session.</p>
+        <button onClick={handleRefreshOrgs} className="px-4 py-2 mb-4 text-white bg-blue-600 rounded hover:bg-blue-700">
+          Refresh Organizations
+        </button>
         <ul>
-          {visibleTenants.map((t: Tenant) => {
+          {visibleTenants.map((t) => {
             const tid = (t.tenantId || t.tenant_id || "").toString();
             const isSelected = Boolean(selectedTenantId && selectedTenantId === tid);
             return (
