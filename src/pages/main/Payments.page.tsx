@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
+import { AuthStorage } from "../../store/authSlice";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
@@ -105,13 +106,13 @@ const PaymentsPage: React.FC = () => {
   );
 
   useEffect(() => {
-    const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+    const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
     if (!tenantId) {
       window.location.href = "/select-tenant";
       return;
     }
     loadPaymentData();
-  }, []);
+  }, [selectedTenantId]);
 
   // use shared formatCurrency from helper.handler
 

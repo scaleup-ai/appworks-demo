@@ -10,7 +10,7 @@ export interface AuthState {
 }
 
 const initialState: AuthState = {
-  isAuthenticated: false,
+  isAuthenticated: typeof window !== 'undefined' ? Boolean(localStorage.getItem('isAuthenticated')) : false,
   xeroConnected: false,
   loading: false,
   error: null,
@@ -20,8 +20,13 @@ const initialState: AuthState = {
 };
 
 export const validateTokens = createAsyncThunk('auth/validateTokens', async () => {
-  const token = localStorage.getItem('access_token');
-  return !!token;
+  // Frontend does not store a real access token; use the persisted isAuthenticated flag
+  try {
+    const v = localStorage.getItem('isAuthenticated');
+    return v === '1' || v === 'true';
+  } catch {
+    return false;
+  }
 });
 
 const authSlice = createSlice({
@@ -32,6 +37,11 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.xeroConnected = true;
       state.error = null;
+      try {
+        localStorage.setItem('isAuthenticated', '1');
+      } catch {
+        // ignore
+      }
     },
     setTenants(state, action: { payload: Array<{ tenantId: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }> }) {
       state.tenants = action.payload || [];
@@ -43,7 +53,12 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.xeroConnected = false;
       state.error = null;
-      localStorage.removeItem('access_token');
+      try {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('isAuthenticated');
+      } catch {
+        // ignore
+      }
       state.tenants = [];
       state.selectedTenantId = null;
     },
@@ -80,3 +95,59 @@ const authSlice = createSlice({
 
 export const { setXeroConnected, logout, setError, clearError, setLoading, setTenants, selectTenant } = authSlice.actions;
 export default authSlice.reducer;
+
+// Helper utilities for other parts of the app to read/write persisted auth values
+export const AuthStorage = {
+  getIsAuthenticated(): boolean {
+    try {
+      return Boolean(window && localStorage.getItem('isAuthenticated'));
+    } catch {
+      return false;
+    }
+  },
+  setIsAuthenticated(v: boolean) {
+    try {
+      if (v) localStorage.setItem('isAuthenticated', '1');
+      else localStorage.removeItem('isAuthenticated');
+    } catch {
+      // ignore
+    }
+  },
+  getSelectedTenantId(): string | null {
+    try {
+      return localStorage.getItem('selectedTenantId') || null;
+    } catch {
+      return null;
+    }
+  },
+  setSelectedTenantId(id: string | null) {
+    try {
+      if (id) localStorage.setItem('selectedTenantId', id);
+      else localStorage.removeItem('selectedTenantId');
+    } catch {
+      // ignore
+    }
+  },
+  // Access token helpers (kept for compatibility with axios client)
+  getAccessToken(): string | null {
+    try {
+      return localStorage.getItem('access_token');
+    } catch {
+      return null;
+    }
+  },
+  setAccessToken(token: string) {
+    try {
+      localStorage.setItem('access_token', token);
+    } catch {
+      // ignore
+    }
+  },
+  clearAccessToken() {
+    try {
+      localStorage.removeItem('access_token');
+    } catch {
+      // ignore
+    }
+  },
+};

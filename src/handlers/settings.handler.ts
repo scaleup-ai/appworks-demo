@@ -1,5 +1,5 @@
 import { Dispatch } from "react";
-import { safeLocalStorageRemove } from "./shared.handler";
+import { AuthStorage } from "../store/authSlice";
 
 export function makeHandleChange<Action = unknown>(dispatch: Dispatch<Action>, selectTenantAction: (v: string | null) => Action) {
   return function handleChange(ev: React.ChangeEvent<HTMLSelectElement>) {
@@ -7,14 +7,18 @@ export function makeHandleChange<Action = unknown>(dispatch: Dispatch<Action>, s
     try {
       if (val) {
         try {
-          localStorage.setItem("selectedTenantId", val);
-        } catch (e) {
-          console.warn("Failed to persist selectedTenantId", e);
+          AuthStorage.setSelectedTenantId(val);
+        } catch {
+          console.warn("Failed to persist selectedTenantId");
         }
         const action = selectTenantAction(val);
         dispatch(action as unknown as Action);
       } else {
-        safeLocalStorageRemove("selectedTenantId");
+        try {
+          AuthStorage.setSelectedTenantId(null);
+        } catch (e) {
+          // ignore
+        }
         const action = selectTenantAction(null);
         dispatch(action as unknown as Action);
       }

@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { store } from '../store/store';
-import { validateTokens } from '../store/authSlice';
+import { validateTokens, AuthStorage } from '../store/authSlice';
 
 // Modern, simplified axios client without complex refresh token logic
 // since most demo endpoints don't require authentication
@@ -17,18 +17,18 @@ const axiosClient: AxiosInstance = axios.create({
   },
 });
 
-// Token management helper
+// Token management helper (delegates to AuthStorage)
 export function getAccessToken(): string | null {
-  return localStorage.getItem('access_token');
+  return AuthStorage.getAccessToken();
 }
 
 export function setAccessToken(token: string): void {
-  localStorage.setItem('access_token', token);
+  AuthStorage.setAccessToken(token);
   axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }
 
 export function clearAccessToken(): void {
-  localStorage.removeItem('access_token');
+  AuthStorage.clearAccessToken();
   delete axiosClient.defaults.headers.common['Authorization'];
 }
 
@@ -56,12 +56,8 @@ axiosClient.interceptors.response.use(
       // Validate tokens in the store
       store.dispatch(validateTokens());
 
-      // For protected routes, redirect to login
-      const currentPath = window.location.pathname;
-      if (currentPath !== '/login' && currentPath !== '/') {
-        // Just redirect to login page for now
-        window.location.href = '/login';
-      }
+      // Let the app-level auth logic handle navigation; do not force redirects here.
+      // This keeps auth navigation consistent (Redux is the single source of truth).
     }
 
     return Promise.reject(error);

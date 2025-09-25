@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { setTenants, selectTenant } from "../store/authSlice";
+import { setTenants, selectTenant, AuthStorage } from "../store/authSlice";
 import axiosClient from "../apis/axios-client";
 import { RootState } from "../store/store";
 import { makeHandleStartXeroAuth, makeHandleSignOut } from "../handlers/auth.handler";
@@ -136,12 +136,12 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     const val = ev.target.value || null;
     try {
       if (val) {
-        localStorage.setItem("selectedTenantId", val);
+        AuthStorage.setSelectedTenantId(val);
         // dispatch selectTenant action
         // import kept minimal here to avoid circular deps
         dispatch(selectTenant(val));
       } else {
-        localStorage.removeItem("selectedTenantId");
+        AuthStorage.setSelectedTenantId(null);
         dispatch(selectTenant(null));
       }
     } catch (e) {

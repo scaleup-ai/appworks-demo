@@ -80,7 +80,8 @@ export function makeHandleRunBulkReconciliation(
 ) {
   return async function handleRunBulkReconciliation() {
     try {
-      const tenantId = selectedTenantIdGetter() || localStorage.getItem("selectedTenantId") || null;
+      // Use the provided getter as the single source of tenant selection for handlers.
+      const tenantId = selectedTenantIdGetter() ?? null;
       const invoices = await accountsReceivablesList({ limit: 5, tenantId: tenantId || undefined });
 
       if (invoices.length === 0) {

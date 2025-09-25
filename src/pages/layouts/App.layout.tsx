@@ -1,6 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Nav from "../../components/Nav.component";
+import { useDispatch } from "react-redux";
+import { setXeroConnected } from "../../store/authSlice";
+import { getIntegrationStatus } from "../../apis/xero.api";
 
 const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({ children, title }) => {
   const [open, setOpen] = useState(false);
@@ -9,6 +12,25 @@ const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({ ch
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + "/");
   };
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    let mounted = true;
+    const probe = async () => {
+      try {
+        const status = await getIntegrationStatus();
+        const ok = (status && ((status as any).integrationStatus as any)?.success) === true;
+        if (ok && mounted) dispatch(setXeroConnected());
+      } catch {
+        // ignore
+      }
+    };
+    void probe();
+    return () => {
+      mounted = false;
+    };
+  }, [dispatch]);
 
   const navLinkClass = (path: string) =>
     `text-sm transition-colors duration-200 ${

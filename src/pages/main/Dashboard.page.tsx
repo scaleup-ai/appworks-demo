@@ -12,6 +12,7 @@ import TenantPrompt from "../../components/ui/TenantPrompt.component";
 import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
 import ActionBar from "../../components/ui/ActionBar.component";
 import { RootState } from "../../store/store";
+import { AuthStorage } from "../../store/authSlice";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { copyToClipboard, downloadJson, formatCurrency } from "../../helpers/ui.helper";
@@ -70,8 +71,8 @@ const DashboardPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load invoices data scoped to selected tenant (store first, fallback to localStorage)
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      // Load invoices data scoped to selected tenant (Redux is primary source)
+      const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
       const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 
       // Load scheduled collections
@@ -115,7 +116,7 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     initializeAgents();
     if (xeroConnected) {
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || "";
+      const tenantId = (selectedTenantId ?? AuthStorage.getSelectedTenantId()) || "";
       if (!tenantId) {
         setShowTenantPrompt(true);
         setLoading(false);
@@ -165,7 +166,7 @@ const DashboardPage: React.FC = () => {
               onConfirm={(v) => {
                 if (v && String(v).trim()) {
                   const val = String(v).trim();
-                  localStorage.setItem("selectedTenantId", val);
+                  AuthStorage.setSelectedTenantId(val);
                   dispatch({ type: "auth/selectTenant", payload: val });
                   setShowTenantPrompt(false);
                   setLoading(true);

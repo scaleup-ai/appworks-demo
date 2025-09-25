@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { setXeroConnected } from "../../../store/authSlice";
 import { handleGoogleOAuthRedirect } from "../../../apis/google.api";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
@@ -52,6 +53,13 @@ const GoogleCallback: React.FC = () => {
         const response = await handleGoogleOAuthRedirect({ code, state: state || "" });
         if (response.status === 200) {
           showToast("Successfully connected to Google!", { type: "success" });
+          try {
+            // update redux auth state so the app has a single source of truth
+            // (mirrors Xero callback behavior)
+            dispatch(setXeroConnected() as any);
+          } catch (e) {
+            // ignore dispatch errors in rare cases
+          }
           navigate("/dashboard");
           return;
         }

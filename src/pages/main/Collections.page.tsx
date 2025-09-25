@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
+import { AuthStorage } from "../../store/authSlice";
 import DashboardLayout from "../layouts/DashboardLayout";
 import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
@@ -59,8 +60,8 @@ const CollectionsPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load invoices scoped to selected tenant (store first, fallback to localStorage)
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      // Load invoices scoped to selected tenant (Redux primary, safe localStorage fallback)
+      const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
       const invoiceData = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
 
       // Load scheduled reminders
@@ -134,7 +135,7 @@ const CollectionsPage: React.FC = () => {
 
   useEffect(() => {
     if (xeroConnected) {
-      const tenantId = selectedTenantId || localStorage.getItem("selectedTenantId") || null;
+      const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
       if (!tenantId) {
         window.location.href = "/select-tenant";
         return;
@@ -143,7 +144,7 @@ const CollectionsPage: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [xeroConnected]);
+  }, [xeroConnected, selectedTenantId]);
 
   // use shared formatCurrency from helper.handler
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect } from "../../../apis/xero.api";
-import { setXeroConnected, selectTenant } from "../../../store/authSlice";
+import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/authSlice";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
 
@@ -71,7 +71,7 @@ const XeroCallback: React.FC = () => {
               const single = payload.tenants[0];
               const tid = single.tenantId || single.tenant_id || "";
               if (tid) {
-                localStorage.setItem("selectedTenantId", tid);
+                AuthStorage.setSelectedTenantId(tid);
                 dispatch(selectTenant(tid));
               }
               dispatch(setXeroConnected());

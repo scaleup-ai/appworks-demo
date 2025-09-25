@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { selectTenant, setTenants } from "../store/authSlice";
+import { selectTenant, setTenants, AuthStorage } from "../store/authSlice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import axiosClient from "../apis/axios-client";
 
@@ -120,8 +120,8 @@ const TenantSelector: React.FC = () => {
 
   const handleSelect = (tenantId: string) => {
     try {
-      if (tenantId) localStorage.setItem("selectedTenantId", tenantId);
-      else localStorage.removeItem("selectedTenantId");
+      if (tenantId) AuthStorage.setSelectedTenantId(tenantId);
+      else AuthStorage.setSelectedTenantId(null);
     } catch {
       // ignore storage errors
     }

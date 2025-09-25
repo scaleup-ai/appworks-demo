@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../../store/store";
 import axiosClient from "../../apis/axios-client";
-import { selectTenant, setTenants } from "../../store/authSlice";
+import { selectTenant, setTenants, AuthStorage } from "../../store/authSlice";
 import { makeHandleChange } from "../../handlers/settings.handler";
 import AppLayout from "../layouts/App.layout";
 import TenantListItem from "../../components/ui/TenantListItem.component";
@@ -23,13 +24,8 @@ type Org = {
 const SettingsPage: React.FC = () => {
   const dispatch = useDispatch();
   const [orgs, setOrgs] = useState<Org[]>([]);
-  const [selected, setSelected] = useState<string | null>(() => {
-    try {
-      return localStorage.getItem("selectedTenantId") || null;
-    } catch {
-      return null;
-    }
-  });
+  const reduxSelected = useSelector((s: RootState) => s.auth.selectedTenantId);
+  const [selected, setSelected] = useState<string | null>(() => reduxSelected ?? AuthStorage.getSelectedTenantId());
   const [status, setStatus] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
@@ -94,7 +90,9 @@ const SettingsPage: React.FC = () => {
     const base = makeHandleChange(dispatch, selectTenant);
     return (ev: React.ChangeEvent<HTMLSelectElement>) => {
       base(ev);
-      setSelected(ev.target.value || null);
+      const v = ev.target.value || null;
+      setSelected(v);
+      AuthStorage.setSelectedTenantId(v);
     };
   }, [dispatch]);
 
