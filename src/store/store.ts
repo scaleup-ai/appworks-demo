@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import createSagaMiddleware from 'redux-saga';
-import authReducer from './authSlice';
+import authReducer from './slices/auth.slice';
 import xeroReducer from './slices/xero.slice';
 import collectionsReducer from './slices/collections.slice';
 import emailReducer from './slices/email.slice';

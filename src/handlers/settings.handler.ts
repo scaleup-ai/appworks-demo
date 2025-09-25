@@ -1,5 +1,5 @@
 import { Dispatch } from "react";
-import { AuthStorage } from "../store/authSlice";
+import { AuthStorage } from "../store/slices/auth.slice";
 
 export function makeHandleChange<Action = unknown>(dispatch: Dispatch<Action>, selectTenantAction: (v: string | null) => Action) {
   return function handleChange(ev: React.ChangeEvent<HTMLSelectElement>) {

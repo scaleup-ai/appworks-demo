@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { setTenants, selectTenant, AuthStorage } from "../store/authSlice";
+import { setTenants, selectTenant, AuthStorage } from "../store/slices/auth.slice";
 import axiosClient from "../apis/axios-client";
 import { RootState } from "../store/store";
 import { makeHandleStartXeroAuth, makeHandleSignOut } from "../handlers/auth.handler";

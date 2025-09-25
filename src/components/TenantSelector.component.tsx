@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { selectTenant, setTenants, AuthStorage } from "../store/authSlice";
+import { selectTenant, setTenants, AuthStorage } from "../store/slices/auth.slice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import axiosClient from "../apis/axios-client";
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Nav from "../../components/Nav.component";
 import { useDispatch } from "react-redux";
-import { setXeroConnected } from "../../store/authSlice";
+import { setXeroConnected } from "../../store/slices/auth.slice";
 import { getIntegrationStatus } from "../../apis/xero.api";
 
 const AppLayout: React.FC<{ children: React.ReactNode; title?: string }> = ({ children, title }) => {

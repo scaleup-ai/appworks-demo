@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect } from "../../../apis/xero.api";
-import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/authSlice";
+import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/slices/auth.slice";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
 

@@ -1,7 +1,7 @@
 import { Dispatch } from "react";
 import axiosClient from "../apis/axios-client";
 import showToast from "../utils/toast";
-import { logout as logoutAction, setTenants as setTenantsAction } from "../store/authSlice";
+import { logout as logoutAction, setTenants as setTenantsAction } from "../store/slices/auth.slice";
 import { AnyAction } from "@reduxjs/toolkit";
 import { parseAndDedupTenants, safeLocalStorageRemove, apiErrorToast } from "./shared.handler";
 

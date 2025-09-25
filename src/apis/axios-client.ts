@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { store } from '../store/store';
-import { validateTokens, AuthStorage } from '../store/authSlice';
+import { validateTokens, AuthStorage } from '../store/slices/auth.slice';
 
 // Modern, simplified axios client without complex refresh token logic
 // since most demo endpoints don't require authentication

@@ -1,7 +1,7 @@
 import React from "react";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "../../../store/store";
-import { logout } from "../../../store/authSlice";
+import { logout } from "../../../store/slices/auth.slice";
 
 const XeroSuccessPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();

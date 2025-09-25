@@ -12,7 +12,7 @@ import TenantPrompt from "../../components/ui/TenantPrompt.component";
 import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
 import ActionBar from "../../components/ui/ActionBar.component";
 import { RootState } from "../../store/store";
-import { AuthStorage } from "../../store/authSlice";
+import { AuthStorage } from "../../store/slices/auth.slice";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { copyToClipboard, downloadJson, formatCurrency } from "../../helpers/ui.helper";

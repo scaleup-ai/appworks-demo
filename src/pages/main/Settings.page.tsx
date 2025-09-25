@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import axiosClient from "../../apis/axios-client";
-import { selectTenant, setTenants, AuthStorage } from "../../store/authSlice";
+import { selectTenant, setTenants, AuthStorage } from "../../store/slices/auth.slice";
 import { makeHandleChange } from "../../handlers/settings.handler";
 import AppLayout from "../layouts/App.layout";
 import TenantListItem from "../../components/ui/TenantListItem.component";
