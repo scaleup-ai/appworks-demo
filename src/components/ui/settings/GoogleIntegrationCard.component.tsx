@@ -7,6 +7,7 @@ const GoogleIntegrationCard: React.FC = () => {
   const [connected, setConnected] = useState<boolean | null>(null);
   const [showRaw, setShowRaw] = useState(false);
   const [payload, setPayload] = useState<Record<string, unknown> | null>(null);
+  const [connecting, setConnecting] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -57,10 +58,28 @@ const GoogleIntegrationCard: React.FC = () => {
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => window.open("/api/v1/google/connect", "_blank")}
+                  onClick={async () => {
+                    if (connecting) return;
+                    try {
+                      setConnecting(true);
+                      const resp = await axiosClient.post("/api/v1/google/auth/start", { format: "json" });
+                      const url = resp?.data?.url;
+                      if (url) {
+                        // navigate in same tab to match expected UX for OAuth
+                        window.location.href = url;
+                      } else {
+                        alert("Failed to get Google consent URL from server");
+                      }
+                    } catch (err) {
+                      console.error("startGoogleAuth failed", err);
+                      alert("Failed to start Google auth. Check server logs for details.");
+                    } finally {
+                      setConnecting(false);
+                    }
+                  }}
                   className="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700"
                 >
-                  Connect Google
+                  {connecting ? "Connecting…" : "Connect Google"}
                 </button>
                 <button
                   onClick={() => setShowRaw((s) => !s)}
