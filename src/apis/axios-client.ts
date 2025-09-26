@@ -41,10 +41,13 @@ axiosClient.interceptors.request.use(
     }
     // Attach current selected tenant / OpenID subject so backend can scope requests
     try {
-      const selected = AuthStorage.getSelectedTenantId();
-      if (selected && config && config.headers) {
-        // Use X-Openid-Sub header to match backend check
-        config.headers['X-Openid-Sub'] = String(selected);
+      // Prefer the OpenID subject stored in Redux (xero.currentOpenIdSub) for accurate user scoping.
+      // Use a looser `any` here to avoid duplicate import lint rules for types in this utility file.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const state = store.getState() as any;
+      const openidSub = (state && state.xero && state.xero.currentOpenIdSub) || AuthStorage.getSelectedTenantId();
+      if (openidSub && config && config.headers) {
+        config.headers['X-Openid-Sub'] = String(openidSub);
       }
     } catch {
       // ignore storage failures

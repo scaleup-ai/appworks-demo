@@ -42,6 +42,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
   const selectedTenantId = useSelector((s: RootState) => s.auth.selectedTenantId);
   const tenants = useSelector((s: RootState) => s.auth.tenants || []);
   const xeroConnected = useSelector((s: RootState) => s.auth.xeroConnected);
+  const currentOpenIdSub = useSelector((s: RootState) => s.xero.currentOpenIdSub);
 
   type OrganizationDetails = {
     id?: string;
@@ -163,21 +164,23 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
         >
           {/* Only show a blank placeholder when we have no tenants loaded */}
           {(tenants || []).length === 0 && <option value="">Select org</option>}
-          {(tenants || []).map((t) => {
-            const ta: any = t;
-            const tenantId =
-              ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
-            const orgNo = ta.organisationNumber ? ` • Org#: ${ta.organisationNumber}` : "";
-            const shortTid = tenantId ? String(tenantId).slice(0, 8) : "";
-            const labelBase =
-              ta.tenantName || ta.displayLabel || ta.clientId || (shortTid ? `...${shortTid}` : "Unknown");
-            const label = `${labelBase}${orgNo}`;
-            return (
-              <option key={tenantId} value={tenantId}>
-                {label}
-              </option>
-            );
-          })}
+          {((tenants || []) as any[])
+            .filter((t) => !currentOpenIdSub || String(t.openid_sub || "") === String(currentOpenIdSub))
+            .map((t) => {
+              const ta: any = t;
+              const tenantId =
+                ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
+              const orgNo = ta.organisationNumber ? ` • Org#: ${ta.organisationNumber}` : "";
+              const shortTid = tenantId ? String(tenantId).slice(0, 8) : "";
+              const labelBase =
+                ta.tenantName || ta.displayLabel || ta.clientId || (shortTid ? `...${shortTid}` : "Unknown");
+              const label = `${labelBase}${orgNo}`;
+              return (
+                <option key={tenantId} value={tenantId}>
+                  {label}
+                </option>
+              );
+            })}
         </select>
       </div>
       <Link to="/" onClick={handleLinkClick} className={linkClass}>

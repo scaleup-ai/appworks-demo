@@ -19,6 +19,7 @@ type Org = {
   clientId?: string;
   organisationNumber?: string;
   displayLabel?: string;
+  openid_sub?: string;
 };
 
 const SettingsPage: React.FC = () => {
@@ -45,12 +46,19 @@ const SettingsPage: React.FC = () => {
         if (Array.isArray(statusData.tenants) && statusData.tenants.length > 0) {
           const orgData = statusData.tenants as Array<Record<string, unknown>>;
           const mapped: Org[] = orgData.map((t) => {
-            const tenantIdRaw = (t.tenantId as string | undefined) || (t.tenant_id as string | undefined) || undefined;
+            // Prefer explicit tenantId fields; fall back to parsing `id` values like "clientId:tenantId"
+            const explicitTenant =
+              (t.tenantId as string | undefined) || (t.tenant_id as string | undefined) || undefined;
             const idRaw = t.id as string | undefined;
+            let tenantIdDerived: string | undefined = explicitTenant;
+            if (!tenantIdDerived && idRaw) {
+              const parts = String(idRaw).split(":");
+              tenantIdDerived = parts.length === 2 ? parts[1] : idRaw;
+            }
             return {
               id: idRaw,
-              tenantId: tenantIdRaw,
-              tenant_id: tenantIdRaw,
+              tenantId: tenantIdDerived,
+              tenant_id: tenantIdDerived,
               tenantName: (t.tenantName as string | undefined) || (t.tenant_name as string | undefined) || undefined,
               clientId: t.clientId as string | undefined,
               organisationNumber: t.organisationNumber as string | undefined,
@@ -58,22 +66,39 @@ const SettingsPage: React.FC = () => {
                 (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
             };
           });
-          setOrgs(mapped);
+          // If we have a currentOpenIdSub, filter the mapped tenants to only include the user's tenants
+          const filtered = currentOpenIdSub
+            ? mapped.filter((m) => String(m["openid_sub"] || "") === String(currentOpenIdSub))
+            : mapped;
+          setOrgs(filtered);
         } else {
           try {
             const orgsResp = await axiosClient.get("/api/v1/xero/organisations");
             const orgsData = (orgsResp.data as Array<Record<string, unknown>> | null) || [];
-            const mapped: Org[] = orgsData.map((t) => ({
-              id: (t.id as string | undefined) || undefined,
-              tenantId: (t.tenantId as string | undefined) || (t.tenant_id as string | undefined) || undefined,
-              tenant_id: (t.tenant_id as string | undefined) || undefined,
-              tenantName: (t.tenantName as string | undefined) || (t.tenant_name as string | undefined) || undefined,
-              clientId: t.clientId as string | undefined,
-              organisationNumber: t.organisationNumber as string | undefined,
-              displayLabel:
-                (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
-            }));
-            setOrgs(mapped);
+            const mapped: Org[] = orgsData.map((t) => {
+              const idRaw = (t.id as string | undefined) || undefined;
+              const explicitTenant =
+                (t.tenantId as string | undefined) || (t.tenant_id as string | undefined) || undefined;
+              let tenantIdDerived: string | undefined = explicitTenant;
+              if (!tenantIdDerived && idRaw) {
+                const parts = String(idRaw).split(":");
+                tenantIdDerived = parts.length === 2 ? parts[1] : idRaw;
+              }
+              return {
+                id: idRaw,
+                tenantId: tenantIdDerived,
+                tenant_id: tenantIdDerived,
+                tenantName: (t.tenantName as string | undefined) || (t.tenant_name as string | undefined) || undefined,
+                clientId: t.clientId as string | undefined,
+                organisationNumber: t.organisationNumber as string | undefined,
+                displayLabel:
+                  (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
+              };
+            });
+            const filtered = currentOpenIdSub
+              ? mapped.filter((m) => String(m["openid_sub"] || "") === String(currentOpenIdSub))
+              : mapped;
+            setOrgs(filtered);
           } catch (innerErr) {
             // If unauthorized, clear orgs and continue silently
             try {
