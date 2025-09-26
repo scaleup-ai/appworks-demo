@@ -16,7 +16,7 @@ export default function XeroIntegrationCard({
   setShowRaw: (b: boolean) => void;
 }) {
   return (
-    <div className="max-w-2xl p-4 rounded bg-white border">
+    <div className="max-w-2xl p-4 bg-white border rounded">
       {loading ? (
         <div className="text-sm text-gray-600">Loading status…</div>
       ) : (
@@ -31,7 +31,7 @@ export default function XeroIntegrationCard({
                   <StatusBadge variant="red">Not connected</StatusBadge>
                 )}
               </div>
-              <div className="text-sm text-gray-500 mt-1">
+              <div className="mt-1 text-sm text-gray-500">
                 {(status && (status.integrationStatus as any)?.message) || "Status unknown"}
               </div>
             </div>
@@ -39,14 +39,25 @@ export default function XeroIntegrationCard({
             <div className="text-right">
               <div className="text-sm text-gray-600">Tenants</div>
               <div className="mt-1 text-sm font-semibold">
-                {((status && (status.tenants as any[])?.length) || orgs.length) + " connected"}
+                {((orgs && orgs.length) || (status && (status.tenants as any[])?.length) || 0) + " connected"}
               </div>
             </div>
           </div>
 
           <div className="mb-3">
-            <div className="text-sm text-gray-600 mb-2">Connected organizations</div>
-            <TenantsList tenants={(status && Array.isArray(status.tenants) ? (status.tenants as any[]) : orgs) || []} />
+            <div className="mb-2 text-sm text-gray-600">Connected organizations</div>
+            {/* Prefer canonical `orgs` prop (from auth slice) so this card shows the same
+                tenant list as the Nav and Settings selector. Only fall back to status.tenants
+                when `orgs` is empty. */}
+            <TenantsList
+              tenants={
+                Array.isArray(orgs) && orgs.length > 0
+                  ? orgs
+                  : Array.isArray((status && status.tenants) as any[])
+                    ? (status!.tenants as any[])
+                    : []
+              }
+            />
           </div>
 
           <div className="flex items-center gap-3">
@@ -60,7 +71,7 @@ export default function XeroIntegrationCard({
           </div>
 
           {showRaw && (
-            <div className="mt-3 p-2 bg-gray-50 border rounded text-xs">
+            <div className="p-2 mt-3 text-xs border rounded bg-gray-50">
               <pre className="overflow-auto">{JSON.stringify(status ?? { organisations: orgs.length }, null, 2)}</pre>
             </div>
           )}

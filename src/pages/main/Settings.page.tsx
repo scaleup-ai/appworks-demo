@@ -26,7 +26,8 @@ const SettingsPage: React.FC = () => {
   // Get current openid_sub from xero slice
   const currentOpenIdSub = useSelector((s: RootState) => s.xero.currentOpenIdSub);
   const dispatch = useDispatch();
-  const [orgs, setOrgs] = useState<Org[]>([]);
+  // Use central auth slice as single source-of-truth for tenants
+  const tenantsFromStore = useSelector((s: RootState) => s.auth.tenants || []);
   const reduxSelected = useSelector((s: RootState) => s.auth.selectedTenantId);
   const [selected, setSelected] = useState<string | null>(() => reduxSelected ?? AuthStorage.getSelectedTenantId());
   const [status, setStatus] = useState<Record<string, unknown> | null>(null);
@@ -66,11 +67,10 @@ const SettingsPage: React.FC = () => {
                 (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
             };
           });
-          // If we have a currentOpenIdSub, filter the mapped tenants to only include the user's tenants
-          const filtered = currentOpenIdSub
-            ? mapped.filter((m) => String(m["openid_sub"] || "") === String(currentOpenIdSub))
-            : mapped;
-          setOrgs(filtered);
+          // Persist normalized tenants into the shared auth slice so Nav, TenantSelector
+          // and other components see the same data. Let UI components perform
+          // per-user filtering using currentOpenIdSub so behaviour is consistent.
+          dispatch(setTenants(mapped));
         } else {
           try {
             const orgsResp = await axiosClient.get("/api/v1/xero/organisations");
@@ -95,10 +95,8 @@ const SettingsPage: React.FC = () => {
                   (t.displayLabel as string | undefined) || (t.display_name as string | undefined) || undefined,
               };
             });
-            const filtered = currentOpenIdSub
-              ? mapped.filter((m) => String(m["openid_sub"] || "") === String(currentOpenIdSub))
-              : mapped;
-            setOrgs(filtered);
+            // Persist into auth slice for global consistency
+            dispatch(setTenants(mapped));
           } catch (innerErr) {
             // If unauthorized, clear orgs and continue silently
             try {
@@ -106,7 +104,8 @@ const SettingsPage: React.FC = () => {
               if (typeof maybe === "object" && maybe !== null && "response" in (maybe as Record<string, unknown>)) {
                 const resp = (maybe as Record<string, unknown>)["response"];
                 if (resp && typeof resp === "object" && (resp as Record<string, unknown>)["status"] === 401) {
-                  setOrgs([]);
+                  // Clear persisted tenants when backend responds unauthorized
+                  dispatch(setTenants([]));
                   return;
                 }
               }
@@ -119,7 +118,7 @@ const SettingsPage: React.FC = () => {
         console.warn("Failed to fetch organisations or status", err);
       } finally {
         // After initial status fetch, Google connection is handled by the dedicated component.
-        setLoading(false);
+          setLoading(false);
       }
     };
     void fetch();
@@ -134,6 +133,11 @@ const SettingsPage: React.FC = () => {
       AuthStorage.setSelectedTenantId(v);
     };
   }, [dispatch]);
+
+  // derive displayed tenants once so Nav and cards use same data
+  const displayedOrgs = currentOpenIdSub
+    ? (tenantsFromStore as any[]).filter((t) => String(t.openid_sub || "") === String(currentOpenIdSub))
+    : (tenantsFromStore as any[]);
 
   return (
     <AppLayout>
@@ -154,14 +158,14 @@ const SettingsPage: React.FC = () => {
           <div className="max-w-md">
             <select value={selected || ""} onChange={handleChange} className="w-full px-3 py-2 border rounded">
               <option value="">(none)</option>
-              {orgs.map((o) => (
+              {displayedOrgs.map((o: any) => (
                 <option key={o.tenantId} value={o.tenantId}>
                   {o.displayLabel || o.tenantName || o.clientId || o.tenantId}
                 </option>
               ))}
             </select>
           </div>
-          <div className="mt-2 text-sm text-gray-600">Connected organizations: {orgs.length}</div>
+          <div className="mt-2 text-sm text-gray-600">Connected organizations: {displayedOrgs.length}</div>
         </section>
 
         <section>
@@ -171,7 +175,7 @@ const SettingsPage: React.FC = () => {
           <div className="max-w-2xl space-y-4">
             <XeroIntegrationCard
               status={status}
-              orgs={orgs}
+              orgs={displayedOrgs}
               loading={loading}
               showRaw={showRaw}
               setShowRaw={setShowRaw}
