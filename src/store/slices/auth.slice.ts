@@ -6,7 +6,10 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   tenants: Array<{ openid_sub: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
+  // legacy name used across parts of the app
   selectedOpenIdSub?: string | null;
+  // canonical name used in components: selectedTenantId
+  selectedTenantId?: string | null;
 }
 
 const initialState: AuthState = {
@@ -16,6 +19,7 @@ const initialState: AuthState = {
   error: null,
   tenants: [],
   selectedOpenIdSub: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
+  selectedTenantId: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
 };
 
 export const validateTokens = createAsyncThunk('auth/validateTokens', async () => {
