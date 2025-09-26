@@ -42,7 +42,10 @@ const TenantSelector: React.FC = () => {
     const fetchTenants = async () => {
       if (tenants && tenants.length > 0) return;
       try {
-        const resp = await axiosClient.get("/api/v1/xero/organisations");
+        // Send currentOpenIdSub so backend can scope results to the authenticated user.
+        const headers: Record<string, string> = {};
+        if (selectedOpenIdSub) headers["X-Openid-Sub"] = selectedOpenIdSub;
+        const resp = await axiosClient.get("/api/v1/xero/organisations", { headers });
         const data = resp.data || [];
         const mapped = (data as OrgResponse[]).map((t) => {
           // prefer explicit tenant_id/tenantId, fall back to openid_sub or id
@@ -86,7 +89,15 @@ const TenantSelector: React.FC = () => {
           const key = v.displayLabel || String(v.openid_sub || "");
           if (!byLabel.has(key)) byLabel.set(key, v);
         }
-        const tenantsArr = Array.from(byLabel.values());
+        let tenantsArr = Array.from(byLabel.values());
+        // Defensive client-side filter: only show tenants that match the currentOpenIdSub when available
+        if (selectedOpenIdSub && tenantsArr && tenantsArr.length > 0) {
+          tenantsArr = tenantsArr.filter((tt) => {
+            // normalized tenant shape includes openid_sub
+            const sub = String(tt.openid_sub || "");
+            return sub === String(selectedOpenIdSub);
+          });
+        }
         // persist normalized tenants to local state and redux store (rich shape)
         const tenantsArrTyped = tenantsArr.map((t) => ({
           openid_sub: String(t.openid_sub || ""),
