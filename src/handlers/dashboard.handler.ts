@@ -41,9 +41,8 @@ export function makeHandleTestEmailGeneration(generateEmailDraft: (req: EmailDra
         stage: "overdue_stage_1",
         customerName: "Test Customer Ltd",
       };
-      const draft = await generateEmailDraft(testRequest);
+      await generateEmailDraft(testRequest);
       showToast("Email draft generated successfully", { type: "success" });
-      console.log("Generated email draft:", draft);
     } catch (err) {
       handleError(err);
     }

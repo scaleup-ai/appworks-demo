@@ -4,6 +4,7 @@ import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
 import * as paymentApi from "../../apis/payment.api";
+import * as auditApi from "../../apis/audit.api";
 import Button from "../../components/ui/Button.component";
 import Card from "../../components/ui/Card.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
@@ -51,6 +52,7 @@ const DashboardPage: React.FC = () => {
     unmatchedPayments: 0,
   });
   const [agents, setAgents] = useState<AgentStatus[]>([]);
+  const [recentActivity, setRecentActivity] = useState<Array<{ id: string; message: string; when?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showTenantPrompt, setShowTenantPrompt] = useState(false);
@@ -100,6 +102,25 @@ const DashboardPage: React.FC = () => {
         scheduledReminders: scheduledReminders.length,
         unmatchedPayments: 0, // Would need payment reconciliation data
       });
+      // Load recent audit/activity events
+      try {
+        const events = await auditApi.listRecentAuditEvents({ limit: 10 });
+        const mapped = (events || []).map((e) => {
+          let msg = e.event_type;
+          try {
+            if (e.payload && typeof e.payload === 'object') {
+              if (e.payload.message) msg = String(e.payload.message);
+              else if (e.payload.action) msg = `${e.event_type}: ${String(e.payload.action)}`;
+              else if (e.payload.tool) msg = `${e.event_type}: ${String(e.payload.tool)}`;
+            }
+          } catch {}
+          return { id: e.id || `${e.event_type}_${e.created_at || ''}_${Math.random()}`, message: msg, when: e.created_at };
+        });
+        setRecentActivity(mapped);
+      } catch (e) {
+        console.warn('Failed to load recent activity', e);
+        setRecentActivity([]);
+      }
     } catch {
       console.error("Failed to load dashboard data:");
       showToast("Failed to load dashboard data", { type: "error" });
@@ -328,38 +349,21 @@ const DashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Recent Activity */}
-        <Card title="Recent Activity" description="Latest agent operations and events">
+        {/* Recent Activity (sourced from API) */}
+        <Card title="Recent Activity" description="Latest agent operations and events (from audit)">
           <div className="space-y-3">
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <div className="flex items-center">
-                <div className="w-2 h-2 mr-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm">Collections Reminder Agent scanned 15 invoices</span>
-              </div>
-              <span className="text-xs text-gray-500">2 minutes ago</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <div className="flex items-center">
-                <div className="w-2 h-2 mr-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm">Email Copywriter Agent generated 3 reminder emails</span>
-              </div>
-              <span className="text-xs text-gray-500">5 minutes ago</span>
-            </div>
-            <div className="flex items-center justify-between py-2 border-b border-gray-100">
-              <div className="flex items-center">
-                <div className="w-2 h-2 mr-3 bg-yellow-500 rounded-full"></div>
-                <span className="text-sm">Payment Reconciliation Agent matched 2 payments</span>
-              </div>
-              <span className="text-xs text-gray-500">10 minutes ago</span>
-            </div>
-            {!xeroConnected && (
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center">
-                  <div className="w-2 h-2 mr-3 bg-gray-400 rounded-full"></div>
-                  <span className="text-sm text-gray-500">Data Integration Agent waiting for Xero connection</span>
+            {recentActivity.length === 0 ? (
+              <div className="py-4 text-sm text-gray-500">No recent activity available.</div>
+            ) : (
+              recentActivity.map((a) => (
+                <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-100">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 mr-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm">{a.message}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{a.when ? new Date(a.when).toLocaleString() : '-'}</span>
                 </div>
-                <span className="text-xs text-gray-500">-</span>
-              </div>
+              ))
             )}
           </div>
         </Card>
