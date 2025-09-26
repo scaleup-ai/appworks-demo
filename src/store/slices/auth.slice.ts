@@ -46,10 +46,53 @@ const authSlice = createSlice({
       }
     },
     setTenants(state, action) {
-      state.tenants = action.payload || [];
+      // Normalize incoming tenants to a canonical shape that includes both
+      // `openid_sub` (used by TenantSelector/Nav) and `tenantId` (used elsewhere).
+      try {
+        const raw = Array.isArray(action.payload) ? action.payload : [];
+        const mapped = raw.map((t: unknown) => {
+          const rec = t as Record<string, unknown> | undefined;
+          const tenantId = (rec && (rec.tenantId as string | undefined)) || (rec && (rec.tenant_id as string | undefined)) || undefined;
+          // If repo returns id in form clientId:tenantId, extract tenant id
+          let derivedTenantId = tenantId;
+          if (!derivedTenantId && rec && typeof rec.id === 'string') {
+            const parts = String(rec.id).split(":");
+            if (parts.length === 2) derivedTenantId = parts[1];
+            else derivedTenantId = String(rec.id);
+          }
+          const openid_sub = rec && ((rec.openid_sub as string | undefined) || derivedTenantId || String(rec.id || ''));
+          const clientId = rec && ((rec.clientId as string | undefined) || (rec.client_id as string | undefined) || (typeof rec.id === 'string' && String(rec.id).includes(":") ? String(rec.id).split(":")[0] : undefined));
+          const displayLabel = rec && ((rec.displayLabel as string | undefined) || (rec.display_label as string | undefined) || (rec.display_name as string | undefined) || undefined);
+          return {
+            openid_sub: String(openid_sub || ''),
+            tenantId: derivedTenantId ? String(derivedTenantId) : undefined,
+            tenantName: (rec && ((rec.tenantName as string | undefined) || (rec.tenant_name as string | undefined) || (rec.name as string | undefined) || clientId)) || undefined,
+            tenantType: (rec && ((rec.tenantType as string | undefined) || (rec.type as string | undefined))) || undefined,
+            clientId: clientId || undefined,
+            organisationNumber: rec && ((rec.organisationNumber as string | undefined) || (rec.organisation_number as string | undefined)) || undefined,
+            displayLabel,
+          };
+        });
+        state.tenants = mapped;
+      } catch {
+        state.tenants = action.payload || [];
+      }
     },
     selectTenant(state, action) {
-      state.selectedOpenIdSub = action.payload;
+      // Allow selecting by either tenantId or openid_sub. Store both forms.
+      const v = action.payload;
+      try {
+        if (v && typeof v === 'string') {
+          state.selectedOpenIdSub = v;
+          state.selectedTenantId = v;
+        } else {
+          state.selectedOpenIdSub = v ?? null;
+          state.selectedTenantId = v ?? null;
+        }
+      } catch {
+        state.selectedOpenIdSub = v ?? null;
+        state.selectedTenantId = v ?? null;
+      }
     },
     logout: (state) => {
       state.isAuthenticated = false;
@@ -63,6 +106,7 @@ const authSlice = createSlice({
       }
       state.tenants = [];
       state.selectedOpenIdSub = null;
+      state.selectedTenantId = null;
     },
     setError: (state, action) => {
       state.error = action.payload;

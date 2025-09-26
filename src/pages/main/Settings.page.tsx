@@ -61,7 +61,7 @@ const SettingsPage: React.FC = () => {
           setOrgs(mapped);
         } else {
           try {
-            const orgsResp = await axiosClient.get("/api/v1/organisations");
+            const orgsResp = await axiosClient.get("/api/v1/xero/organisations");
             const orgsData = (orgsResp.data as Array<Record<string, unknown>> | null) || [];
             const mapped: Org[] = orgsData.map((t) => ({
               id: (t.id as string | undefined) || undefined,

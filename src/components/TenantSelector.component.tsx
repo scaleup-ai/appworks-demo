@@ -18,6 +18,8 @@ type OrgResponse = {
   id?: string;
   clientId?: string;
   openid_sub?: string;
+  tenantId?: string;
+  tenant_id?: string;
   tenantName?: string;
   tenantType?: string;
   organisationNumber?: string;
@@ -43,11 +45,17 @@ const TenantSelector: React.FC = () => {
         const resp = await axiosClient.get("/api/v1/xero/organisations");
         const data = resp.data || [];
         const mapped = (data as OrgResponse[]).map((t) => {
-          const openid_sub = t.openid_sub || t.id || "";
+          // prefer explicit tenant_id/tenantId, fall back to openid_sub or id
+          const openid_sub =
+            (t.openid_sub as string | undefined) ||
+            (t.tenantId as string | undefined) ||
+            (t.tenant_id as string | undefined) ||
+            (t.id as string | undefined) ||
+            "";
           const clientId = t.clientId || "";
           const orgNo = t.organisationNumber || "";
           const name = t.tenantName || clientId || "";
-          const shortSub = openid_sub.slice(0, 8);
+          const shortSub = openid_sub ? String(openid_sub).slice(0, 8) : "";
           const displayLabel = `${name}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortSub ? ` • ${shortSub}` : ""}`;
           return {
             openid_sub,
