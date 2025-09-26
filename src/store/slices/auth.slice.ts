@@ -5,8 +5,8 @@ export interface AuthState {
   xeroConnected: boolean;
   loading: boolean;
   error: string | null;
-  tenants: Array<{ tenantId: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
-  selectedTenantId?: string | null;
+  tenants: Array<{ openid_sub: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
+  selectedOpenIdSub?: string | null;
 }
 
 const initialState: AuthState = {
@@ -15,12 +15,10 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   tenants: [],
-  // initialize selected tenant from localStorage if present so app picks up previous selection
-  selectedTenantId: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
+  selectedOpenIdSub: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
 };
 
 export const validateTokens = createAsyncThunk('auth/validateTokens', async () => {
-  // Frontend does not store a real access token; use the persisted isAuthenticated flag
   try {
     const v = localStorage.getItem('isAuthenticated');
     return v === '1' || v === 'true';
@@ -43,11 +41,11 @@ const authSlice = createSlice({
         // ignore
       }
     },
-    setTenants(state, action: { payload: Array<{ tenantId: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }> }) {
+    setTenants(state, action) {
       state.tenants = action.payload || [];
     },
-    selectTenant(state, action: { payload: string | null }) {
-      state.selectedTenantId = action.payload;
+    selectTenant(state, action) {
+      state.selectedOpenIdSub = action.payload;
     },
     logout: (state) => {
       state.isAuthenticated = false;
@@ -60,7 +58,7 @@ const authSlice = createSlice({
         // ignore
       }
       state.tenants = [];
-      state.selectedTenantId = null;
+      state.selectedOpenIdSub = null;
     },
     setError: (state, action) => {
       state.error = action.payload;

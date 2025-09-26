@@ -39,7 +39,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
   // tenant change is handled elsewhere (Nav only displays friendly name)
 
   // read tenant state at top-level so we can show friendly names and fetch missing metadata
-  const selId = useSelector((s: RootState) => s.auth.selectedTenantId);
+  const selOpenId = useSelector((s: RootState) => s.auth.selectedOpenIdSub);
   const tenants = useSelector((s: RootState) => s.auth.tenants || []);
   const xeroConnected = useSelector((s: RootState) => s.auth.xeroConnected);
 
@@ -60,7 +60,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
 
   useEffect(() => {
     // If a tenant is selected but the store has no tenant metadata yet, fetch organisations
-    if (selId && (!tenants || tenants.length === 0)) {
+    if (selOpenId && (!tenants || tenants.length === 0)) {
       void (async () => {
         try {
           const resp = await axiosClient.get("/api/v1/xero/organisations");
@@ -128,7 +128,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
         }
       })();
     }
-  }, [selId]);
+  }, [selOpenId]);
 
   // UI rendering tenant shape is provided by auth store
 
@@ -156,39 +156,30 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
       {/* Tenant selector / display */}
       <div className={linkClass}>
         <select
-          value={selId || ""}
+          value={selOpenId || ""}
           onChange={handleSelectChange}
           className="px-2 py-1 text-sm bg-white border rounded"
           aria-label="Select organization"
         >
           {/* Only show a blank placeholder when we have no tenants loaded */}
-          {(tenants || []).filter((t) => t && String(t.tenantId || "").length > 0).length === 0 && (
+          {(tenants || []).filter((t) => t && t.openid_sub && t.openid_sub.length > 0).length === 0 && (
             <option value="">Select org</option>
           )}
           {(tenants || [])
-            .filter((t) => t && String(t.tenantId || "").length > 0)
-            .map(
-              (t: {
-                tenantId: string;
-                tenantName?: string;
-                clientId?: string;
-                organisationNumber?: string;
-                displayLabel?: string;
-              }) => {
-                const tid = String(t.tenantId || "");
-                // Prefer tenantName (friendly org name). Fall back to displayLabel, clientId or short tenant id.
-                const orgNo = t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "";
-                const shortId = tid ? String(tid).slice(0, 8) : "";
-                const labelBase =
-                  t.tenantName || t.displayLabel || t.clientId || (shortId ? `...${shortId}` : "Unknown");
-                const label = `${labelBase}${orgNo}`;
-                return (
-                  <option key={tid} value={tid}>
-                    {label}
-                  </option>
-                );
-              }
-            )}
+            .filter((t) => t && t.openid_sub && t.openid_sub.length > 0)
+            .map((t) => {
+              const sub = t.openid_sub;
+              const orgNo = t.organisationNumber ? ` • Org#: ${t.organisationNumber}` : "";
+              const shortSub = sub ? sub.slice(0, 8) : "";
+              const labelBase =
+                t.tenantName || t.displayLabel || t.clientId || (shortSub ? `...${shortSub}` : "Unknown");
+              const label = `${labelBase}${orgNo}`;
+              return (
+                <option key={sub} value={sub}>
+                  {label}
+                </option>
+              );
+            })}
         </select>
       </div>
       <Link to="/" onClick={handleLinkClick} className={linkClass}>

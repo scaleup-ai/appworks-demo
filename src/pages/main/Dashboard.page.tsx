@@ -41,7 +41,7 @@ interface AgentStatus {
 
 const DashboardPage: React.FC = () => {
   const dispatch = useDispatch();
-  const { xeroConnected, selectedTenantId } = useSelector((state: RootState) => state.auth);
+  const { xeroConnected, selectedOpenIdSub } = useSelector((state: RootState) => state.auth);
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
     outstandingAmount: 0,
@@ -61,7 +61,7 @@ const DashboardPage: React.FC = () => {
       // Fetch real agent status from backend
       const agentList = await import("../../apis/agents.api").then((m) => m.listAgents());
       setAgents(agentList);
-    } catch (err) {
+    } catch {
       setAgents([]);
       showToast("Failed to load agent status", { type: "error" });
     }
@@ -72,8 +72,8 @@ const DashboardPage: React.FC = () => {
       setLoading(true);
 
       // Load invoices data scoped to selected tenant (Redux is primary source)
-      const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
-      const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
+      const openid_sub = selectedOpenIdSub ?? AuthStorage.getSelectedTenantId();
+      const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: openid_sub || undefined });
 
       // Load scheduled collections
       const scheduledReminders = await collectionsApi.getScheduledReminders();
@@ -116,8 +116,8 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     initializeAgents();
     if (xeroConnected) {
-      const tenantId = (selectedTenantId ?? AuthStorage.getSelectedTenantId()) || "";
-      if (!tenantId) {
+      const openid_sub = (selectedOpenIdSub ?? AuthStorage.getSelectedTenantId()) || "";
+      if (!openid_sub) {
         setShowTenantPrompt(true);
         setLoading(false);
         return;
@@ -126,22 +126,9 @@ const DashboardPage: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [xeroConnected, selectedTenantId]);
+  }, [xeroConnected, selectedOpenIdSub]);
 
   // use shared formatCurrency from helper.handler
-
-  const getStatusColor = (status: AgentStatus["status"]) => {
-    switch (status) {
-      case "active":
-        return "text-green-600 bg-green-100";
-      case "inactive":
-        return "text-gray-600 bg-gray-100";
-      case "error":
-        return "text-red-600 bg-red-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
 
   if (loading) {
     return (

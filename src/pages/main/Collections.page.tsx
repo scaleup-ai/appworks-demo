@@ -43,7 +43,7 @@ interface CollectionsSummary {
 }
 
 const CollectionsPage: React.FC = () => {
-  const { xeroConnected, selectedTenantId } = useSelector((state: RootState) => state.auth);
+  const { xeroConnected, selectedOpenIdSub } = useSelector((state: RootState) => state.auth);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [summary, setSummary] = useState<CollectionsSummary>({
     totalOutstanding: 0,
@@ -61,8 +61,8 @@ const CollectionsPage: React.FC = () => {
       setLoading(true);
 
       // Load invoices scoped to selected tenant (Redux primary, safe localStorage fallback)
-      const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
-      const invoiceData = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined });
+      const openid_sub = selectedOpenIdSub ?? AuthStorage.getSelectedTenantId();
+      const invoiceData = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: openid_sub || undefined });
 
       // Load scheduled reminders
       const scheduledReminders = await collectionsApi.getScheduledReminders();
@@ -135,8 +135,8 @@ const CollectionsPage: React.FC = () => {
 
   useEffect(() => {
     if (xeroConnected) {
-      const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
-      if (!tenantId) {
+      const openid_sub = selectedOpenIdSub ?? AuthStorage.getSelectedTenantId();
+      if (!openid_sub) {
         window.location.href = "/select-tenant";
         return;
       }
@@ -144,26 +144,9 @@ const CollectionsPage: React.FC = () => {
     } else {
       setLoading(false);
     }
-  }, [xeroConnected, selectedTenantId]);
+  }, [xeroConnected, selectedOpenIdSub]);
 
   // use shared formatCurrency from helper.handler
-
-  const getReminderStageColor = (stage: string) => {
-    switch (stage) {
-      case "current":
-        return "text-green-600 bg-green-100";
-      case "pre_due":
-        return "text-blue-600 bg-blue-100";
-      case "overdue_stage_1":
-        return "text-yellow-600 bg-yellow-100";
-      case "overdue_stage_2":
-        return "text-orange-600 bg-orange-100";
-      case "overdue_stage_3":
-        return "text-red-600 bg-red-100";
-      default:
-        return "text-gray-600 bg-gray-100";
-    }
-  };
 
   const getReminderStageLabel = (stage: string) => {
     switch (stage) {

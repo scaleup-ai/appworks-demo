@@ -5,14 +5,9 @@ import { useAppDispatch, useAppSelector } from "../store/hooks";
 import axiosClient from "../apis/axios-client";
 
 type Tenant = {
-  tenantId?: string;
-  tenant_id?: string;
+  openid_sub: string;
   tenantName?: string;
-  tenant_name?: string;
   tenantType?: string;
-  type?: string;
-  name?: string;
-  organization?: string;
   clientId?: string;
   organisationNumber?: string;
   createdAt?: string;
@@ -22,23 +17,18 @@ type Tenant = {
 type OrgResponse = {
   id?: string;
   clientId?: string;
-  tenantId?: string;
-  tenant_id?: string;
+  openid_sub?: string;
   tenantName?: string;
-  tenant_name?: string;
   tenantType?: string;
-  type?: string;
   organisationNumber?: string;
-  organisation_number?: string;
   createdAt?: string;
-  created_at?: string;
 };
 
 const TenantSelector: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const selectedTenantId = useAppSelector((s) => s.auth.selectedTenantId);
+  const selectedOpenIdSub = useAppSelector((s) => s.xero.currentOpenIdSub);
 
   const [tenants, setLocalTenants] = useState<Tenant[]>(
     () => (location.state as { tenants?: Tenant[] })?.tenants || []
@@ -53,35 +43,28 @@ const TenantSelector: React.FC = () => {
         const resp = await axiosClient.get("/api/v1/xero/organisations");
         const data = resp.data || [];
         const mapped = (data as OrgResponse[]).map((t) => {
-          // If backend returned id as `${clientId}:${tenantId}`, parse tenantId
-          let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
-          if (!tenantIdRaw && t.id) {
-            const parts = String(t.id).split(":");
-            if (parts.length === 2) tenantIdRaw = parts[1];
-            else tenantIdRaw = String(t.id);
-          }
-          const clientId = t.clientId || (t.id ? String((t.id as string).split(":")[0]) : undefined);
-          const orgNo = t.organisationNumber || t.organisation_number || undefined;
-          const name = t.tenantName || t.tenant_name || clientId || undefined;
-          const shortTid = tenantIdRaw ? String(tenantIdRaw).slice(0, 8) : undefined;
-          const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortTid ? ` • ${shortTid}` : ""}`;
+          const openid_sub = t.openid_sub || t.id || "";
+          const clientId = t.clientId || "";
+          const orgNo = t.organisationNumber || "";
+          const name = t.tenantName || clientId || "";
+          const shortSub = openid_sub.slice(0, 8);
+          const displayLabel = `${name}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortSub ? ` • ${shortSub}` : ""}`;
           return {
-            tenantId: String(tenantIdRaw || ""),
+            openid_sub,
             tenantName: name,
-            tenantType: t.tenantType || t.type || undefined,
+            tenantType: t.tenantType || "",
             clientId,
             organisationNumber: orgNo,
-            createdAt: t.createdAt || t.created_at || undefined,
-            // helpful display label used in UI
+            createdAt: t.createdAt || "",
             displayLabel,
-          } as unknown as Tenant;
+          };
         });
 
-        // dedupe by tenantId while preserving metadata
+        // dedupe by openid_sub while preserving metadata
         const map = new Map<string, (typeof mapped)[number]>();
         for (const m of mapped) {
-          const key = String(m.tenantId || "");
-          if (!map.has(key)) map.set(key, { ...m, tenantId: key });
+          const key = String(m.openid_sub || "");
+          if (!map.has(key)) map.set(key, { ...m, openid_sub: key });
           else {
             const ex = map.get(key)!;
             ex.tenantName = ex.tenantName || m.tenantName;
@@ -92,20 +75,20 @@ const TenantSelector: React.FC = () => {
         // Also dedupe by displayLabel to avoid showing multiple identical-looking entries
         const byLabel = new Map<string, (typeof mapped)[number]>();
         for (const v of Array.from(map.values())) {
-          const key = v.displayLabel || String(v.tenantId || "");
+          const key = v.displayLabel || String(v.openid_sub || "");
           if (!byLabel.has(key)) byLabel.set(key, v);
         }
         const tenantsArr = Array.from(byLabel.values());
         // persist normalized tenants to local state and redux store (rich shape)
         const tenantsArrTyped = tenantsArr.map((t) => ({
-          tenantId: String(t.tenantId || ""),
+          openid_sub: String(t.openid_sub || ""),
           tenantName: t.tenantName,
           tenantType: t.tenantType,
           clientId: t.clientId,
           organisationNumber: t.organisationNumber,
           displayLabel: t.displayLabel,
         }));
-        if (mounted) setLocalTenants(tenantsArr as unknown as Tenant[]);
+        if (mounted) setLocalTenants(tenantsArr as Tenant[]);
         // Persist rich shape to redux regardless of component mount state (safe)
         dispatch(setTenants(tenantsArrTyped));
       } catch (err) {
@@ -118,23 +101,8 @@ const TenantSelector: React.FC = () => {
     };
   }, [dispatch, tenants]);
 
-  const handleSelect = (tenantId: string) => {
-    try {
-      if (tenantId) AuthStorage.setSelectedTenantId(tenantId);
-      else AuthStorage.setSelectedTenantId(null);
-    } catch {
-      // ignore storage errors
-    }
-    // dispatch null when no id
-    dispatch(selectTenant(tenantId && tenantId.length > 0 ? tenantId : null));
-    navigate("/dashboard");
-  };
-
   // filter out any entries without a valid tenant id before rendering
-  const visibleTenants = (tenants || []).filter((t) => {
-    const tid = String(t?.tenantId || t?.tenant_id || "").trim();
-    return tid.length > 0;
-  });
+  const visibleTenants = (tenants || []).filter((t) => t.openid_sub && t.openid_sub.length > 0);
 
   if (!visibleTenants || visibleTenants.length === 0) {
     // Nothing to select
@@ -153,20 +121,25 @@ const TenantSelector: React.FC = () => {
         <p className="mb-4 text-sm text-gray-600">Choose which Xero organization you want to use for this session.</p>
         <ul>
           {visibleTenants.map((t: Tenant) => {
-            const tid = (t.tenantId || t.tenant_id || "").toString();
-            const isSelected = Boolean(selectedTenantId && selectedTenantId === tid);
+            const sub = t.openid_sub;
+            const isSelected = Boolean(selectedOpenIdSub && selectedOpenIdSub === sub);
             return (
-              <li key={tid} className="mb-3">
+              <li key={sub} className="mb-3">
                 <button
-                  onClick={() => handleSelect(tid)}
+                  onClick={() => {
+                    AuthStorage.setSelectedTenantId(sub);
+                    dispatch(selectTenant(sub));
+                    navigate("/dashboard");
+                  }}
                   className={`w-full px-4 py-2 text-left border rounded hover:bg-gray-100 ${isSelected ? "bg-blue-50 border-blue-300" : ""}`}
                 >
                   <div className="font-medium">
-                    {t.tenantName || t.tenant_name || t.clientId || t.name || t.organization || "Unknown"}
+                    {t.tenantName || t.displayLabel || t.clientId || sub.slice(0, 8) || "Unknown"}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {t.organisationNumber ? `Org#: ${t.organisationNumber}` : t.tenantType || t.type || ""}
+                    {t.organisationNumber ? `Org#: ${t.organisationNumber}` : t.tenantType || ""}
                   </div>
+                  <div className="text-xs text-gray-400">OpenID: {sub}</div>
                 </button>
               </li>
             );

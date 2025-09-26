@@ -10,7 +10,8 @@ interface XeroState {
   };
   // After OpenAPI update the GET token endpoint returns metadata rather than
   // the full token set. Store the metadata here keyed by clientId-tenantId.
-  tokens: Record<string, TokenMetadataResponse>;
+  tokens: Record<string, TokenMetadataResponse & { openid_sub?: string }>;
+  currentOpenIdSub?: string | null;
   error: ApiError | null;
 }
 
@@ -62,8 +63,11 @@ const xeroSlice = createSlice({
     getTokenSuccess: (state, action: PayloadAction<TokenMetadataResponse>) => {
       state.isLoading = false;
       state.error = null;
-      // Store token metadata in state if needed
-      // Example keying strategy left to consumers: `${clientId}-${tenantId}`
+      // Store token metadata and openid_sub
+      const { clientId, tenantId, openid_sub } = action.payload;
+      const key = `${clientId || ""}-${tenantId || ""}`;
+      state.tokens[key] = { ...action.payload };
+      if (openid_sub) state.currentOpenIdSub = openid_sub;
     },
     getTokenFailure: (state, action: PayloadAction<ApiError>) => {
       state.isLoading = false;
@@ -106,5 +110,7 @@ export const {
   startAuthFailure,
   clearError,
 } = xeroSlice.actions;
+
+export const selectCurrentOpenIdSub = (state: { xero: XeroState }): string | null | undefined => state.xero.currentOpenIdSub;
 
 export default xeroSlice.reducer;

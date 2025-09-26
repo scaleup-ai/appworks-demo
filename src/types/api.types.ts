@@ -41,6 +41,7 @@ export interface TokenMetadataResponse {
   expires_at?: string;
   scopes?: string[];
   access_token_present?: boolean;
+  openid_sub?: string;
 }
 
 export interface IntegrationStatus {

@@ -22,6 +22,8 @@ type Org = {
 };
 
 const SettingsPage: React.FC = () => {
+  // Get current openid_sub from xero slice
+  const currentOpenIdSub = useSelector((s: RootState) => s.xero.currentOpenIdSub);
   const dispatch = useDispatch();
   const [orgs, setOrgs] = useState<Org[]>([]);
   const reduxSelected = useSelector((s: RootState) => s.auth.selectedTenantId);
@@ -98,6 +100,15 @@ const SettingsPage: React.FC = () => {
 
   return (
     <AppLayout>
+      {/* Translucent OpenID info for Xero user scoping */}
+      {currentOpenIdSub && (
+        <div style={{ position: "absolute", top: 16, right: 16, opacity: 0.5, pointerEvents: "none", zIndex: 10 }}>
+          <div className="px-3 py-2 text-xs text-blue-900 border border-blue-200 rounded shadow bg-blue-50">
+            <span>Xero OpenID (sub):</span>
+            <span className="ml-2 font-mono">{currentOpenIdSub}</span>
+          </div>
+        </div>
+      )}
       <div className="p-6">
         <h1 className="mb-4 text-2xl font-semibold">Settings</h1>
         <section className="mb-6">
