@@ -54,6 +54,18 @@ export function makeFetchAndSetTenants(dispatch: Dispatch<AnyAction>) {
       const finalTenants = parseAndDedupTenants(resp.data || []);
       dispatch(setTenantsAction(finalTenants) as unknown as AnyAction);
     } catch (err) {
+      try {
+        const maybe = err as unknown;
+        if (typeof maybe === 'object' && maybe !== null && 'response' in (maybe as Record<string, unknown>)) {
+          const resp = (maybe as Record<string, unknown>)['response'];
+          if (resp && typeof resp === 'object' && (resp as Record<string, unknown>)['status'] === 401) {
+            dispatch(setTenantsAction([]) as unknown as AnyAction);
+            return;
+          }
+        }
+      } catch {
+        // ignore parsing errors
+      }
       console.warn("Failed to fetch organisations for Nav", err);
     }
   };

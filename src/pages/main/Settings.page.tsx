@@ -75,7 +75,19 @@ const SettingsPage: React.FC = () => {
             }));
             setOrgs(mapped);
           } catch (innerErr) {
-            // ignore organisations fallback failure
+            // If unauthorized, clear orgs and continue silently
+            try {
+              const maybe = innerErr as unknown;
+              if (typeof maybe === "object" && maybe !== null && "response" in (maybe as Record<string, unknown>)) {
+                const resp = (maybe as Record<string, unknown>)["response"];
+                if (resp && typeof resp === "object" && (resp as Record<string, unknown>)["status"] === 401) {
+                  setOrgs([]);
+                  return;
+                }
+              }
+            } catch {
+              // ignore parse errors
+            }
           }
         }
       } catch (err) {

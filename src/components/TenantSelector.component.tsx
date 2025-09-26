@@ -42,10 +42,8 @@ const TenantSelector: React.FC = () => {
     const fetchTenants = async () => {
       if (tenants && tenants.length > 0) return;
       try {
-        // Send currentOpenIdSub so backend can scope results to the authenticated user.
-        const headers: Record<string, string> = {};
-        if (selectedOpenIdSub) headers["X-Openid-Sub"] = selectedOpenIdSub;
-        const resp = await axiosClient.get("/api/v1/xero/organisations", { headers });
+        // axios client now attaches X-Openid-Sub automatically from local storage
+        const resp = await axiosClient.get("/api/v1/xero/organisations");
         const data = resp.data || [];
         const mapped = (data as OrgResponse[]).map((t) => {
           // prefer explicit tenant_id/tenantId, fall back to openid_sub or id

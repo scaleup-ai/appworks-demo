@@ -39,6 +39,16 @@ axiosClient.interceptors.request.use(
     if (token && config && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    // Attach current selected tenant / OpenID subject so backend can scope requests
+    try {
+      const selected = AuthStorage.getSelectedTenantId();
+      if (selected && config && config.headers) {
+        // Use X-Openid-Sub header to match backend check
+        config.headers['X-Openid-Sub'] = String(selected);
+      }
+    } catch {
+      // ignore storage failures
+    }
     return config;
   },
   (error: unknown) => Promise.reject(error)
