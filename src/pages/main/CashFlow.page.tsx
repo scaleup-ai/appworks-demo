@@ -6,7 +6,6 @@ import Card from "../../components/ui/Card.component";
 import Button from "../../components/ui/Button.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import StatusBadge from "../../components/ui/StatusBadge.component";
-import TenantPrompt from "../../components/ui/TenantPrompt.component";
 import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
 import ActionBar from "../../components/ui/ActionBar.component";
 import showToast from "../../utils/toast";
@@ -128,14 +127,14 @@ const CashFlowPage: React.FC = () => {
     return (
       <DashboardLayout title="Cash Flow Management">
         <div className="py-12">
-          <div className="max-w-md mx-auto">
-            <TenantPrompt
-              title="Xero Connection Required"
-              message="Connect your Xero account to access cash flow forecasting and treasury data."
-              showInput={false}
-              onConfirm={() => navigate("/connect-xero")}
-              ctaText="Connect Xero"
-            />
+          <div className="max-w-md mx-auto p-6 border rounded-lg bg-yellow-50 text-center">
+            <h3 className="text-lg font-medium text-yellow-800">Xero Not Connected</h3>
+            <p className="mt-2 text-sm text-yellow-700">
+              Connect your Xero account to access cash flow forecasting and treasury data.
+            </p>
+            <div className="mt-4">
+              <Button onClick={() => navigate("/connect-xero")}>Connect Xero</Button>
+            </div>
           </div>
         </div>
       </DashboardLayout>

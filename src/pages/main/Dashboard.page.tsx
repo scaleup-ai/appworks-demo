@@ -9,7 +9,6 @@ import Button from "../../components/ui/Button.component";
 import Card from "../../components/ui/Card.component";
 import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
 import StatusBadge from "../../components/ui/StatusBadge.component";
-import TenantPrompt from "../../components/ui/TenantPrompt.component";
 import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
 import ActionBar from "../../components/ui/ActionBar.component";
 import { RootState } from "../../store/store";
@@ -55,8 +54,7 @@ const DashboardPage: React.FC = () => {
   const [recentActivity, setRecentActivity] = useState<Array<{ id: string; message: string; when?: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [showTenantPrompt, setShowTenantPrompt] = useState(false);
-  const [tenantInput, setTenantInput] = useState("");
+  // Removed TenantPrompt: prefer automatic tenant selection after auth
 
   const initializeAgents = async () => {
     try {
@@ -108,17 +106,21 @@ const DashboardPage: React.FC = () => {
         const mapped = (events || []).map((e) => {
           let msg = e.event_type;
           try {
-            if (e.payload && typeof e.payload === 'object') {
+            if (e.payload && typeof e.payload === "object") {
               if (e.payload.message) msg = String(e.payload.message);
               else if (e.payload.action) msg = `${e.event_type}: ${String(e.payload.action)}`;
               else if (e.payload.tool) msg = `${e.event_type}: ${String(e.payload.tool)}`;
             }
           } catch {}
-          return { id: e.id || `${e.event_type}_${e.created_at || ''}_${Math.random()}`, message: msg, when: e.created_at };
+          return {
+            id: e.id || `${e.event_type}_${e.created_at || ""}_${Math.random()}`,
+            message: msg,
+            when: e.created_at,
+          };
         });
         setRecentActivity(mapped);
       } catch (e) {
-        console.warn('Failed to load recent activity', e);
+        console.warn("Failed to load recent activity", e);
         setRecentActivity([]);
       }
     } catch {
@@ -139,8 +141,8 @@ const DashboardPage: React.FC = () => {
     if (xeroConnected) {
       const openid_sub = (selectedOpenIdSub ?? AuthStorage.getSelectedTenantId()) || "";
       if (!openid_sub) {
-        setShowTenantPrompt(true);
-        setLoading(false);
+        // No tenant selected: send user to select-tenant route (removed interactive prompt)
+        window.location.href = "/select-tenant";
         return;
       }
       loadDashboardData();
@@ -161,33 +163,7 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  if (showTenantPrompt) {
-    return (
-      <DashboardLayout title="Dashboard">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-full max-w-md">
-            <TenantPrompt
-              title="Select Tenant"
-              message="Please enter or select your organisation/tenant ID to view dashboard data."
-              value={tenantInput}
-              onChange={(v) => setTenantInput(v)}
-              onConfirm={(v) => {
-                if (v && String(v).trim()) {
-                  const val = String(v).trim();
-                  AuthStorage.setSelectedTenantId(val);
-                  dispatch({ type: "auth/selectTenant", payload: val });
-                  setShowTenantPrompt(false);
-                  setLoading(true);
-                  setTimeout(() => loadDashboardData(), 100);
-                }
-              }}
-              ctaText="Confirm Tenant"
-            />
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // interactive tenant prompt removed - flow should redirect to /select-tenant when needed
 
   return (
     <DashboardLayout
@@ -361,7 +337,7 @@ const DashboardPage: React.FC = () => {
                     <div className="w-2 h-2 mr-3 bg-green-500 rounded-full"></div>
                     <span className="text-sm">{a.message}</span>
                   </div>
-                  <span className="text-xs text-gray-500">{a.when ? new Date(a.when).toLocaleString() : '-'}</span>
+                  <span className="text-xs text-gray-500">{a.when ? new Date(a.when).toLocaleString() : "-"}</span>
                 </div>
               ))
             )}
