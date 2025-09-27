@@ -5,7 +5,7 @@ export interface AuthState {
   xeroConnected: boolean;
   loading: boolean;
   error: string | null;
-  tenants: Array<{ openid_sub: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
+  tenants: Array<{ openid_sub?: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
   // legacy name used across parts of the app
   selectedOpenIdSub?: string | null;
   // canonical name used in components: selectedTenantId
@@ -60,11 +60,16 @@ const authSlice = createSlice({
             if (parts.length === 2) derivedTenantId = parts[1];
             else derivedTenantId = String(rec.id);
           }
-          const openid_sub = rec && ((rec.openid_sub as string | undefined) || derivedTenantId || String(rec.id || ''));
+          // Only use explicit openid_sub when provided by the backend. Do NOT
+          // default it to the tenant id or record id; that causes incorrect
+          // scoping where tenants appear to belong to the current user.
+          const rawOpenId = rec ? ((rec.openid_sub as string | undefined) || (rec.openidSub as string | undefined)) : undefined;
+          const openid_sub = rawOpenId && rawOpenId.length > 0 ? rawOpenId : undefined;
           const clientId = rec && ((rec.clientId as string | undefined) || (rec.client_id as string | undefined) || (typeof rec.id === 'string' && String(rec.id).includes(":") ? String(rec.id).split(":")[0] : undefined));
           const displayLabel = rec && ((rec.displayLabel as string | undefined) || (rec.display_label as string | undefined) || (rec.display_name as string | undefined) || undefined);
           return {
-            openid_sub: String(openid_sub || ''),
+            // keep openid_sub undefined when backend didn't provide it
+            openid_sub: openid_sub ? String(openid_sub) : undefined,
             tenantId: derivedTenantId ? String(derivedTenantId) : undefined,
             tenantName: (rec && ((rec.tenantName as string | undefined) || (rec.tenant_name as string | undefined) || (rec.name as string | undefined) || clientId)) || undefined,
             tenantType: (rec && ((rec.tenantType as string | undefined) || (rec.type as string | undefined))) || undefined,
