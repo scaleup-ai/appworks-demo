@@ -152,21 +152,25 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
 
   // sign-out handled by makeHandleSignOut (wired below)
 
+  // Determine how many visible tenants there are after applying OpenID scoping
+  const visibleTenants = ((tenants || []) as any[]).filter(
+    (t) => !currentOpenIdSub || String(t.openid_sub || "") === String(currentOpenIdSub)
+  );
+
   return (
     <div className={className + " flex items-center gap-4 relative"}>
       {/* Tenant selector / display */}
       <div className={linkClass}>
-        <select
-          value={selectedTenantId || ""}
-          onChange={handleSelectChange}
-          className="px-2 py-1 text-sm bg-white border rounded"
-          aria-label="Select organization"
-        >
-          {/* Only show a blank placeholder when we have no tenants loaded */}
-          {(tenants || []).length === 0 && <option value="">Select org</option>}
-          {((tenants || []) as any[])
-            .filter((t) => !currentOpenIdSub || String(t.openid_sub || "") === String(currentOpenIdSub))
-            .map((t) => {
+        {visibleTenants.length > 1 ? (
+          <select
+            value={selectedTenantId || ""}
+            onChange={handleSelectChange}
+            className="px-2 py-1 text-sm bg-white border rounded"
+            aria-label="Select organization"
+          >
+            {/* Only show a blank placeholder when we have no tenants loaded */}
+            {visibleTenants.length === 0 && <option value="">Select org</option>}
+            {visibleTenants.map((t) => {
               const ta: any = t;
               const tenantId =
                 ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
@@ -181,7 +185,26 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
                 </option>
               );
             })}
-        </select>
+          </select>
+        ) : visibleTenants.length === 1 ? (
+          // Single tenant -> render read-only label instead of a select
+          <div className="px-2 py-1 text-sm bg-white border rounded text-gray-700">
+            {(() => {
+              const ta: any = visibleTenants[0];
+              const tenantId =
+                ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
+              const orgNo = ta.organisationNumber ? ` • Org#: ${ta.organisationNumber}` : "";
+              const shortTid = tenantId ? String(tenantId).slice(0, 8) : "";
+              const labelBase =
+                ta.tenantName || ta.displayLabel || ta.clientId || (shortTid ? `...${shortTid}` : "Unknown");
+              const label = `${labelBase}${orgNo}`;
+              return label;
+            })()}
+          </div>
+        ) : (
+          // No tenants -> show placeholder (users with no orgs)
+          <div className="px-2 py-1 text-sm bg-white border rounded text-gray-500">No organisations</div>
+        )}
       </div>
       <Link to="/" onClick={handleLinkClick} className={linkClass}>
         Home
