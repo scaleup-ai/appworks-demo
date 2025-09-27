@@ -226,12 +226,29 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
       </Link>
 
       {!xeroConnected ? (
-        <button
-          onClick={handleStartXeroAuth}
-          className={mobile ? "text-sm font-medium text-blue-600 mt-2" : "text-sm font-medium text-blue-600"}
-        >
-          Sign in
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleStartXeroAuth}
+            className={mobile ? "text-sm font-medium text-blue-600 mt-2" : "text-sm font-medium text-blue-600"}
+          >
+            Sign in
+          </button>
+          <label className="flex items-center gap-2 text-sm text-gray-600">
+            <input
+              type="checkbox"
+              defaultChecked={false}
+              onChange={(e) => {
+                try {
+                  if (e.target.checked) localStorage.setItem("remember_me", "1");
+                  else localStorage.removeItem("remember_me");
+                } catch {
+                  // ignore
+                }
+              }}
+            />
+            Remember me
+          </label>
+        </div>
       ) : (
         <div className="relative">
           <button

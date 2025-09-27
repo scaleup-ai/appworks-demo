@@ -8,13 +8,34 @@ import { parseAndDedupTenants, safeLocalStorageRemove, apiErrorToast } from "./s
 export function makeHandleStartXeroAuth() {
   return async function handleStartXeroAuth() {
     try {
-      const { getXeroAuthUrl, capturePostAuthRedirect } = await import("../apis/xero.api");
+      const xeroApi = await import("../apis/xero.api");
+      const { capturePostAuthRedirect, startXeroAuth, getXeroAuthUrl } = xeroApi;
       try {
         capturePostAuthRedirect();
       } catch (err) {
         console.warn("capturePostAuthRedirect failed", err);
       }
-      window.location.href = getXeroAuthUrl();
+      // If SPA JSON start is supported, prefer it so we can attach headers
+      try {
+        const remember = (() => {
+          try { return localStorage.getItem('remember_me') === '1'; } catch { return false; }
+        })();
+        const resp = await startXeroAuth('json', { remember });
+        const r = resp as { url?: string } | undefined;
+        if (r && r.url) {
+          // If server returned a consent URL, navigate there
+          window.location.href = r.url;
+          return;
+        }
+      } catch {
+        // fallback to direct redirect URL
+        try {
+          window.location.href = getXeroAuthUrl();
+          return;
+        } catch {
+          // fall through to generic error handling
+        }
+      }
     } catch (err) {
       console.warn("startXeroAuth failed", err);
       apiErrorToast(showToast, "Failed to start Xero auth")(err);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axiosClient from "../../../apis/axios-client";
+import axiosClient, { API_SERVICE_BASE_URL } from "../../../apis/axios-client";
 import StatusBadge from "../StatusBadge.component";
 
 const GoogleIntegrationCard: React.FC = () => {
@@ -8,6 +8,13 @@ const GoogleIntegrationCard: React.FC = () => {
   const [showRaw, setShowRaw] = useState(false);
   const [payload, setPayload] = useState<Record<string, unknown> | null>(null);
   const [connecting, setConnecting] = useState(false);
+  const [rememberMe, setRememberMe] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("remember_me") === "1";
+    } catch {
+      return false;
+    }
+  });
 
   useEffect(() => {
     let mounted = true;
@@ -57,16 +64,49 @@ const GoogleIntegrationCard: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm mr-2">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => {
+                      try {
+                        const v = Boolean(e.target.checked);
+                        setRememberMe(v);
+                        if (v) localStorage.setItem("remember_me", "1");
+                        else localStorage.removeItem("remember_me");
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                  />
+                  Remember me
+                </label>
                 <button
                   onClick={async () => {
                     if (connecting) return;
                     try {
                       setConnecting(true);
-                      const resp = await axiosClient.post("/api/v1/google/auth/start", { format: "json" });
-                      const url = resp?.data?.url;
-                      if (url) {
-                        // navigate in same tab to match expected UX for OAuth
-                        window.location.href = url;
+                      const url = (API_SERVICE_BASE_URL || "").replace(/\/$/, "") + "/api/v1/google/auth/start";
+                      const headers: Record<string, string> = {
+                        "Content-Type": "application/json",
+                        Accept: "application/json",
+                      };
+                      try {
+                        if (localStorage.getItem("remember_me") === "1") headers["X-Remember-Me"] = "1";
+                      } catch {
+                        // ignore
+                      }
+                      const resp = await fetch(url, {
+                        method: "POST",
+                        credentials: "include",
+                        headers,
+                        body: JSON.stringify({ format: "json" }),
+                      });
+                      if (!resp.ok) throw new Error(`Auth start failed: ${resp.status}`);
+                      const data = await resp.json();
+                      const redirectUrl = data?.url;
+                      if (redirectUrl) {
+                        window.location.href = redirectUrl;
                       } else {
                         alert("Failed to get Google consent URL from server");
                       }

@@ -27,15 +27,26 @@ export interface StartAuthResponse {
   url?: string;
 }
 
-export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect') {
+export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect', opts?: { remember?: boolean }) {
   // If caller wants the JSON variant (SPA-managed flow), request mode=json and
   // return the typed ConsentUrlResponse. Otherwise return the raw axios response
   // so callers can inspect the Location header for a server-side redirect.
   if (mode === 'json') {
-    const resp = await axiosClient.get<ConsentUrlResponse>(XeroApiRoutesLocal.AUTH, {
-      params: { mode: 'json' },
-    });
-    return resp.data;
+    // Use fetch with credentials included so server-set cookies (remember_token)
+    // are accepted by the browser without changing axios global settings.
+    const base = (API_SERVICE_BASE_URL || '').replace(/\/$/, '');
+    const url = `${base}${XeroApiRoutesLocal.AUTH}?mode=json`;
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    try {
+      if (opts && opts.remember) headers['X-Remember-Me'] = '1';
+      else if (typeof window !== 'undefined' && localStorage.getItem('remember_me') === '1') headers['X-Remember-Me'] = '1';
+    } catch {
+      // ignore
+    }
+    const resp = await fetch(url, { method: 'GET', credentials: 'include', headers });
+    if (!resp.ok) throw new Error(`startXeroAuth json failed: ${resp.status}`);
+    const data = (await resp.json()) as ConsentUrlResponse;
+    return data;
   }
 
   return axiosClient.get(XeroApiRoutesLocal.AUTH, { validateStatus: () => true });
