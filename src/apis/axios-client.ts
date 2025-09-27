@@ -11,11 +11,17 @@ export const API_SERVICE_BASE_URL = ((import.meta as { env?: { VITE_API_BASE_URL
 const axiosClient: AxiosInstance = axios.create({
   baseURL: API_SERVICE_BASE_URL,
   timeout: 10000,
+  // Ensure browser sends cookies (httpOnly cookies set by the API) with requests
+  // so server-side plugins can validate remember tokens and set request headers.
+  withCredentials: true,
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
   },
 });
+
+// Also set default on the instance to be defensive for code that mutates config
+axiosClient.defaults.withCredentials = true;
 
 // Token management helper (delegates to AuthStorage)
 export function getAccessToken(): string | null {
