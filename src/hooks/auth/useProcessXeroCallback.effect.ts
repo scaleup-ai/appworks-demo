@@ -42,6 +42,10 @@ export async function processXeroCallback({ code, state, signal }: ProcessArgs):
 
   try {
     const response = await handleOAuthRedirect({ code, state: state || "" });
+    // Instrumentation: log the backend response status and keys for debugging
+    try {
+      console.log('processXeroCallback: backend response', { status: response.status, dataKeys: response && response.data && typeof response.data === 'object' ? Object.keys(response.data) : undefined });
+    } catch { /* ignore console failures */ }
 
     if (signal?.aborted) return { action: "error", message: "aborted" };
 
