@@ -8,7 +8,7 @@ const GoogleIntegrationCard: React.FC = () => {
   const [showRaw, setShowRaw] = useState(false);
   const [payload, setPayload] = useState<Record<string, unknown> | null>(null);
   const [connecting, setConnecting] = useState(false);
-  const [rememberMe, setRememberMe] = useState<boolean>(() => {
+  const [persistSession, setPersistSession] = useState<boolean>(() => {
     try {
       return localStorage.getItem("remember_me") === "1";
     } catch {
@@ -67,19 +67,10 @@ const GoogleIntegrationCard: React.FC = () => {
                 <label className="flex items-center gap-2 text-sm mr-2">
                   <input
                     type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => {
-                      try {
-                        const v = Boolean(e.target.checked);
-                        setRememberMe(v);
-                        if (v) localStorage.setItem("remember_me", "1");
-                        else localStorage.removeItem("remember_me");
-                      } catch {
-                        // ignore
-                      }
-                    }}
+                    checked={persistSession}
+                    onChange={(e) => setPersistSession(e.target.checked)}
                   />
-                  Remember me
+                  Keep me signed in
                 </label>
                 <button
                   onClick={async () => {
@@ -91,11 +82,7 @@ const GoogleIntegrationCard: React.FC = () => {
                         "Content-Type": "application/json",
                         Accept: "application/json",
                       };
-                      try {
-                        if (localStorage.getItem("remember_me") === "1") headers["X-Remember-Me"] = "1";
-                      } catch {
-                        // ignore
-                      }
+                      if (persistSession) headers["X-Remember-Me"] = "1";
                       const resp = await fetch(url, {
                         method: "POST",
                         credentials: "include",

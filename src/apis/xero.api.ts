@@ -39,7 +39,6 @@ export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect', opts
     const headers: Record<string, string> = { Accept: 'application/json' };
     try {
       if (opts && opts.remember) headers['X-Remember-Me'] = '1';
-      else if (typeof window !== 'undefined' && localStorage.getItem('remember_me') === '1') headers['X-Remember-Me'] = '1';
     } catch {
       // ignore
     }

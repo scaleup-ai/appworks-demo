@@ -106,15 +106,4 @@ export function apiErrorToast(showToast: (msg: string, opts?: ToastOptions) => v
   };
 }
 
-export async function withLoading<T>(setLoading: (b: boolean) => void, fn: () => Promise<T>): Promise<T> {
-  setLoading(true);
-  try {
-    return await fn();
-  } finally {
-    try {
-      setLoading(false);
-    } catch (err) {
-      console.warn("withLoading: failed to set loading false", err);
-    }
-  }
-}
+

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import React, { useEffect, useState, useCallback } from "react";
+import { useSelector } from "react-redux";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
@@ -15,13 +15,10 @@ import { RootState } from "../../store/store";
 import { AuthStorage } from "../../store/slices/auth.slice";
 import showToast from "../../utils/toast";
 import DashboardLayout from "../layouts/DashboardLayout";
-import { copyToClipboard, downloadJson, formatCurrency } from "../../helpers/ui.helper";
-import {
-  makeHandleRefreshData,
-  makeHandleTriggerCollectionsScan,
-  makeHandleTestEmailGeneration,
-  makeHandleTestPaymentReconciliation,
-} from "../../handlers/dashboard.handler";
+import { copyToClipboard, downloadJson, formatCurrency, openExternal } from "../../helpers/ui.helper";
+import { useApi } from "../../hooks/useApi";
+import { useNavigate } from "react-router-dom";
+import { listAgents } from "../../apis/agents.api";
 
 interface DashboardStats {
   totalInvoices: number;
@@ -40,7 +37,7 @@ interface AgentStatus {
 }
 
 const DashboardPage: React.FC = () => {
-  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { xeroConnected, selectedOpenIdSub } = useSelector((state: RootState) => state.auth);
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
@@ -53,32 +50,22 @@ const DashboardPage: React.FC = () => {
   const [agents, setAgents] = useState<AgentStatus[]>([]);
   const [recentActivity, setRecentActivity] = useState<Array<{ id: string; message: string; when?: string }>>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  // Removed TenantPrompt: prefer automatic tenant selection after auth
 
-  const initializeAgents = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
-      // Fetch real agent status from backend
-      const agentList = await import("../../apis/agents.api").then((m) => m.listAgents());
-      setAgents(agentList);
-    } catch {
-      setAgents([]);
-      showToast("Failed to load agent status", { type: "error" });
-    }
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-
-      // Load invoices data scoped to selected tenant (Redux is primary source)
       const openid_sub = selectedOpenIdSub ?? AuthStorage.getSelectedTenantId();
-      const invoices = await accountsReceivablesApi.listInvoices({ limit: 100, tenantId: openid_sub || undefined });
+      if (!openid_sub) {
+        navigate("/select-tenant");
+        return;
+      }
 
-      // Load scheduled collections
-      const scheduledReminders = await collectionsApi.getScheduledReminders();
+      const [invoices, scheduledReminders, events, agentList] = await Promise.all([
+        accountsReceivablesApi.listInvoices({ limit: 100, tenantId: openid_sub || undefined }),
+        collectionsApi.getScheduledReminders(),
+        auditApi.listRecentAuditEvents({ limit: 10 }),
+        listAgents()
+      ]);
 
-      // Calculate stats from the data
       const totalInvoices = invoices.length;
       const outstandingAmount = invoices
         .filter((inv) => inv.status !== "PAID")
@@ -86,72 +73,83 @@ const DashboardPage: React.FC = () => {
 
       const now = new Date();
       const overdueAmount = invoices
-        .filter((inv) => {
-          if (inv.status === "PAID" || !inv.dueDate) return false;
-          return new Date(inv.dueDate) < now;
-        })
+        .filter((inv) => inv.status !== "PAID" && inv.dueDate && new Date(inv.dueDate) < now)
         .reduce((sum, inv) => sum + (inv.amount || 0), 0);
 
       setStats({
         totalInvoices,
         outstandingAmount,
         overdueAmount,
-        collectedThisMonth: 0, // Would need payment history to calculate
+        collectedThisMonth: 0,
         scheduledReminders: scheduledReminders.length,
-        unmatchedPayments: 0, // Would need payment reconciliation data
+        unmatchedPayments: 0,
       });
-      // Load recent audit/activity events
-      try {
-        const events = await auditApi.listRecentAuditEvents({ limit: 10 });
-        const mapped = (events || []).map((e) => {
-          let msg = e.event_type;
-          try {
-            if (e.payload && typeof e.payload === "object") {
-              if (e.payload.message) msg = String(e.payload.message);
-              else if (e.payload.action) msg = `${e.event_type}: ${String(e.payload.action)}`;
-              else if (e.payload.tool) msg = `${e.event_type}: ${String(e.payload.tool)}`;
-            }
-          } catch {}
-          return {
-            id: e.id || `${e.event_type}_${e.created_at || ""}_${Math.random()}`,
-            message: msg,
-            when: e.created_at,
-          };
-        });
-        setRecentActivity(mapped);
-      } catch (e) {
-        console.warn("Failed to load recent activity", e);
-        setRecentActivity([]);
-      }
-    } catch {
-      console.error("Failed to load dashboard data:");
+
+      const mappedEvents = (events || []).map((e) => {
+        let msg = e.event_type;
+        try {
+          if (e.payload && typeof e.payload === "object") {
+            if (e.payload.message) msg = String(e.payload.message);
+            else if (e.payload.action) msg = `${e.event_type}: ${String(e.payload.action)}`;
+            else if (e.payload.tool) msg = `${e.event_type}: ${String(e.payload.tool)}`;
+          }
+        } catch {}
+        return {
+          id: e.id || `${e.event_type}_${e.created_at || ""}_${Math.random()}`,
+          message: msg,
+          when: e.created_at,
+        };
+      });
+      setRecentActivity(mappedEvents);
+      setAgents(agentList);
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error);
       showToast("Failed to load dashboard data", { type: "error" });
-    } finally {
-      setLoading(false);
     }
+  }, [selectedOpenIdSub, navigate]);
+
+  const { execute: refreshData, isLoading: isRefreshing } = useApi(loadDashboardData, {
+    successMessage: "Dashboard data refreshed",
+  });
+
+  const { execute: triggerScan, isLoading: isScanning } = useApi(collectionsApi.triggerScan, {
+    successMessage: "Collections scan triggered",
+  });
+
+  const { execute: testEmail, isLoading: isTestingEmail } = useApi(emailApi.generateEmailDraft, {
+    successMessage: "Email draft generated successfully",
+  });
+
+  const { execute: testPayment, isLoading: isTestingPayment } = useApi(paymentApi.reconcilePayment, {
+    successMessage: "Payment reconciliation test succeeded",
+  });
+
+  const handleTriggerCollectionsScan = async () => {
+    await triggerScan();
+    await refreshData();
   };
 
-  const handleRefreshData = makeHandleRefreshData(loadDashboardData, setRefreshing);
-  const handleTriggerCollectionsScan = makeHandleTriggerCollectionsScan(collectionsApi.triggerScan, loadDashboardData);
-  const handleTestEmailGeneration = makeHandleTestEmailGeneration(emailApi.generateEmailDraft);
-  const handleTestPaymentReconciliation = makeHandleTestPaymentReconciliation(paymentApi.reconcilePayment);
+  const handleTestEmailGeneration = () => {
+    testEmail({
+      invoiceId: "test-invoice-001",
+      amount: 1500,
+      stage: "overdue_stage_1",
+      customerName: "Test Customer Ltd",
+    });
+  };
+
+  const handleTestPaymentReconciliation = () => {
+    testPayment({ paymentId: "test-payment-001", amount: 1500, reference: "INV-001" });
+  };
 
   useEffect(() => {
-    initializeAgents();
     if (xeroConnected) {
-      const openid_sub = (selectedOpenIdSub ?? AuthStorage.getSelectedTenantId()) || "";
-      if (!openid_sub) {
-        // No tenant selected: send user to select-tenant route (removed interactive prompt)
-        window.location.href = "/select-tenant";
-        return;
-      }
-      loadDashboardData();
+      setLoading(true);
+      refreshData().finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
-  }, [xeroConnected, selectedOpenIdSub]);
-
-  // use shared formatCurrency from helper.handler
+  }, [xeroConnected, refreshData]);
 
   if (loading) {
     return (
@@ -163,18 +161,16 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  // interactive tenant prompt removed - flow should redirect to /select-tenant when needed
-
   return (
     <DashboardLayout
       title="Autopilot Receivables Dashboard"
       actions={
         <ActionBar>
-          <Button onClick={handleRefreshData} loading={refreshing} size="sm" variant="secondary">
+          <Button onClick={() => refreshData()} loading={isRefreshing} size="sm" variant="secondary">
             Refresh Data
           </Button>
           {!xeroConnected && (
-            <Button onClick={() => (window.location.href = "/auth")} size="sm">
+            <Button onClick={() => navigate("/auth")} size="sm">
               Connect Xero
             </Button>
           )}
@@ -205,7 +201,6 @@ const DashboardPage: React.FC = () => {
       }
     >
       <div className="space-y-8">
-        {/* Connection Status */}
         {!xeroConnected && (
           <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
             <div className="flex items-center">
@@ -220,104 +215,50 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Key Metrics */}
         <SummaryCardGrid
           items={[
-            {
-              title: "Total Invoices",
-              value: stats.totalInvoices,
-              className: "border-l-4 border-l-blue-500",
-              icon: "📄",
-            },
-            {
-              title: "Outstanding",
-              value: formatCurrency(stats.outstandingAmount),
-              className: "border-l-4 border-l-yellow-500",
-              icon: "💰",
-            },
-            {
-              title: "Overdue",
-              value: formatCurrency(stats.overdueAmount),
-              className: "border-l-4 border-l-red-500",
-              icon: "⚠️",
-            },
-            {
-              title: "Scheduled Reminders",
-              value: stats.scheduledReminders,
-              className: "border-l-4 border-l-green-500",
-              icon: "📧",
-            },
+            { title: "Total Invoices", value: stats.totalInvoices, className: "border-l-4 border-l-blue-500", icon: "📄" },
+            { title: "Outstanding", value: formatCurrency(stats.outstandingAmount), className: "border-l-4 border-l-yellow-500", icon: "💰" },
+            { title: "Overdue", value: formatCurrency(stats.overdueAmount), className: "border-l-4 border-l-red-500", icon: "⚠️" },
+            { title: "Scheduled Reminders", value: stats.scheduledReminders, className: "border-l-4 border-l-green-500", icon: "📧" },
           ]}
         />
 
-        {/* Agent Status */}
         <Card title="Agent Status" description="Monitor the status of all autopilot agents">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {agents.map((agent, index) => (
               <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-gray-900">{agent.name}</h4>
-                  <StatusBadge
-                    variant={agent.status === "active" ? "green" : agent.status === "inactive" ? "gray" : "red"}
-                  >
+                  <StatusBadge variant={agent.status === "active" ? "green" : agent.status === "inactive" ? "gray" : "red"}>
                     {agent.status}
                   </StatusBadge>
                 </div>
                 <p className="mb-2 text-sm text-gray-600">{agent.description}</p>
-                {agent.lastRun && (
-                  <p className="text-xs text-gray-500">Last run: {new Date(agent.lastRun).toLocaleString()}</p>
-                )}
+                {agent.lastRun && <p className="text-xs text-gray-500">Last run: {new Date(agent.lastRun).toLocaleString()}</p>}
               </div>
             ))}
           </div>
         </Card>
 
-        {/* Quick Actions */}
         <Card title="Agent Actions" description="Test and trigger agent operations">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Button
-              onClick={handleTriggerCollectionsScan}
-              className="flex flex-col items-start h-auto p-4 text-left"
-              variant="ghost"
-            >
+            <Button onClick={handleTriggerCollectionsScan} loading={isScanning} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
               <div className="mb-1 text-lg">🔍</div>
               <div className="font-medium">Trigger Collections Scan</div>
               <div className="text-sm text-gray-500">Scan for overdue invoices</div>
             </Button>
-
-            <Button
-              onClick={handleTestEmailGeneration}
-              className="flex flex-col items-start h-auto p-4 text-left"
-              variant="ghost"
-            >
+            <Button onClick={handleTestEmailGeneration} loading={isTestingEmail} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
               <div className="mb-1 text-lg">✍️</div>
               <div className="font-medium">Test Email Generation</div>
               <div className="text-sm text-gray-500">Generate sample reminder</div>
             </Button>
-
-            <Button
-              onClick={handleTestPaymentReconciliation}
-              className="flex flex-col items-start h-auto p-4 text-left"
-              variant="ghost"
-            >
+            <Button onClick={handleTestPaymentReconciliation} loading={isTestingPayment} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
               <div className="mb-1 text-lg">🔄</div>
               <div className="font-medium">Test Payment Matching</div>
               <div className="text-sm text-gray-500">Reconcile sample payment</div>
             </Button>
-
-            <Button
-              onClick={() => {
-                // open demo collections in a new tab using handlers
-                import("../../helpers/ui.helper")
-                  .then((h) => h.openExternal("/collections", "_blank"))
-                  .catch((e) => {
-                    console.warn("Failed to open collections", e);
-                    window.open("/collections", "_blank");
-                  });
-              }}
-              className="flex flex-col items-start h-auto p-4 text-left"
-              variant="ghost"
-            >
+            <Button onClick={() => openExternal("/collections", "_blank")} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
               <div className="mb-1 text-lg">📊</div>
               <div className="font-medium">View Collections</div>
               <div className="text-sm text-gray-500">Detailed collections view</div>
@@ -325,7 +266,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Recent Activity (sourced from API) */}
         <Card title="Recent Activity" description="Latest agent operations and events (from audit)">
           <div className="space-y-3">
             {recentActivity.length === 0 ? (

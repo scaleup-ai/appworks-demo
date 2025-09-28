@@ -1,5 +1,6 @@
 import React from "react";
 import Button from "./Button.component";
+import { getXeroAuthUrl, capturePostAuthRedirect } from "../../apis/xero.api";
 
 interface Props {
   label?: string;
@@ -10,17 +11,12 @@ interface Props {
 const ConnectButton: React.FC<Props> = ({ label = "Connect Xero", className = "", onClick }) => {
   const handle = () => {
     if (onClick) return onClick();
-    import("../../apis/xero.api")
-      .then(({ getXeroAuthUrl, capturePostAuthRedirect }) => {
-        try {
-          capturePostAuthRedirect();
-        } catch {}
-        window.location.href = getXeroAuthUrl();
-      })
-      .catch(() => {
-        // fallback
-        window.location.href = "/auth";
-      });
+    try {
+      capturePostAuthRedirect();
+      window.location.href = getXeroAuthUrl();
+    } catch {
+      window.location.href = "/auth";
+    }
   };
 
   return (

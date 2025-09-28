@@ -3,18 +3,18 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 export interface AuthState {
   isAuthenticated: boolean;
   xeroConnected: boolean;
+  googleConnected: boolean;
   loading: boolean;
   error: string | null;
   tenants: Array<{ openid_sub?: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
-  // legacy name used across parts of the app
   selectedOpenIdSub?: string | null;
-  // canonical name used in components: selectedTenantId
   selectedTenantId?: string | null;
 }
 
 const initialState: AuthState = {
   isAuthenticated: typeof window !== 'undefined' ? Boolean(localStorage.getItem('isAuthenticated')) : false,
   xeroConnected: false,
+  googleConnected: false,
   loading: false,
   error: null,
   tenants: [],
@@ -45,30 +45,33 @@ const authSlice = createSlice({
         // ignore
       }
     },
+    setGoogleConnected: (state) => {
+      state.isAuthenticated = true;
+      state.googleConnected = true;
+      state.error = null;
+      try {
+        localStorage.setItem('isAuthenticated', '1');
+      } catch {
+        // ignore
+      }
+    },
     setTenants(state, action) {
-      // Normalize incoming tenants to a canonical shape that includes both
-      // `openid_sub` (used by TenantSelector/Nav) and `tenantId` (used elsewhere).
       try {
         const raw = Array.isArray(action.payload) ? action.payload : [];
         const mapped = raw.map((t: unknown) => {
           const rec = t as Record<string, unknown> | undefined;
           const tenantId = (rec && (rec.tenantId as string | undefined)) || (rec && (rec.tenant_id as string | undefined)) || undefined;
-          // If repo returns id in form clientId:tenantId, extract tenant id
           let derivedTenantId = tenantId;
           if (!derivedTenantId && rec && typeof rec.id === 'string') {
             const parts = String(rec.id).split(":");
             if (parts.length === 2) derivedTenantId = parts[1];
             else derivedTenantId = String(rec.id);
           }
-          // Only use explicit openid_sub when provided by the backend. Do NOT
-          // default it to the tenant id or record id; that causes incorrect
-          // scoping where tenants appear to belong to the current user.
           const rawOpenId = rec ? ((rec.openid_sub as string | undefined) || (rec.openidSub as string | undefined)) : undefined;
           const openid_sub = rawOpenId && rawOpenId.length > 0 ? rawOpenId : undefined;
           const clientId = rec && ((rec.clientId as string | undefined) || (rec.client_id as string | undefined) || (typeof rec.id === 'string' && String(rec.id).includes(":") ? String(rec.id).split(":")[0] : undefined));
           const displayLabel = rec && ((rec.displayLabel as string | undefined) || (rec.display_label as string | undefined) || (rec.display_name as string | undefined) || undefined);
           return {
-            // keep openid_sub undefined when backend didn't provide it
             openid_sub: openid_sub ? String(openid_sub) : undefined,
             tenantId: derivedTenantId ? String(derivedTenantId) : undefined,
             tenantName: (rec && ((rec.tenantName as string | undefined) || (rec.tenant_name as string | undefined) || (rec.name as string | undefined) || clientId)) || undefined,
@@ -84,7 +87,6 @@ const authSlice = createSlice({
       }
     },
     selectTenant(state, action) {
-      // Allow selecting by either tenantId or openid_sub. Store both forms.
       const v = action.payload;
       try {
         if (v && typeof v === 'string') {
@@ -102,6 +104,7 @@ const authSlice = createSlice({
     logout: (state) => {
       state.isAuthenticated = false;
       state.xeroConnected = false;
+      state.googleConnected = false;
       state.error = null;
       try {
         localStorage.removeItem('access_token');
@@ -134,20 +137,21 @@ const authSlice = createSlice({
         if (!action.payload) {
           state.isAuthenticated = false;
           state.xeroConnected = false;
+          state.googleConnected = false;
         }
       })
       .addCase(validateTokens.rejected, (state) => {
         state.loading = false;
         state.isAuthenticated = false;
         state.xeroConnected = false;
+        state.googleConnected = false;
       });
   },
 });
 
-export const { setXeroConnected, logout, setError, clearError, setLoading, setTenants, selectTenant } = authSlice.actions;
+export const { setXeroConnected, setGoogleConnected, logout, setError, clearError, setLoading, setTenants, selectTenant } = authSlice.actions;
 export default authSlice.reducer;
 
-// Helper utilities for other parts of the app to read/write persisted auth values
 export const AuthStorage = {
   getIsAuthenticated(): boolean {
     try {
@@ -179,7 +183,6 @@ export const AuthStorage = {
       // ignore
     }
   },
-  // Access token helpers (kept for compatibility with axios client)
   getAccessToken(): string | null {
     try {
       return localStorage.getItem('access_token');

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { selectTenant, setTenants, AuthStorage } from "../store/slices/auth.slice";
+import { selectTenant, AuthStorage } from "../store/slices/auth.slice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import axiosClient from "../apis/axios-client";
+import { useTenants } from "../hooks/useTenants";
+import LoadingSpinner from "../components/ui/LoadingSpinner.component";
 
 type Tenant = {
-  openid_sub: string;
+  openid_sub?: string;
   tenantName?: string;
   tenantType?: string;
   clientId?: string;
@@ -14,115 +15,40 @@ type Tenant = {
   displayLabel?: string;
 };
 
-type OrgResponse = {
-  id?: string;
-  clientId?: string;
-  openid_sub?: string;
-  tenantId?: string;
-  tenant_id?: string;
-  tenantName?: string;
-  tenantType?: string;
-  organisationNumber?: string;
-  createdAt?: string;
-};
-
 const TenantSelector: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const selectedOpenIdSub = useAppSelector((s) => s.xero.currentOpenIdSub);
+  const storeTenants = useAppSelector((s) => s.auth.tenants);
 
   const [tenants, setLocalTenants] = useState<Tenant[]>(
-    () => (location.state as { tenants?: Tenant[] })?.tenants || []
+    () => (location.state as { tenants?: Tenant[] })?.tenants || storeTenants || []
   );
 
+  const { loadTenants, isLoading } = useTenants();
+
   useEffect(() => {
-    // If no tenants passed via route state, fetch available organisations from backend
-    let mounted = true;
-    const fetchTenants = async () => {
-      if (tenants && tenants.length > 0) return;
-      try {
-        // axios client now attaches X-Openid-Sub automatically from local storage
-        const resp = await axiosClient.get("/api/v1/xero/organisations");
-        const data = resp.data || [];
-        const mapped = (data as OrgResponse[]).map((t) => {
-          // prefer explicit tenant_id/tenantId, fall back to openid_sub or id
-          const openid_sub =
-            (t.openid_sub as string | undefined) ||
-            (t.tenantId as string | undefined) ||
-            (t.tenant_id as string | undefined) ||
-            (t.id as string | undefined) ||
-            "";
-          const clientId = t.clientId || "";
-          const orgNo = t.organisationNumber || "";
-          const name = t.tenantName || clientId || "";
-          const shortSub = openid_sub ? String(openid_sub).slice(0, 8) : "";
-          const displayLabel = `${name}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortSub ? ` • ${shortSub}` : ""}`;
-          return {
-            openid_sub,
-            tenantName: name,
-            tenantType: t.tenantType || "",
-            clientId,
-            organisationNumber: orgNo,
-            createdAt: t.createdAt || "",
-            displayLabel,
-          };
-        });
+    if (!tenants || tenants.length === 0) {
+      loadTenants();
+    }
+  }, [tenants, loadTenants]);
 
-        // dedupe by openid_sub while preserving metadata
-        const map = new Map<string, (typeof mapped)[number]>();
-        for (const m of mapped) {
-          const key = String(m.openid_sub || "");
-          if (!map.has(key)) map.set(key, { ...m, openid_sub: key });
-          else {
-            const ex = map.get(key)!;
-            ex.tenantName = ex.tenantName || m.tenantName;
-            ex.organisationNumber = ex.organisationNumber || m.organisationNumber;
-            ex.clientId = ex.clientId || m.clientId;
-          }
-        }
-        // Also dedupe by displayLabel to avoid showing multiple identical-looking entries
-        const byLabel = new Map<string, (typeof mapped)[number]>();
-        for (const v of Array.from(map.values())) {
-          const key = v.displayLabel || String(v.openid_sub || "");
-          if (!byLabel.has(key)) byLabel.set(key, v);
-        }
-        let tenantsArr = Array.from(byLabel.values());
-        // Defensive client-side filter: only show tenants that match the currentOpenIdSub when available
-        if (selectedOpenIdSub && tenantsArr && tenantsArr.length > 0) {
-          tenantsArr = tenantsArr.filter((tt) => {
-            // normalized tenant shape includes openid_sub
-            const sub = String(tt.openid_sub || "");
-            return sub === String(selectedOpenIdSub);
-          });
-        }
-        // persist normalized tenants to local state and redux store (rich shape)
-        const tenantsArrTyped = tenantsArr.map((t) => ({
-          openid_sub: String(t.openid_sub || ""),
-          tenantName: t.tenantName,
-          tenantType: t.tenantType,
-          clientId: t.clientId,
-          organisationNumber: t.organisationNumber,
-          displayLabel: t.displayLabel,
-        }));
-        if (mounted) setLocalTenants(tenantsArr as Tenant[]);
-        // Persist rich shape to redux regardless of component mount state (safe)
-        dispatch(setTenants(tenantsArrTyped));
-      } catch (err) {
-        console.warn("Failed to fetch organisations", err);
-      }
-    };
-    fetchTenants();
-    return () => {
-      mounted = false;
-    };
-  }, [dispatch, tenants]);
+  useEffect(() => {
+    setLocalTenants(storeTenants as Tenant[]);
+  }, [storeTenants]);
 
-  // filter out any entries without a valid tenant id before rendering
   const visibleTenants = (tenants || []).filter((t) => t.openid_sub && t.openid_sub.length > 0);
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
   if (!visibleTenants || visibleTenants.length === 0) {
-    // Nothing to select
     return (
       <div className="p-6">
         <h3 className="text-lg font-medium">No organizations found</h3>
@@ -144,14 +70,14 @@ const TenantSelector: React.FC = () => {
               <li key={sub} className="mb-3">
                 <button
                   onClick={() => {
-                    AuthStorage.setSelectedTenantId(sub);
-                    dispatch(selectTenant(sub));
+                    AuthStorage.setSelectedTenantId(sub || null);
+                    dispatch(selectTenant(sub || null));
                     navigate("/dashboard");
                   }}
                   className={`w-full px-4 py-2 text-left border rounded hover:bg-gray-100 ${isSelected ? "bg-blue-50 border-blue-300" : ""}`}
                 >
                   <div className="font-medium">
-                    {t.tenantName || t.displayLabel || t.clientId || sub.slice(0, 8) || "Unknown"}
+                    {t.tenantName || t.displayLabel || t.clientId || (sub || '').slice(0, 8) || "Unknown"}
                   </div>
                   <div className="text-xs text-gray-500">
                     {t.organisationNumber ? `Org#: ${t.organisationNumber}` : t.tenantType || ""}

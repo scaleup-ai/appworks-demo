@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { handleOAuthRedirect } from "../../../apis/xero.api";
+import { handleOAuthRedirect, getIntegrationStatus, startXeroAuth } from "../../../apis/xero.api";
 import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/slices/auth.slice";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
@@ -37,13 +37,12 @@ const XeroCallback: React.FC = () => {
         return;
       }
 
-      // One-shot guard keyed by the specific code to avoid duplicate backend calls
       const guardKey = `xero_oauth_callback_inflight:${code}`;
       try {
         const inflight = sessionStorage.getItem(guardKey);
         if (inflight === "1") {
           setProcessing(false);
-          return; // already processing this code
+          return;
         }
         sessionStorage.setItem(guardKey, "1");
       } catch {
@@ -95,7 +94,7 @@ const XeroCallback: React.FC = () => {
               connected?: boolean;
               tenantId?: string;
             } | null;
-            const statusRespRaw = await (await import("../../../apis/xero.api")).getIntegrationStatus();
+            const statusRespRaw = await getIntegrationStatus();
             const statusResp = statusRespRaw as unknown as StatusResp;
             const integrationStatus = statusResp?.integrationStatus || null;
             const isConnected =
@@ -112,7 +111,6 @@ const XeroCallback: React.FC = () => {
           }
           showToast("Session expired. Restarting Xero sign-in…", { type: "warning" });
           try {
-            const { startXeroAuth } = await import("../../../apis/xero.api");
             const data = (await startXeroAuth("json")) as import("../../../types/api.types").ConsentUrlResponse;
             if (data && data.url) {
               window.location.href = data.url;
@@ -168,7 +166,6 @@ const XeroCallback: React.FC = () => {
             <button
               onClick={async () => {
                 try {
-                  const { startXeroAuth } = await import("../../../apis/xero.api");
                   const data = (await startXeroAuth("json")) as import("../../../types/api.types").ConsentUrlResponse;
                   if (data && data.url) {
                     window.location.href = data.url;

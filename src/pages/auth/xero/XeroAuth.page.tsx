@@ -1,23 +1,26 @@
 import React, { useState } from "react";
-import { makeHandleXeroAuth } from "../../../handlers/xero.handler";
+import { capturePostAuthRedirect, startXeroAuth, getXeroAuthUrl } from "../../../apis/xero.api";
+import showToast from "../../../utils/toast";
+import { apiErrorToast } from "../../../handlers/shared.handler";
 
 const XeroAuthPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-
-  const handleXeroAuth = makeHandleXeroAuth();
-  const [remember, setRemember] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("remember_me") === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [persistSession, setPersistSession] = useState(false);
 
   const onConnectClick = async () => {
     try {
       setIsLoading(true);
-      // The startXeroAuth helper will read localStorage and include the X-Remember-Me header
-      await handleXeroAuth();
+      capturePostAuthRedirect();
+      const resp = await startXeroAuth('json', { remember: persistSession });
+      const r = resp as { url?: string } | undefined;
+      if (r && r.url) {
+        window.location.href = r.url;
+        return;
+      }
+      window.location.href = getXeroAuthUrl();
+    } catch (err) {
+      console.warn("startXeroAuth failed", err);
+      apiErrorToast(showToast, "Failed to start Xero auth")(err);
     } finally {
       setIsLoading(false);
     }
@@ -58,24 +61,15 @@ const XeroAuthPage: React.FC = () => {
                   </>
                 )}
               </button>
-              {/* Remember-me checkbox */}
+              {/* Keep me signed in checkbox */}
               <label className="flex items-center text-sm text-gray-700">
                 <input
                   type="checkbox"
-                  checked={remember}
-                  onChange={(e) => {
-                    const v = e.target.checked;
-                    setRemember(v);
-                    try {
-                      if (v) localStorage.setItem("remember_me", "1");
-                      else localStorage.removeItem("remember_me");
-                    } catch {
-                      // noop
-                    }
-                  }}
+                  checked={persistSession}
+                  onChange={(e) => setPersistSession(e.target.checked)}
                   className="w-4 h-4 mr-2 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                Remember me
+                Keep me signed in
               </label>
             </div>
           </div>

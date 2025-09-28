@@ -1,11 +1,12 @@
-import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { setTenants, selectTenant, AuthStorage } from "../store/slices/auth.slice";
-import axiosClient from "../apis/axios-client";
+import { setTenants, selectTenant, logout, AuthStorage } from "../store/slices/auth.slice";
 import { RootState } from "../store/store";
-import { makeHandleStartXeroAuth, makeHandleSignOut } from "../handlers/auth.handler";
-import { useNavigate } from "react-router-dom";
+import { useTenants } from "../hooks/useTenants";
+import { capturePostAuthRedirect, startXeroAuth, getXeroAuthUrl, logoutXero } from "../apis/xero.api";
+import showToast from "../utils/toast";
+import { apiErrorToast } from "../handlers/shared.handler";
 
 interface NavProps {
   className?: string;
@@ -15,144 +16,66 @@ interface NavProps {
 
 const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }) => {
   const linkClass = mobile ? "block text-sm py-2" : "text-sm px-3";
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleLinkClick = () => {
-    // single, explicit place to invoke the optional callback
     try {
       onLinkClick?.();
     } catch (err) {
-      // non-fatal callback error
       console.warn("Nav onLinkClick callback failed", err);
     }
   };
 
-  // auth handlers (moved to handlers for reuse)
+  const handleStartXeroAuth = async (options?: { persist?: boolean }) => {
+    try {
+      capturePostAuthRedirect();
+      const resp = await startXeroAuth('json', { remember: options?.persist });
+      const r = resp as { url?: string } | undefined;
+      if (r && r.url) {
+        window.location.href = r.url;
+        return;
+      }
+      window.location.href = getXeroAuthUrl();
+    } catch (err) {
+      console.warn("startXeroAuth failed", err);
+      apiErrorToast(showToast, "Failed to start Xero auth")(err);
+    }
+  };
 
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
-  const handleStartXeroAuth = makeHandleStartXeroAuth();
-  const handleSignOut = makeHandleSignOut(dispatch, navigate);
+  const handleSignOut = async () => {
+    try {
+      await logoutXero();
+    } catch (e) {
+      console.warn("Xero logout failed", e);
+    }
+    dispatch(logout());
+    AuthStorage.setSelectedTenantId(null);
+    navigate("/");
+  };
 
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [persistSession, setPersistSession] = React.useState(false);
 
-  // tenant change is handled elsewhere (Nav only displays friendly name)
-
-  // read tenant state at top-level so we can show friendly names and fetch missing metadata
   const selectedTenantId = useSelector((s: RootState) => s.auth.selectedTenantId);
   const tenants = useSelector((s: RootState) => s.auth.tenants || []);
   const xeroConnected = useSelector((s: RootState) => s.auth.xeroConnected);
   const currentOpenIdSub = useSelector((s: RootState) => s.xero.currentOpenIdSub);
 
-  type OrganizationDetails = {
-    id?: string;
-    clientId?: string;
-    tenantId?: string;
-    tenant_id?: string;
-    tenantName?: string;
-    tenant_name?: string;
-    organisationNumber?: string;
-    organisation_number?: string;
-    createdAt?: string;
-    created_at?: string;
-    tenantType?: string;
-    type?: string;
-  };
+  const { loadTenants } = useTenants();
 
   useEffect(() => {
-    // If a tenant is selected but the store has no tenant metadata yet, fetch organisations
     if (selectedTenantId && (!tenants || tenants.length === 0)) {
-      void (async () => {
-        try {
-          const resp = await axiosClient.get("/api/v1/xero/organisations");
-          const data = resp.data || [];
-          type NavTenant = {
-            tenantId: string;
-            tenantName?: string;
-            tenantType?: string;
-            clientId?: string;
-            organisationNumber?: string;
-            createdAt?: string;
-            displayLabel?: string;
-          };
-          const tenantsArr = (data as OrganizationDetails[]).map((t) => {
-            let tenantIdRaw = t.tenantId || t.tenant_id || undefined;
-            let clientId = t.clientId || undefined;
-            if (!tenantIdRaw && t.id) {
-              const parts = String(t.id).split(":");
-              if (parts.length === 2) {
-                clientId = clientId || parts[0];
-                tenantIdRaw = parts[1];
-              } else {
-                tenantIdRaw = String(t.id);
-              }
-            }
-            const orgNo = t.organisationNumber || t.organisation_number || undefined;
-            const name = t.tenantName || t.tenant_name || clientId || undefined;
-            const shortTid = tenantIdRaw ? String(tenantIdRaw).slice(0, 8) : undefined;
-            const displayLabel = `${name || clientId || "Unknown"}${orgNo ? ` • Org#: ${orgNo}` : ""}${shortTid ? ` • ${shortTid}` : ""}`;
-            return {
-              tenantId: String(tenantIdRaw || ""),
-              tenantName: name,
-              tenantType: t.tenantType || t.type || undefined,
-              clientId,
-              organisationNumber: orgNo,
-              createdAt: t.createdAt || t.created_at || undefined,
-              displayLabel,
-            } as NavTenant;
-          });
-          // dedupe by tenantId before dispatching
-          const map = new Map<string, (typeof tenantsArr)[number]>();
-          for (const m of tenantsArr) {
-            if (!map.has(m.tenantId)) map.set(m.tenantId, m);
-            else {
-              const ex = map.get(m.tenantId)!;
-              ex.tenantName = ex.tenantName || m.tenantName;
-              ex.organisationNumber = ex.organisationNumber || m.organisationNumber;
-              ex.clientId = ex.clientId || m.clientId;
-            }
-          }
-          dispatch(
-            setTenants(
-              Array.from(map.values()).map((m) => ({
-                tenantId: String(m.tenantId || ""),
-                tenantName: m.tenantName,
-                tenantType: m.tenantType,
-                clientId: m.clientId,
-                organisationNumber: m.organisationNumber,
-                displayLabel: m.displayLabel,
-              }))
-            )
-          );
-        } catch (err) {
-          console.warn("Failed to fetch organisations for Nav", err);
-        }
-      })();
+      loadTenants();
     }
-  }, [selectedTenantId]);
-
-  // UI rendering tenant shape is provided by auth store
+  }, [selectedTenantId, tenants, loadTenants]);
 
   const handleSelectChange = (ev: React.ChangeEvent<HTMLSelectElement>) => {
     const val = ev.target.value || null;
-    try {
-      if (val) {
-        AuthStorage.setSelectedTenantId(val);
-        // dispatch selectTenant action
-        // import kept minimal here to avoid circular deps
-        dispatch(selectTenant(val));
-      } else {
-        AuthStorage.setSelectedTenantId(null);
-        dispatch(selectTenant(null));
-      }
-    } catch (e) {
-      console.warn("Failed to persist tenant selection", e);
-    }
+    AuthStorage.setSelectedTenantId(val);
+    dispatch(selectTenant(val));
   };
 
-  // sign-out handled by makeHandleSignOut (wired below)
-
-  // Determine how many visible tenants there are after applying OpenID scoping
   const visibleTenants = ((tenants || []) as any[]).filter(
     (t) => !currentOpenIdSub || String(t.openid_sub || "") === String(currentOpenIdSub)
   );
@@ -168,7 +91,6 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             className="px-2 py-1 text-sm bg-white border rounded"
             aria-label="Select organization"
           >
-            {/* Only show a blank placeholder when we have no tenants loaded */}
             {visibleTenants.length === 0 && <option value="">Select org</option>}
             {visibleTenants.map((t) => {
               const ta: any = t;
@@ -187,7 +109,6 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             })}
           </select>
         ) : visibleTenants.length === 1 ? (
-          // Single tenant -> render read-only label instead of a select
           <div className="px-2 py-1 text-sm bg-white border rounded text-gray-700">
             {(() => {
               const ta: any = visibleTenants[0];
@@ -202,7 +123,6 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             })()}
           </div>
         ) : (
-          // No tenants -> show placeholder (users with no orgs)
           <div className="px-2 py-1 text-sm bg-white border rounded text-gray-500">No organisations</div>
         )}
       </div>
@@ -228,25 +148,14 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
       {!xeroConnected ? (
         <div className="flex items-center gap-3">
           <button
-            onClick={handleStartXeroAuth}
+            onClick={() => handleStartXeroAuth({ persist: persistSession })}
             className={mobile ? "text-sm font-medium text-blue-600 mt-2" : "text-sm font-medium text-blue-600"}
           >
             Sign in
           </button>
           <label className="flex items-center gap-2 text-sm text-gray-600">
-            <input
-              type="checkbox"
-              defaultChecked={false}
-              onChange={(e) => {
-                try {
-                  if (e.target.checked) localStorage.setItem("remember_me", "1");
-                  else localStorage.removeItem("remember_me");
-                } catch {
-                  // ignore
-                }
-              }}
-            />
-            Remember me
+            <input type="checkbox" checked={persistSession} onChange={(e) => setPersistSession(e.target.checked)} />
+            Keep me signed in
           </label>
         </div>
       ) : (

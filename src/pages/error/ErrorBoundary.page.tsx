@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate, useRouteError } from "react-router-dom";
 import AppLayout from "../layouts/App.layout";
-import { makeHandleGoHome, makeHandleGoBack } from "../../handlers/error.handler";
 
 interface RouteError {
   statusText?: string;
@@ -13,8 +12,8 @@ export const ErrorBoundaryPage: React.FC = () => {
   const navigate = useNavigate();
   const error = useRouteError() as RouteError;
 
-  const handleGoHome = makeHandleGoHome(navigate);
-  const handleGoBack = makeHandleGoBack(navigate);
+  const handleGoHome = () => navigate("/", { replace: true });
+  const handleGoBack = () => navigate(-1);
 
   const errorMessage = error?.statusText || error?.message || "An unexpected error occurred";
   const errorStatus = error?.status;

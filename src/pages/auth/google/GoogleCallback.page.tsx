@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { setXeroConnected } from "../../../store/slices/auth.slice";
-import { handleGoogleOAuthRedirect } from "../../../apis/google.api";
+import { setGoogleConnected } from "../../../store/slices/auth.slice";
+import { handleGoogleOAuthRedirect, startGoogleAuth } from "../../../apis/google.api";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
 
@@ -54,9 +54,7 @@ const GoogleCallback: React.FC = () => {
         if (response.status === 200) {
           showToast("Successfully connected to Google!", { type: "success" });
           try {
-            // update redux auth state so the app has a single source of truth
-            // (mirrors Xero callback behavior)
-            dispatch(setXeroConnected() as any);
+            dispatch(setGoogleConnected());
           } catch (e) {
             // ignore dispatch errors in rare cases
           }
@@ -65,7 +63,6 @@ const GoogleCallback: React.FC = () => {
         }
         if (response.status === 409) {
           showToast("Session already processed. Checking connection…", { type: "info" });
-          // Fallback: go to dashboard and let status settle
           navigate("/dashboard");
           return;
         }
@@ -112,7 +109,6 @@ const GoogleCallback: React.FC = () => {
             <button
               onClick={async () => {
                 try {
-                  const { startGoogleAuth } = await import("../../../apis/google.api");
                   const data = (await startGoogleAuth("json")) as any;
                   if (data && data.data && data.data.url) {
                     window.location.href = data.data.url;
