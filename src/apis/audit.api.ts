@@ -1,14 +1,14 @@
 import axiosClient from './axios-client';
 
 export enum AuditApiRoutes {
-  AUDIT = '/api/v1/admin/audit',
+  AUDIT = '/api/v1/audit',
 }
 
 export interface AuditEventDTO {
   id: string;
   session_id?: string;
   event_type: string;
-  payload: any;
+  payload: Record<string, unknown>;
   created_at?: string;
 }
 
