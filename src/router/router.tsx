@@ -16,7 +16,7 @@ import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
-export const ROOT_PATH = (import.meta.env.BASE_URL as string) || "/";
+export const ROOT_PATH = import.meta.env.BASE_URL ? import.meta.env.BASE_URL : "";
 
 enum ROUTE_LOGIC_TYPE {
   AUTH_CHECK = "AUTH_CHECK",
@@ -71,7 +71,7 @@ export const lameRoutes: ExtendedRouteObject[] = [
   {
     title: "Auth",
     routeObject: {
-      path: `${ROOT_PATH}auth`,
+      path: `${ROOT_PATH}/auth`,
       element: <XeroAuthPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -79,7 +79,7 @@ export const lameRoutes: ExtendedRouteObject[] = [
   {
     title: "Select Tenant",
     routeObject: {
-      path: `${ROOT_PATH}select-tenant`,
+      path: `${ROOT_PATH}/select-tenant`,
       element: <TenantSelector />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -90,7 +90,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Dashboard",
     routeObject: {
-      path: `${ROOT_PATH}dashboard`,
+      path: `${ROOT_PATH}/dashboard`,
       element: <DashboardPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -98,7 +98,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Collections",
     routeObject: {
-      path: `${ROOT_PATH}collections`,
+      path: `${ROOT_PATH}/collections`,
       element: <CollectionsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -106,7 +106,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Payments",
     routeObject: {
-      path: `${ROOT_PATH}payments`,
+      path: `${ROOT_PATH}/payments`,
       element: <PaymentsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -114,7 +114,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Profitability",
     routeObject: {
-      path: `${ROOT_PATH}profitability`,
+      path: `${ROOT_PATH}/profitability`,
       element: <ProfitabilityPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -122,7 +122,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Cash Flow",
     routeObject: {
-      path: `${ROOT_PATH}cashflow`,
+      path: `${ROOT_PATH}/cashflow`,
       element: <CashFlowPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -130,7 +130,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Settings",
     routeObject: {
-      path: `${ROOT_PATH}settings`,
+      path: `${ROOT_PATH}/settings`,
       element: <SettingsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -144,6 +144,7 @@ export const routes: ExtendedRouteObject[] = [
   ...lameRoutes, // Hide lame routes from nav
   ...mainAppRoutes.map((r) => ({
     ...r,
+    path: "/app".concat(`${r.routeObject.path}`),
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
   })),
 ];
