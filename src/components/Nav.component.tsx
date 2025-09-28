@@ -30,7 +30,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
   const handleStartXeroAuth = async (options?: { persist?: boolean }) => {
     try {
       capturePostAuthRedirect();
-      const resp = await startXeroAuth('json', { remember: options?.persist });
+      const resp = await startXeroAuth("json", { remember: options?.persist });
       const r = resp as { url?: string } | undefined;
       if (r && r.url) {
         window.location.href = r.url;
@@ -76,6 +76,16 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     dispatch(selectTenant(val));
   };
 
+  // Derive a display label for a tenant object
+  const deriveTenantLabel = (ta: any) => {
+    const tenantId =
+      ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
+    const orgNo = ta.organisationNumber ? ` • Org#: ${ta.organisationNumber}` : "";
+    const shortTid = tenantId ? String(tenantId).slice(0, 8) : "";
+    const labelBase = ta.tenantName || ta.displayLabel || ta.clientId || (shortTid ? `...${shortTid}` : "Unknown");
+    return `${labelBase}${orgNo}`;
+  };
+
   const visibleTenants = ((tenants || []) as any[]).filter(
     (t) => !currentOpenIdSub || String(t.openid_sub || "") === String(currentOpenIdSub)
   );
@@ -96,31 +106,16 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
               const ta: any = t;
               const tenantId =
                 ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
-              const orgNo = ta.organisationNumber ? ` • Org#: ${ta.organisationNumber}` : "";
-              const shortTid = tenantId ? String(tenantId).slice(0, 8) : "";
-              const labelBase =
-                ta.tenantName || ta.displayLabel || ta.clientId || (shortTid ? `...${shortTid}` : "Unknown");
-              const label = `${labelBase}${orgNo}`;
               return (
                 <option key={tenantId} value={tenantId}>
-                  {label}
+                  {deriveTenantLabel(ta)}
                 </option>
               );
             })}
           </select>
         ) : visibleTenants.length === 1 ? (
           <div className="px-2 py-1 text-sm bg-white border rounded text-gray-700">
-            {(() => {
-              const ta: any = visibleTenants[0];
-              const tenantId =
-                ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
-              const orgNo = ta.organisationNumber ? ` • Org#: ${ta.organisationNumber}` : "";
-              const shortTid = tenantId ? String(tenantId).slice(0, 8) : "";
-              const labelBase =
-                ta.tenantName || ta.displayLabel || ta.clientId || (shortTid ? `...${shortTid}` : "Unknown");
-              const label = `${labelBase}${orgNo}`;
-              return label;
-            })()}
+            {deriveTenantLabel(visibleTenants[0])}
           </div>
         ) : (
           <div className="px-2 py-1 text-sm bg-white border rounded text-gray-500">No organisations</div>

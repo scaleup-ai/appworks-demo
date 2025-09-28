@@ -85,8 +85,8 @@ const GoogleIntegrationCard: React.FC = () => {
                       };
                       try {
                         const sel =
-                          AuthStorage && typeof AuthStorage.getSelectedTenantId === "function"
-                            ? AuthStorage.getSelectedTenantId()
+                          AuthStorage && typeof AuthStorage.getSelectedOpenIdSub === "function"
+                            ? AuthStorage.getSelectedOpenIdSub()
                             : null;
                         if (sel) headers["X-Openid-Sub"] = String(sel);
                       } catch {}

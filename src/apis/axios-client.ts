@@ -24,14 +24,16 @@ const axiosClient: AxiosInstance = axios.create({
 axiosClient.defaults.withCredentials = true;
 
 // If an OpenID subject was persisted earlier, set it as a default header so
-// early requests (before interceptor runs) are scoped correctly.
+// early requests (before interceptor runs) are scoped correctly. Do NOT
+// fall back to the tenant id here — tenant ids are not the same as an
+// OpenID subject and can cause incorrect scoping/401s.
 try {
-  const persisted = AuthStorage.getSelectedOpenIdSub ? AuthStorage.getSelectedOpenIdSub() : AuthStorage.getSelectedTenantId();
-  if (persisted) {
-    axiosClient.defaults.headers.common['X-Openid-Sub'] = String(persisted);
+  const persistedOpenId = (typeof AuthStorage.getSelectedOpenIdSub === 'function' ? AuthStorage.getSelectedOpenIdSub() : null);
+  if (persistedOpenId) {
+    axiosClient.defaults.headers.common['X-Openid-Sub'] = String(persistedOpenId);
   }
 } catch {
-  // ignore
+  // ignore storage failures
 }
 
 // Token management helper (delegates to AuthStorage)
@@ -58,13 +60,15 @@ axiosClient.interceptors.request.use(
     }
     // Attach current selected tenant / OpenID subject so backend can scope requests
     try {
-      // Prefer a persisted selection in localStorage (AuthStorage) first so
-      // requests sent immediately after a page load have a scoped header.
-      // Fall back to Redux (`xero.currentOpenIdSub`) if available.
-      // Use a looser `any` here to avoid duplicate import lint rules for types in this utility file.
+      // Prefer a persisted OpenID subject in localStorage (AuthStorage) first
+      // so requests sent immediately after a page load have a scoped header.
+      // Fall back to Redux (`xero.currentOpenIdSub`) only. Do NOT fall back to
+      // the tenant id here — that's a different concept and was causing
+      // incorrect header values to be sent.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const state = store.getState() as any;
-      const openidSub = AuthStorage.getSelectedTenantId() || (state && state.xero && state.xero.currentOpenIdSub);
+      const persisted = (typeof AuthStorage.getSelectedOpenIdSub === 'function' ? AuthStorage.getSelectedOpenIdSub() : null) || null;
+      const openidSub = persisted || (state && state.xero && state.xero.currentOpenIdSub) || null;
       if (openidSub && config && config.headers) {
         config.headers['X-Openid-Sub'] = String(openidSub);
       }

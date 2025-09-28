@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect, getIntegrationStatus, startXeroAuth, getXeroToken } from "../../../apis/xero.api";
 import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/slices/auth.slice";
+import { setSelectedOpenIdSub } from "../../../store/slices/auth.slice";
 import { setCurrentOpenIdSub } from "../../../store/slices/xero.slice";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
@@ -90,6 +91,11 @@ const XeroCallback: React.FC = () => {
                   AuthStorage.setSelectedOpenIdSub(String(maybeOpenId));
                 } catch {}
                 try {
+                  // Persist to Redux auth slice so pages that read auth.selectedOpenIdSub
+                  // will immediately see the new value (Dashboard relies on this).
+                  dispatch(setSelectedOpenIdSub(String(maybeOpenId)));
+                } catch {}
+                try {
                   // Also set axios default header for early requests
                   if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
                     axiosClient.defaults.headers.common["X-Openid-Sub"] = String(maybeOpenId);
@@ -117,6 +123,9 @@ const XeroCallback: React.FC = () => {
           if (topOpenId) {
             try {
               AuthStorage.setSelectedOpenIdSub(String(topOpenId));
+            } catch {}
+            try {
+              dispatch(setSelectedOpenIdSub(String(topOpenId)));
             } catch {}
             try {
               if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {

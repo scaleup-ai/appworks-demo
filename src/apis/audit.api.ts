@@ -16,7 +16,13 @@ export async function listRecentAuditEvents(params?: { limit?: number }): Promis
   const response = await axiosClient.get(AuditApiRoutes.AUDIT, {
     params: { limit: params?.limit || 20 },
   });
-  return response.data || [];
+  // Support both shapes: server may return an array directly or a wrapper { ok, count, events }
+  const data = response.data;
+  if (!data) return [];
+  if (Array.isArray(data)) return data as AuditEventDTO[];
+  if (data.events && Array.isArray(data.events)) return data.events as AuditEventDTO[];
+  // Fallback: if server returned { ok: true, count: N } but no events, return empty
+  return [];
 }
 
 export default {

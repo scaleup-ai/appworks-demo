@@ -103,7 +103,7 @@ export async function healthCheckAllServices(): Promise<HealthCheckResult[]> {
   try {
     // Defensive header in case localStorage/Redux is not hydrated yet.
     try {
-      const selected = AuthStorage && typeof AuthStorage.getSelectedTenantId === 'function' ? AuthStorage.getSelectedTenantId() : null;
+      const selected = AuthStorage && typeof AuthStorage.getSelectedOpenIdSub === 'function' ? AuthStorage.getSelectedOpenIdSub() : null;
       if (selected) {
         await axiosClient.get('/api/v1/xero/integration/status', { headers: { 'X-Openid-Sub': String(selected) } });
       } else {

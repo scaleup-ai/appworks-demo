@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { selectTenant, AuthStorage } from "../store/slices/auth.slice";
+import { selectTenant, AuthStorage, setSelectedOpenIdSub } from "../store/slices/auth.slice";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { useTenants } from "../hooks/useTenants";
 import LoadingSpinner from "../components/ui/LoadingSpinner.component";
@@ -40,6 +40,31 @@ const TenantSelector: React.FC = () => {
 
   const visibleTenants = (tenants || []).filter((t) => t.openid_sub && t.openid_sub.length > 0);
 
+  // Handler extracted from inline JSX to keep JSX clean and enable easier
+  // reasoning about the flow (derive tenant id, persist, dispatch, navigate).
+  function handleTenantClick(t: Tenant) {
+    // Derive tenant id from available fields. The tenant object may encode
+    // client:tenant as `id` elsewhere; fall back to openid_sub when necessary.
+    const tenantIdCandidate = (t as any).tenantId || (t as any).tenant_id || undefined;
+    const idFromIdField = (t as any).id
+      ? String((t as any).id).includes(":")
+        ? String((t as any).id).split(":")[1]
+        : String((t as any).id)
+      : undefined;
+    const tenantId = tenantIdCandidate || idFromIdField || t.clientId || t.openid_sub || null;
+    const openid = t.openid_sub || null;
+    // Persist tenant id and openid subject separately
+    AuthStorage.setSelectedTenantId(tenantId);
+    AuthStorage.setSelectedOpenIdSub(openid);
+    try {
+      dispatch(selectTenant(tenantId));
+    } catch {}
+    try {
+      dispatch(setSelectedOpenIdSub(openid));
+    } catch {}
+    navigate("/dashboard");
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
@@ -69,15 +94,11 @@ const TenantSelector: React.FC = () => {
             return (
               <li key={sub} className="mb-3">
                 <button
-                  onClick={() => {
-                    AuthStorage.setSelectedTenantId(sub || null);
-                    dispatch(selectTenant(sub || null));
-                    navigate("/dashboard");
-                  }}
+                  onClick={() => handleTenantClick(t)}
                   className={`w-full px-4 py-2 text-left border rounded hover:bg-gray-100 ${isSelected ? "bg-blue-50 border-blue-300" : ""}`}
                 >
                   <div className="font-medium">
-                    {t.tenantName || t.displayLabel || t.clientId || (sub || '').slice(0, 8) || "Unknown"}
+                    {t.tenantName || t.displayLabel || t.clientId || (sub || "").slice(0, 8) || "Unknown"}
                   </div>
                   <div className="text-xs text-gray-500">
                     {t.organisationNumber ? `Org#: ${t.organisationNumber}` : t.tenantType || ""}

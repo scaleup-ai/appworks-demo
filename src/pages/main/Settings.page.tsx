@@ -28,8 +28,8 @@ const SettingsPage: React.FC = () => {
   // axios interceptor ran before Redux/localStorage hydration.
   const defaultHeaders: Record<string, string> = {};
   try {
-    const selected = AuthStorage.getSelectedTenantId();
-    if (selected) defaultHeaders["X-Openid-Sub"] = String(selected);
+    const selectedOpen = AuthStorage.getSelectedOpenIdSub();
+    if (selectedOpen) defaultHeaders["X-Openid-Sub"] = String(selectedOpen);
   } catch {
     // ignore
   }

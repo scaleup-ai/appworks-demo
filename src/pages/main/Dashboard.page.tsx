@@ -38,7 +38,7 @@ interface AgentStatus {
 
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { xeroConnected, selectedOpenIdSub } = useSelector((state: RootState) => state.auth);
+  const { xeroConnected, selectedOpenIdSub, selectedTenantId } = useSelector((state: RootState) => state.auth);
   const [stats, setStats] = useState<DashboardStats>({
     totalInvoices: 0,
     outstandingAmount: 0,
@@ -53,17 +53,23 @@ const DashboardPage: React.FC = () => {
 
   const loadDashboardData = useCallback(async () => {
     try {
-      const openid_sub = selectedOpenIdSub ?? AuthStorage.getSelectedTenantId();
-      if (!openid_sub) {
+      // Use selectedTenantId (or persisted tenant id) as the tenant identifier
+      // for Xero API calls. Use selectedOpenIdSub (or persisted OpenID-sub) as
+      // the per-user identifier for header-based endpoints like audit. These
+      // are distinct values and must not be conflated.
+      const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
+      const openidSub = selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub();
+      if (!tenantId && !openidSub) {
+        // If we have no tenant selection and no user-scoped subject, ask user to select tenant
         navigate("/select-tenant");
         return;
       }
 
       const [invoices, scheduledReminders, events, agentList] = await Promise.all([
-        accountsReceivablesApi.listInvoices({ limit: 100, tenantId: openid_sub || undefined }),
+        accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined }),
         collectionsApi.getScheduledReminders(),
         auditApi.listRecentAuditEvents({ limit: 10 }),
-        listAgents()
+        listAgents(),
       ]);
 
       const totalInvoices = invoices.length;
@@ -142,6 +148,19 @@ const DashboardPage: React.FC = () => {
     testPayment({ paymentId: "test-payment-001", amount: 1500, reference: "INV-001" });
   };
 
+  // Extracted handlers to keep JSX concise
+  const handleExportSnapshot = () => {
+    const snapshot = { stats, agents, generatedAt: new Date().toISOString() };
+    downloadJson("dashboard-snapshot.json", snapshot);
+    showToast("Dashboard snapshot downloaded", { type: "success" });
+  };
+
+  const handleCopySnapshot = () => {
+    const snapshotText = JSON.stringify({ stats, agents }, null, 2);
+    copyToClipboard(snapshotText);
+    showToast("Copied snapshot to clipboard", { type: "success" });
+  };
+
   useEffect(() => {
     if (xeroConnected) {
       setLoading(true);
@@ -174,27 +193,10 @@ const DashboardPage: React.FC = () => {
               Connect Xero
             </Button>
           )}
-          <Button
-            onClick={() => {
-              const snapshot = { stats, agents, generatedAt: new Date().toISOString() };
-              downloadJson("dashboard-snapshot.json", snapshot);
-              showToast("Dashboard snapshot downloaded", { type: "success" });
-            }}
-            size="sm"
-            variant="secondary"
-          >
+          <Button onClick={handleExportSnapshot} size="sm" variant="secondary">
             Export Snapshot
           </Button>
-          <Button
-            onClick={() => {
-              const snapshotText = JSON.stringify({ stats, agents }, null, 2);
-              copyToClipboard(snapshotText);
-              showToast("Copied snapshot to clipboard", {
-                type: "success",
-              });
-            }}
-            size="sm"
-          >
+          <Button onClick={handleCopySnapshot} size="sm">
             Copy Snapshot
           </Button>
         </ActionBar>
@@ -217,10 +219,30 @@ const DashboardPage: React.FC = () => {
 
         <SummaryCardGrid
           items={[
-            { title: "Total Invoices", value: stats.totalInvoices, className: "border-l-4 border-l-blue-500", icon: "📄" },
-            { title: "Outstanding", value: formatCurrency(stats.outstandingAmount), className: "border-l-4 border-l-yellow-500", icon: "💰" },
-            { title: "Overdue", value: formatCurrency(stats.overdueAmount), className: "border-l-4 border-l-red-500", icon: "⚠️" },
-            { title: "Scheduled Reminders", value: stats.scheduledReminders, className: "border-l-4 border-l-green-500", icon: "📧" },
+            {
+              title: "Total Invoices",
+              value: stats.totalInvoices,
+              className: "border-l-4 border-l-blue-500",
+              icon: "📄",
+            },
+            {
+              title: "Outstanding",
+              value: formatCurrency(stats.outstandingAmount),
+              className: "border-l-4 border-l-yellow-500",
+              icon: "💰",
+            },
+            {
+              title: "Overdue",
+              value: formatCurrency(stats.overdueAmount),
+              className: "border-l-4 border-l-red-500",
+              icon: "⚠️",
+            },
+            {
+              title: "Scheduled Reminders",
+              value: stats.scheduledReminders,
+              className: "border-l-4 border-l-green-500",
+              icon: "📧",
+            },
           ]}
         />
 
@@ -230,12 +252,16 @@ const DashboardPage: React.FC = () => {
               <div key={index} className="p-4 border rounded-lg hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium text-gray-900">{agent.name}</h4>
-                  <StatusBadge variant={agent.status === "active" ? "green" : agent.status === "inactive" ? "gray" : "red"}>
+                  <StatusBadge
+                    variant={agent.status === "active" ? "green" : agent.status === "inactive" ? "gray" : "red"}
+                  >
                     {agent.status}
                   </StatusBadge>
                 </div>
                 <p className="mb-2 text-sm text-gray-600">{agent.description}</p>
-                {agent.lastRun && <p className="text-xs text-gray-500">Last run: {new Date(agent.lastRun).toLocaleString()}</p>}
+                {agent.lastRun && (
+                  <p className="text-xs text-gray-500">Last run: {new Date(agent.lastRun).toLocaleString()}</p>
+                )}
               </div>
             ))}
           </div>
@@ -243,22 +269,41 @@ const DashboardPage: React.FC = () => {
 
         <Card title="Agent Actions" description="Test and trigger agent operations">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Button onClick={handleTriggerCollectionsScan} loading={isScanning} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
+            <Button
+              onClick={handleTriggerCollectionsScan}
+              loading={isScanning}
+              className="flex flex-col items-start h-auto p-4 text-left"
+              variant="ghost"
+            >
               <div className="mb-1 text-lg">🔍</div>
               <div className="font-medium">Trigger Collections Scan</div>
               <div className="text-sm text-gray-500">Scan for overdue invoices</div>
             </Button>
-            <Button onClick={handleTestEmailGeneration} loading={isTestingEmail} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
+            <Button
+              onClick={handleTestEmailGeneration}
+              loading={isTestingEmail}
+              className="flex flex-col items-start h-auto p-4 text-left"
+              variant="ghost"
+            >
               <div className="mb-1 text-lg">✍️</div>
               <div className="font-medium">Test Email Generation</div>
               <div className="text-sm text-gray-500">Generate sample reminder</div>
             </Button>
-            <Button onClick={handleTestPaymentReconciliation} loading={isTestingPayment} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
+            <Button
+              onClick={handleTestPaymentReconciliation}
+              loading={isTestingPayment}
+              className="flex flex-col items-start h-auto p-4 text-left"
+              variant="ghost"
+            >
               <div className="mb-1 text-lg">🔄</div>
               <div className="font-medium">Test Payment Matching</div>
               <div className="text-sm text-gray-500">Reconcile sample payment</div>
             </Button>
-            <Button onClick={() => openExternal("/collections", "_blank")} className="flex flex-col items-start h-auto p-4 text-left" variant="ghost">
+            <Button
+              onClick={() => openExternal("/collections", "_blank")}
+              className="flex flex-col items-start h-auto p-4 text-left"
+              variant="ghost"
+            >
               <div className="mb-1 text-lg">📊</div>
               <div className="font-medium">View Collections</div>
               <div className="text-sm text-gray-500">Detailed collections view</div>

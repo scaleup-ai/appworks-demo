@@ -89,15 +89,16 @@ const authSlice = createSlice({
     selectTenant(state, action) {
       const v = action.payload;
       try {
+        // Only set the selected tenant id here. Do NOT clobber the stored
+        // selectedOpenIdSub (OpenID subject) with the tenant id. The OpenID
+        // subject is a distinct identity value and must be set explicitly via
+        // `setSelectedOpenIdSub` when available.
         if (v && typeof v === 'string') {
-          state.selectedOpenIdSub = v;
           state.selectedTenantId = v;
         } else {
-          state.selectedOpenIdSub = v ?? null;
           state.selectedTenantId = v ?? null;
         }
       } catch {
-        state.selectedOpenIdSub = v ?? null;
         state.selectedTenantId = v ?? null;
       }
     },
@@ -126,6 +127,18 @@ const authSlice = createSlice({
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
+    // Explicitly set the OpenID subject (user identifier) in both Redux state
+    // and localStorage. This is distinct from the selected tenant id.
+    setSelectedOpenIdSub(state, action) {
+      const v = action.payload as string | null | undefined;
+      try {
+        state.selectedOpenIdSub = v ?? null;
+        if (v) localStorage.setItem('selectedOpenIdSub', v);
+        else localStorage.removeItem('selectedOpenIdSub');
+      } catch {
+        state.selectedOpenIdSub = v ?? null;
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -149,7 +162,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setXeroConnected, setGoogleConnected, logout, setError, clearError, setLoading, setTenants, selectTenant } = authSlice.actions;
+export const { setXeroConnected, setGoogleConnected, logout, setError, clearError, setLoading, setTenants, selectTenant, setSelectedOpenIdSub } = authSlice.actions;
 export default authSlice.reducer;
 
 export const AuthStorage = {

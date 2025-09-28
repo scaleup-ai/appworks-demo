@@ -44,7 +44,7 @@ export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect', opts
       // ignore
     }
     try {
-      const selected = AuthStorage && typeof AuthStorage.getSelectedTenantId === 'function' ? AuthStorage.getSelectedTenantId() : null;
+      const selected = AuthStorage && typeof AuthStorage.getSelectedOpenIdSub === 'function' ? AuthStorage.getSelectedOpenIdSub() : null;
       if (selected) headers['X-Openid-Sub'] = String(selected);
     } catch {
       // ignore
@@ -124,7 +124,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
   // axios interceptor normally attaches `X-Openid-Sub`, but ensure the
   // header is present here as a fallback to avoid spurious 401 responses.
   try {
-    const selected = AuthStorage && typeof AuthStorage.getSelectedTenantId === 'function' ? AuthStorage.getSelectedTenantId() : null;
+    const selected = AuthStorage && typeof AuthStorage.getSelectedOpenIdSub === 'function' ? AuthStorage.getSelectedOpenIdSub() : null;
     if (selected) {
       const resp = await axiosClient.get<IntegrationStatus>(XeroApiRoutesLocal.INTEGRATION_STATUS, {
         validateStatus: () => true,
