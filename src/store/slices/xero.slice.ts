@@ -89,6 +89,9 @@ const xeroSlice = createSlice({
     },
 
     // Clear error
+    setCurrentOpenIdSub: (state, action: PayloadAction<string | null>) => {
+      state.currentOpenIdSub = action.payload;
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -108,6 +111,7 @@ export const {
   startAuthStart,
   startAuthSuccess,
   startAuthFailure,
+  setCurrentOpenIdSub,
   clearError,
 } = xeroSlice.actions;
 

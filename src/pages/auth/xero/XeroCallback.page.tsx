@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect, getIntegrationStatus, startXeroAuth } from "../../../apis/xero.api";
 import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/slices/auth.slice";
+import { setCurrentOpenIdSub } from "../../../store/slices/xero.slice";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
 
@@ -82,6 +83,7 @@ const XeroCallback: React.FC = () => {
             return;
           }
           dispatch(setXeroConnected());
+          dispatch(setCurrentOpenIdSub(null));
           showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");
           return;
