@@ -13,7 +13,6 @@ import ProfitabilityPage from "../pages/main/Profitability.page";
 import CashFlowPage from "../pages/main/CashFlow.page";
 import SettingsPage from "../pages/main/Settings.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
-import path from "path";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
@@ -139,7 +138,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
 ];
 
 const normalizeSlashesAndConcatArray = (parts: string[]): string => {
-  return path.posix.join(...parts);
+  return parts.join("/").replace(/\/+/g, "/");
 };
 
 // Helper to produce a path under /app. Accepts leading/trailing slashes and
