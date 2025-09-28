@@ -41,7 +41,7 @@ const authRoutes: ExtendedRouteObject[] = [
     title: "Xero OAuth Callback Handler",
     logicType: ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK,
     routeObject: {
-      path: `${ROOT_PATH}/xero/oauth2/redirect/:state?`,
+      path: `/xero/oauth2/redirect/:state?`,
       element: <XeroCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -49,7 +49,7 @@ const authRoutes: ExtendedRouteObject[] = [
   {
     title: "Google OAuth Callback Handler",
     routeObject: {
-      path: `${ROOT_PATH}/google/oauth2/redirect/:state?`,
+      path: `/google/oauth2/redirect/:state?`,
       element: <GoogleCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -141,17 +141,6 @@ const normalizeSlashesAndConcatArray = (parts: string[]): string => {
   return parts.join("/").replace(/\/+/g, "/");
 };
 
-const stripLeadingRoot = (p: string): string => {
-  if (!p) return p;
-  if (!ROOT_PATH) return p;
-  try {
-    if (p.startsWith(ROOT_PATH)) return p.slice(ROOT_PATH.length);
-    return p;
-  } catch {
-    return p;
-  }
-};
-
 // Helper to produce a path under /app. Accepts leading/trailing slashes and
 // normalizes duplicates: appPath('/dashboard') -> '/app/dashboard'
 export const appPath = (route: string): string => {
@@ -169,14 +158,14 @@ export const routes: ExtendedRouteObject[] = [
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: normalizeSlashesAndConcatArray([ROOT_PATH, stripLeadingRoot(r.routeObject.path!)]),
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
     },
   })),
   ...lameRoutes.map((r) => ({
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: normalizeSlashesAndConcatArray([ROOT_PATH, stripLeadingRoot(r.routeObject.path!)]),
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
     },
     logicType: undefined,
   })),
@@ -184,7 +173,7 @@ export const routes: ExtendedRouteObject[] = [
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: normalizeSlashesAndConcatArray([ROOT_PATH, "/app", stripLeadingRoot(r.routeObject.path!)]),
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, "/app", r.routeObject.path!]),
     },
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
   })),
