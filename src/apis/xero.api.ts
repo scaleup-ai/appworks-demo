@@ -1,4 +1,5 @@
 import axiosClient, { API_SERVICE_BASE_URL } from './axios-client';
+import { AuthStorage } from '../store/slices/auth.slice';
 import {
   XeroTokenRequest,
   ConsentUrlResponse,
@@ -39,6 +40,12 @@ export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect', opts
     const headers: Record<string, string> = { Accept: 'application/json' };
     try {
       if (opts && opts.remember) headers['X-Remember-Me'] = '1';
+    } catch {
+      // ignore
+    }
+    try {
+      const selected = AuthStorage && typeof AuthStorage.getSelectedTenantId === 'function' ? AuthStorage.getSelectedTenantId() : null;
+      if (selected) headers['X-Openid-Sub'] = String(selected);
     } catch {
       // ignore
     }

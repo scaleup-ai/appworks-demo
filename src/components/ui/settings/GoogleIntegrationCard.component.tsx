@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axiosClient, { API_SERVICE_BASE_URL } from "../../../apis/axios-client";
+import { AuthStorage } from "../../../store/slices/auth.slice";
 import StatusBadge from "../StatusBadge.component";
 
 const GoogleIntegrationCard: React.FC = () => {
@@ -82,6 +83,13 @@ const GoogleIntegrationCard: React.FC = () => {
                         "Content-Type": "application/json",
                         Accept: "application/json",
                       };
+                      try {
+                        const sel =
+                          AuthStorage && typeof AuthStorage.getSelectedTenantId === "function"
+                            ? AuthStorage.getSelectedTenantId()
+                            : null;
+                        if (sel) headers["X-Openid-Sub"] = String(sel);
+                      } catch {}
                       if (persistSession) headers["X-Remember-Me"] = "1";
                       const resp = await fetch(url, {
                         method: "POST",
