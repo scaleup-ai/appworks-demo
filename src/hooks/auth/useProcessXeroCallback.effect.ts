@@ -177,37 +177,33 @@ export function useProcessXeroCallback(options?: {
 
       if (controller.signal.aborted) return;
 
+      // Instrumentation: log the resolved action so we can trace client decisions
+      console.log('useProcessXeroCallback: result.action', result.action, result);
+
       switch (result.action) {
         case "dashboard":
-          try {
-            // update redux state and navigate
-            dispatch(setXeroConnected());
-            navigate("/dashboard");
-            options?.onDashboard?.();
-          } catch {
-            // ignore navigation issues
-            options?.onDashboard?.();
-          }
+          // Instrumentation: log before navigation
+          console.log('useProcessXeroCallback: navigating to /dashboard');
+          // update redux state and navigate
+          dispatch(setXeroConnected());
+          navigate("/dashboard");
+          options?.onDashboard?.();
           break;
         case "select-tenant":
-          try {
-            options?.onSelectTenant?.(result.tenants);
-            navigate("/select-tenant", { state: { tenants: result.tenants } });
-          } catch {
-            options?.onSelectTenant?.(result.tenants);
-          }
+          console.log('useProcessXeroCallback: navigating to /select-tenant');
+          options?.onSelectTenant?.(result.tenants);
+          navigate("/select-tenant", { state: { tenants: result.tenants } });
           break;
-        case "restart-auth":
-          try {
-            options?.onRestartAuth?.();
-            const data = (await startXeroAuth("json")) as { url?: string } | null;
-            if (data && data.url) window.location.href = data.url;
-          } catch {
-            options?.onError?.("restart_failed");
-          }
+        case "restart-auth": {
+          console.log('useProcessXeroCallback: restarting auth');
+          options?.onRestartAuth?.();
+          const data = (await startXeroAuth("json")) as { url?: string } | null;
+          if (data && data.url) navigate(data.url);
           break;
+        }
         case "error":
         default:
+          console.log('useProcessXeroCallback: error branch', result.message);
           options?.onError?.(result.message);
           showToast("Failed to complete Xero authentication", { type: "error" });
           break;
