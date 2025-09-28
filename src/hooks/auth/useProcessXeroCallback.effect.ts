@@ -130,7 +130,8 @@ export async function processXeroCallback({ code, state, signal }: ProcessArgs):
       }
 
       // success and no tenant selection required
-      return { action: "dashboard", tenants: maybeTenants || [] };
+      // Ensure we return an array type for tenants to satisfy the ProcessCallbackResult
+      return { action: "dashboard", tenants: (Array.isArray(maybeTenants) ? (maybeTenants as Array<Record<string, unknown>>) : []) };
     }
 
     if (response.status === 409) {

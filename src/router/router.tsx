@@ -146,7 +146,11 @@ export const routes: ExtendedRouteObject[] = [
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: `${ROOT_PATH}app${r.routeObject.path.startsWith("/") ? "" : "/"}${r.routeObject.path}`,
+      // Guard path access: routeObject.path may be undefined; default to empty string
+      path: (() => {
+        const p = r.routeObject.path ?? "";
+        return `${ROOT_PATH}app${p.startsWith("/") ? "" : "/"}${p}`;
+      })(),
     },
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
   })),
