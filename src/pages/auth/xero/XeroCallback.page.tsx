@@ -114,7 +114,23 @@ const XeroCallback: React.FC = () => {
               }
               dispatch(setXeroConnected());
               showToast("Successfully connected to Xero!", { type: "success" });
-              navigate("/dashboard");
+              // Prefer React Router navigation, but fallback to a full-page redirect
+              // if navigation doesn't take effect quickly (some hosting/routing
+              // setups may not handle history push on immediate callback pages).
+              const goToDashboard = () => {
+                try {
+                  navigate("/dashboard");
+                } catch {}
+                // If React navigation didn't change location after 250ms, force it
+                setTimeout(() => {
+                  try {
+                    if (window.location.pathname !== "/dashboard") {
+                      window.location.replace("/dashboard");
+                    }
+                  } catch {}
+                }, 250);
+              };
+              goToDashboard();
               return;
             }
             navigate("/select-tenant", { state: { tenants: payload.tenants } });
@@ -144,7 +160,15 @@ const XeroCallback: React.FC = () => {
           }
           dispatch(setXeroConnected());
           showToast("Successfully connected to Xero!", { type: "success" });
-          navigate("/dashboard");
+          // Use resilient navigation helper
+          try {
+            navigate("/dashboard");
+          } catch {}
+          setTimeout(() => {
+            try {
+              if (window.location.pathname !== "/dashboard") window.location.replace("/dashboard");
+            } catch {}
+          }, 250);
           return;
         }
         if (response.status === 409) {
