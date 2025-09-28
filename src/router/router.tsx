@@ -155,11 +155,17 @@ export const appPath = (route: string): string => {
 export const routes: ExtendedRouteObject[] = [
   ...authRoutes.map((r) => ({
     ...r,
-    path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+    routeObject: {
+      ...r.routeObject,
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+    },
   })),
   ...lameRoutes.map((r) => ({
     ...r,
-    path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+    routeObject: {
+      ...r.routeObject,
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+    },
     logicType: undefined,
   })),
   ...mainAppRoutes.map((r) => ({
@@ -185,5 +191,24 @@ const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
   );
   return { ...route.routeObject, element: wrapped };
 };
+
+// Print registered route paths in dev to help debug mismatches between
+// navigation targets and registered router paths.
+try {
+  if (import.meta.env && (import.meta.env.DEV as boolean)) {
+    // map to the final RouteObject paths
+    // eslint-disable-next-line no-console
+    console.log(
+      "registered routes:",
+      routes.map((r) => {
+        try {
+          return (r.routeObject && (r.routeObject.path as string)) || undefined;
+        } catch {
+          return undefined;
+        }
+      })
+    );
+  }
+} catch {}
 
 export const browserRouter = createBrowserRouter(routes.map(applyLogicWrapper));
