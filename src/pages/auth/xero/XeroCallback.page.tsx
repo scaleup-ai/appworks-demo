@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { handleOAuthRedirect, getIntegrationStatus, startXeroAuth } from "../../../apis/xero.api";
+import { handleOAuthRedirect, getIntegrationStatus, startXeroAuth, getXeroToken } from "../../../apis/xero.api";
 import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/slices/auth.slice";
 import { setCurrentOpenIdSub } from "../../../store/slices/xero.slice";
 import showToast from "../../../utils/toast";
@@ -70,6 +70,36 @@ const XeroCallback: React.FC = () => {
             if (payload.tenants.length === 1) {
               const single = payload.tenants[0];
               const tid = single.tenantId || single.tenant_id || "";
+              let maybeOpenId = (single as any).openid_sub || (single as any).openidSub || null;
+              // If we don't have openid_sub in the tenant payload, try to fetch token metadata
+              // If the clientId is present, attempt a lookup.
+              if (!maybeOpenId) {
+                const clientId = (single as any).clientId || (single as any).client_id || (single as any).id || null;
+                if (clientId && tid) {
+                  try {
+                    const meta = await getXeroToken(String(clientId), String(tid));
+                    maybeOpenId = (meta && ((meta as any).openid_sub || (meta as any).openidSub)) || maybeOpenId;
+                  } catch {
+                    // ignore
+                  }
+                }
+              }
+              if (maybeOpenId) {
+                try {
+                  AuthStorage.setSelectedOpenIdSub(String(maybeOpenId));
+                } catch {}
+                try {
+                  // Also set axios default header for early requests
+                  // eslint-disable-next-line @typescript-eslint/no-var-requires
+                  const axiosClient = require("../../../apis/axios-client").default;
+                  if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
+                    axiosClient.defaults.headers.common["X-Openid-Sub"] = String(maybeOpenId);
+                  }
+                } catch {}
+                try {
+                  dispatch(setCurrentOpenIdSub(String(maybeOpenId)));
+                } catch {}
+              }
               if (tid) {
                 AuthStorage.setSelectedTenantId(tid);
                 dispatch(selectTenant(tid));
@@ -82,8 +112,27 @@ const XeroCallback: React.FC = () => {
             navigate("/select-tenant", { state: { tenants: payload.tenants } });
             return;
           }
+          // If the response included an OpenID subject at top-level, persist and set it
+          const topOpenId =
+            (response.data && ((response.data as any).openid_sub || (response.data as any).openidSub)) || null;
+          if (topOpenId) {
+            try {
+              AuthStorage.setSelectedOpenIdSub(String(topOpenId));
+            } catch {}
+            try {
+              // eslint-disable-next-line @typescript-eslint/no-var-requires
+              const axiosClient = require("../../../apis/axios-client").default;
+              if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
+                axiosClient.defaults.headers.common["X-Openid-Sub"] = String(topOpenId);
+              }
+            } catch {}
+            try {
+              dispatch(setCurrentOpenIdSub(String(topOpenId)));
+            } catch {}
+          } else {
+            dispatch(setCurrentOpenIdSub(null));
+          }
           dispatch(setXeroConnected());
-          dispatch(setCurrentOpenIdSub(null));
           showToast("Successfully connected to Xero!", { type: "success" });
           navigate("/dashboard");
           return;

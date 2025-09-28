@@ -18,7 +18,7 @@ const initialState: AuthState = {
   loading: false,
   error: null,
   tenants: [],
-  selectedOpenIdSub: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
+  selectedOpenIdSub: typeof window !== 'undefined' ? (localStorage.getItem('selectedOpenIdSub') || null) : null,
   selectedTenantId: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
 };
 
@@ -182,6 +182,23 @@ export const AuthStorage = {
     } catch {
       // ignore
     }
+  },
+  getSelectedOpenIdSub(): string | null {
+    try {
+      return localStorage.getItem('selectedOpenIdSub') || null;
+    } catch {
+      return null;
+    }
+  },
+  setSelectedOpenIdSub(id: string | null) {
+    try {
+      if (id) localStorage.setItem('selectedOpenIdSub', id);
+      else localStorage.removeItem('selectedOpenIdSub');
+    } catch {
+      // ignore
+    }
+    // axios-client initializes its default header from AuthStorage on load;
+    // no runtime mutation here to avoid circular import lint rules.
   },
   getAccessToken(): string | null {
     try {

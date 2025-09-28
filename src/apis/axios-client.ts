@@ -23,6 +23,17 @@ const axiosClient: AxiosInstance = axios.create({
 // Also set default on the instance to be defensive for code that mutates config
 axiosClient.defaults.withCredentials = true;
 
+// If an OpenID subject was persisted earlier, set it as a default header so
+// early requests (before interceptor runs) are scoped correctly.
+try {
+  const persisted = AuthStorage.getSelectedOpenIdSub ? AuthStorage.getSelectedOpenIdSub() : AuthStorage.getSelectedTenantId();
+  if (persisted) {
+    axiosClient.defaults.headers.common['X-Openid-Sub'] = String(persisted);
+  }
+} catch {
+  // ignore
+}
+
 // Token management helper (delegates to AuthStorage)
 export function getAccessToken(): string | null {
   return AuthStorage.getAccessToken();
