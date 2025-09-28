@@ -162,13 +162,55 @@ const DashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (xeroConnected) {
+    let cancelled = false;
+
+    const waitForPersistedIds = async (timeoutMs = 3000, pollInterval = 200) => {
+      const start = Date.now();
+      while (Date.now() - start < timeoutMs) {
+        const tenantIdNow = selectedTenantId ?? AuthStorage.getSelectedTenantId();
+        const openidNow = selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub();
+        if (tenantIdNow || openidNow) return { tenantId: tenantIdNow, openid: openidNow };
+        // pause briefly to allow callback/selector to persist values
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((r) => setTimeout(r, pollInterval));
+      }
+      return {
+        tenantId: selectedTenantId ?? AuthStorage.getSelectedTenantId(),
+        openid: selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub(),
+      };
+    };
+
+    const startLoad = async () => {
+      if (!xeroConnected) {
+        setLoading(false);
+        return;
+      }
       setLoading(true);
-      refreshData().finally(() => setLoading(false));
-    } else {
-      setLoading(false);
-    }
-  }, [xeroConnected, refreshData]);
+
+      try {
+        const { tenantId, openid } = await waitForPersistedIds();
+        // If we still don't have any tenancy or user subject, redirect to tenant selection
+        if (!tenantId && !openid) {
+          navigate("/select-tenant");
+          return;
+        }
+
+        if (!cancelled) {
+          await refreshData();
+        }
+      } catch (err) {
+        console.error("Failed to load dashboard data (guarded):", err);
+        showToast("Failed to load dashboard data", { type: "error" });
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    startLoad();
+    return () => {
+      cancelled = true;
+    };
+  }, [xeroConnected, refreshData, selectedTenantId, selectedOpenIdSub, navigate]);
 
   if (loading) {
     return (
