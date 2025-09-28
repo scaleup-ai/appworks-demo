@@ -102,7 +102,7 @@ export async function processXeroCallback({ code, state, signal }: ProcessArgs):
             } catch {
               // noop
             }
-            return { action: "dashboard" };
+            return { action: "dashboard", tenants: maybeTenants };
           }
         }
         return { action: "select-tenant", tenants: maybeTenants as Array<Record<string, unknown>> };
