@@ -3,12 +3,12 @@ import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { ROOT_PATH } from "../../router/router";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect, startXeroAuth, getXeroToken } from "../../apis/xero.api";
-import { setXeroConnected, AuthStorage } from "../../store/slices/auth.slice";
+import { setXeroConnected, AuthStorage, setTenants } from "../../store/slices/auth.slice";
 import showToast from "../../utils/toast";
 import axiosClient from "../../apis/axios-client";
 
 export type ProcessCallbackResult =
-  | { action: "dashboard" }
+  | { action: "dashboard"; tenants?: Array<Record<string, unknown>> }
   | { action: "select-tenant"; tenants: Array<Record<string, unknown>> }
   | { action: "restart-auth" }
   | { action: "error"; message?: string };
@@ -130,7 +130,7 @@ export async function processXeroCallback({ code, state, signal }: ProcessArgs):
       }
 
       // success and no tenant selection required
-      return { action: "dashboard" };
+      return { action: "dashboard", tenants: maybeTenants || [] };
     }
 
     if (response.status === 409) {
@@ -186,6 +186,9 @@ export function useProcessXeroCallback(options?: {
           // Instrumentation: log before navigation
           console.log('useProcessXeroCallback: navigating to /app/dashboard');
           // update redux state and navigate
+          if (result.tenants) {
+            dispatch(setTenants(result.tenants));
+          }
           dispatch(setXeroConnected());
           navigate(`${ROOT_PATH}app/dashboard`);
           options?.onDashboard?.();
