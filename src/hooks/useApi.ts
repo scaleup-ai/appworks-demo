@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { apiErrorToast } from '../handlers/shared.handler';
 import showToast from '../utils/toast';
 
@@ -12,7 +12,7 @@ export function useApi<T extends unknown[], R>(
   const [error, setError] = useState<Error | null>(null);
   const [data, setData] = useState<R | null>(null);
 
-  const execute = async (...args: T): Promise<R | undefined> => {
+  const execute = useCallback(async (...args: T): Promise<R | undefined> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -29,7 +29,7 @@ export function useApi<T extends unknown[], R>(
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [apiFunc, options?.successMessage, options?.errorMessage]);
 
   return { execute, isLoading, error, data };
 }
