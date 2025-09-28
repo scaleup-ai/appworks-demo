@@ -83,7 +83,9 @@ export function safeLocalStorageRemove(key: string) {
     // best-effort only — log when something goes wrong
     try {
       console.warn(`safeLocalStorageRemove failed for ${key}`, e);
-    } catch { }
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -105,5 +107,3 @@ export function apiErrorToast(showToast: (msg: string, opts?: ToastOptions) => v
     showToast(msg, { type: "error" });
   };
 }
-
-

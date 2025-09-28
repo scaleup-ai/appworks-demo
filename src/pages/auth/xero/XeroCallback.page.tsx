@@ -6,6 +6,7 @@ import { setXeroConnected, selectTenant, AuthStorage } from "../../../store/slic
 import { setCurrentOpenIdSub } from "../../../store/slices/xero.slice";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
+import axiosClient from "../../../apis/axios-client";
 
 const XeroCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -90,8 +91,6 @@ const XeroCallback: React.FC = () => {
                 } catch {}
                 try {
                   // Also set axios default header for early requests
-                  // eslint-disable-next-line @typescript-eslint/no-var-requires
-                  const axiosClient = require("../../../apis/axios-client").default;
                   if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
                     axiosClient.defaults.headers.common["X-Openid-Sub"] = String(maybeOpenId);
                   }
@@ -120,8 +119,6 @@ const XeroCallback: React.FC = () => {
               AuthStorage.setSelectedOpenIdSub(String(topOpenId));
             } catch {}
             try {
-              // eslint-disable-next-line @typescript-eslint/no-var-requires
-              const axiosClient = require("../../../apis/axios-client").default;
               if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
                 axiosClient.defaults.headers.common["X-Openid-Sub"] = String(topOpenId);
               }
