@@ -11,7 +11,11 @@ import { useApi } from "../../hooks/useApi";
 
 const SettingsPage: React.FC = () => {
   const dispatch = useDispatch();
-  const { tenants: tenantsFromStore, selectedTenantId, currentOpenIdSub } = useSelector((state: RootState) => ({
+  const {
+    tenants: tenantsFromStore,
+    selectedTenantId,
+    currentOpenIdSub,
+  } = useSelector((state: RootState) => ({
     tenants: state.auth.tenants || [],
     selectedTenantId: state.auth.selectedTenantId,
     currentOpenIdSub: state.xero.currentOpenIdSub,
@@ -20,8 +24,19 @@ const SettingsPage: React.FC = () => {
   const [showRaw, setShowRaw] = useState(false);
 
   const { loadTenants, isLoading: tenantsLoading } = useTenants();
-  const { execute: fetchStatus, isLoading: statusLoading } = useApi(() => axiosClient.get("/api/v1/xero/integration/status"));
-  
+  // Defensive: include X-Openid-Sub header from AuthStorage in case the
+  // axios interceptor ran before Redux/localStorage hydration.
+  const defaultHeaders: Record<string, string> = {};
+  try {
+    const selected = AuthStorage.getSelectedTenantId();
+    if (selected) defaultHeaders["X-Openid-Sub"] = String(selected);
+  } catch {
+    // ignore
+  }
+  const { execute: fetchStatus, isLoading: statusLoading } = useApi(() =>
+    axiosClient.get("/api/v1/xero/integration/status", { headers: defaultHeaders })
+  );
+
   const [status, setStatus] = useState<any>(null);
 
   useEffect(() => {

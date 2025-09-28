@@ -119,6 +119,23 @@ export async function handleOAuthRedirect(query: { code?: string; state?: string
 }
 
 export async function getIntegrationStatus(): Promise<IntegrationStatus> {
+  // Defensive: some environments may call this before the Redux state or
+  // localStorage selectedTenantId is available (race on app start). The
+  // axios interceptor normally attaches `X-Openid-Sub`, but ensure the
+  // header is present here as a fallback to avoid spurious 401 responses.
+  try {
+    const selected = AuthStorage && typeof AuthStorage.getSelectedTenantId === 'function' ? AuthStorage.getSelectedTenantId() : null;
+    if (selected) {
+      const resp = await axiosClient.get<IntegrationStatus>(XeroApiRoutesLocal.INTEGRATION_STATUS, {
+        validateStatus: () => true,
+        headers: { 'X-Openid-Sub': String(selected) },
+      });
+      return resp.data;
+    }
+  } catch {
+    // ignore storage read errors and fall through to default request
+  }
+
   const resp = await axiosClient.get<IntegrationStatus>(XeroApiRoutesLocal.INTEGRATION_STATUS, { validateStatus: () => true });
   return resp.data;
 }

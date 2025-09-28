@@ -1,4 +1,5 @@
 import axiosClient from './axios-client';
+import { AuthStorage } from '../store/slices/auth.slice';
 
 export enum HealthApiRoutes {
   // Main healthcheck endpoints  
@@ -100,7 +101,18 @@ export async function healthCheckAllServices(): Promise<HealthCheckResult[]> {
 
   // Check Xero integration endpoint
   try {
-    await axiosClient.get('/api/v1/xero/integration/status');
+    // Defensive header in case localStorage/Redux is not hydrated yet.
+    try {
+      const selected = AuthStorage && typeof AuthStorage.getSelectedTenantId === 'function' ? AuthStorage.getSelectedTenantId() : null;
+      if (selected) {
+        await axiosClient.get('/api/v1/xero/integration/status', { headers: { 'X-Openid-Sub': String(selected) } });
+      } else {
+        await axiosClient.get('/api/v1/xero/integration/status');
+      }
+    } catch {
+      // fallback to plain request
+      await axiosClient.get('/api/v1/xero/integration/status');
+    }
     results.push({ endpoint: '/api/v1/xero/integration/status', status: 'ok' });
   } catch (error) {
     results.push({
