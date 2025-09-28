@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setGoogleConnected } from "../../../store/slices/auth.slice";
 import { handleGoogleOAuthRedirect, startGoogleAuth } from "../../../apis/google.api";
+import { ROOT_PATH, appPath } from "../../../router/router";
 import showToast from "../../../utils/toast";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
 
@@ -58,12 +59,12 @@ const GoogleCallback: React.FC = () => {
           } catch (e) {
             // ignore dispatch errors in rare cases
           }
-          navigate("/app/dashboard");
+          navigate(appPath("/dashboard"));
           return;
         }
         if (response.status === 409) {
           showToast("Session already processed. Checking connection…", { type: "info" });
-          navigate("/app/dashboard");
+          navigate(appPath("/dashboard"));
           return;
         }
         throw new Error(`OAuth callback failed with status ${response.status}`);
@@ -124,13 +125,13 @@ const GoogleCallback: React.FC = () => {
               Retry Connect
             </button>
             <button
-              onClick={() => navigate("/", { replace: true })}
+              onClick={() => navigate(`${ROOT_PATH}`, { replace: true })}
               className="px-4 py-3 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
             >
               Return home
             </button>
             <button
-              onClick={() => navigate("/dashboard", { replace: true })}
+              onClick={() => navigate(appPath("/dashboard"), { replace: true })}
               className="px-4 py-3 text-sm text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50"
             >
               Proceed to Dashboard

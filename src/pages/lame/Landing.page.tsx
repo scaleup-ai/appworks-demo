@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import AppLayout from "../layouts/App.layout";
 import ConnectButton from "../../components/ui/ConnectButton.component";
-import { ROOT_PATH } from "../../router/router";
+import { ROOT_PATH, appPath } from "../../router/router";
 
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,10 +12,10 @@ export const LandingPage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(`${(ROOT_PATH || "/").replace(/\/+$\/$/g, "")}/app/dashboard`);
+      navigate(appPath("/dashboard"));
     } else {
       // Redirect to auth page if not authenticated
-      navigate(`${(ROOT_PATH || "/").replace(/\/+$|\/$/g, "")}/auth`);
+      navigate(`${ROOT_PATH}auth`);
     }
   }, [isAuthenticated, navigate]);
   return (

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ROOT_PATH } from "../../../router/router";
+import { ROOT_PATH, appPath } from "../../../router/router";
 import { startXeroAuth } from "../../../apis/xero.api";
 import LoadingSpinner from "../../../components/ui/LoadingSpinner.component";
 import useProcessXeroCallback from "../../../hooks/auth/useProcessXeroCallback.effect";
@@ -68,7 +68,7 @@ const XeroCallback: React.FC = () => {
               Return home
             </button>
             <button
-              onClick={() => navigate(`${ROOT_PATH}app/dashboard`, { replace: true })}
+              onClick={() => navigate(appPath("/dashboard"), { replace: true })}
               className="px-4 py-3 text-sm text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50"
             >
               Proceed to Dashboard

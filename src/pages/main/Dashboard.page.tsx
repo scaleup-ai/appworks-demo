@@ -18,7 +18,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import { copyToClipboard, downloadJson, formatCurrency, openExternal } from "../../helpers/ui.helper";
 import { useApi } from "../../hooks/useApi";
 import { useNavigate } from "react-router-dom";
-import { ROOT_PATH } from "../../router/router";
+import { ROOT_PATH, appPath } from "../../router/router";
 import { listAgents } from "../../apis/agents.api";
 
 interface DashboardStats {
@@ -343,7 +343,7 @@ const DashboardPage: React.FC = () => {
               <div className="text-sm text-gray-500">Reconcile sample payment</div>
             </Button>
             <Button
-              onClick={() => openExternal("/app/collections", "_blank")}
+              onClick={() => openExternal(appPath("/collections"), "_blank")}
               className="flex flex-col items-start h-auto p-4 text-left"
               variant="ghost"
             >

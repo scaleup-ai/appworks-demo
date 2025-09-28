@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
-import { ROOT_PATH } from "../../router/router";
+import { appPath } from "../../router/router";
 import { useDispatch } from "react-redux";
 import { handleOAuthRedirect, startXeroAuth, getXeroToken } from "../../apis/xero.api";
 import { setXeroConnected, AuthStorage, setTenants } from "../../store/slices/auth.slice";
@@ -185,19 +185,19 @@ export function useProcessXeroCallback(options?: {
       switch (result.action) {
         case "dashboard":
           // Instrumentation: log before navigation
-          console.log('useProcessXeroCallback: navigating to /app/dashboard');
+          console.log('useProcessXeroCallback: navigating to', appPath("/dashboard"));
           // update redux state and navigate
           if (result.tenants) {
             dispatch(setTenants(result.tenants));
           }
           dispatch(setXeroConnected());
-          navigate(`${ROOT_PATH}app/dashboard`);
+          navigate(appPath("/dashboard"));
           options?.onDashboard?.();
           break;
         case "select-tenant":
           console.log('useProcessXeroCallback: navigating to /select-tenant');
           options?.onSelectTenant?.(result.tenants);
-          navigate(`${ROOT_PATH}select-tenant`, { state: { tenants: result.tenants } });
+          navigate(appPath("/select-tenant"), { state: { tenants: result.tenants } });
           break;
         case "restart-auth": {
           console.log('useProcessXeroCallback: restarting auth');

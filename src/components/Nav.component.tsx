@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ROOT_PATH } from "../router/router";
+import { ROOT_PATH, appPath } from "../router/router";
 import { useSelector, useDispatch } from "react-redux";
 import { setTenants, selectTenant, logout, AuthStorage } from "../store/slices/auth.slice";
 import { RootState } from "../store/store";
@@ -125,19 +125,19 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
       <Link to={`${ROOT_PATH}`} onClick={handleLinkClick} className={linkClass}>
         Home
       </Link>
-      <Link to={`${ROOT_PATH}dashboard`} onClick={handleLinkClick} className={linkClass}>
+      <Link to={appPath("/dashboard")} onClick={handleLinkClick} className={linkClass}>
         Dashboard
       </Link>
-      <Link to={`${ROOT_PATH}collections`} onClick={handleLinkClick} className={linkClass}>
+      <Link to={appPath("/collections")} onClick={handleLinkClick} className={linkClass}>
         Collections
       </Link>
-      <Link to={`${ROOT_PATH}payments`} onClick={handleLinkClick} className={linkClass}>
+      <Link to={appPath("/payments")} onClick={handleLinkClick} className={linkClass}>
         Payments
       </Link>
-      <Link to={`${ROOT_PATH}profitability`} onClick={handleLinkClick} className={linkClass}>
+      <Link to={appPath("/profitability")} onClick={handleLinkClick} className={linkClass}>
         Profitability
       </Link>
-      <Link to={`${ROOT_PATH}cashflow`} onClick={handleLinkClick} className={linkClass}>
+      <Link to={appPath("/cashflow")} onClick={handleLinkClick} className={linkClass}>
         Cash Flow
       </Link>
 
@@ -169,7 +169,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  navigate(`${ROOT_PATH}app/settings`);
+                  navigate(appPath("/settings"));
                   handleLinkClick();
                 }}
                 className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"

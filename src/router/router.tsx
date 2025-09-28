@@ -13,6 +13,7 @@ import ProfitabilityPage from "../pages/main/Profitability.page";
 import CashFlowPage from "../pages/main/CashFlow.page";
 import SettingsPage from "../pages/main/Settings.page";
 import AuthProtectedRouteLogic from "./logic/AuthProtected.route-logic";
+import path from "path";
 
 // Use the Vite BASE_URL directly as the router root. Rely on the environment
 // to control the base path — less logic, as requested.
@@ -41,7 +42,7 @@ const authRoutes: ExtendedRouteObject[] = [
     title: "Xero OAuth Callback Handler",
     logicType: ROUTE_LOGIC_TYPE.XERO_OAUTH_CALLBACK,
     routeObject: {
-      path: `${ROOT_PATH}xero/oauth2/redirect/:state?`,
+      path: `${ROOT_PATH}/xero/oauth2/redirect/:state?`,
       element: <XeroCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -49,7 +50,7 @@ const authRoutes: ExtendedRouteObject[] = [
   {
     title: "Google OAuth Callback Handler",
     routeObject: {
-      path: `${ROOT_PATH}google/oauth2/redirect/:state?`,
+      path: `${ROOT_PATH}/google/oauth2/redirect/:state?`,
       element: <GoogleCallback />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -71,7 +72,7 @@ export const lameRoutes: ExtendedRouteObject[] = [
   {
     title: "Auth",
     routeObject: {
-      path: `${ROOT_PATH}/auth`,
+      path: `/auth`,
       element: <XeroAuthPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -79,7 +80,7 @@ export const lameRoutes: ExtendedRouteObject[] = [
   {
     title: "Select Tenant",
     routeObject: {
-      path: `${ROOT_PATH}/select-tenant`,
+      path: `/select-tenant`,
       element: <TenantSelector />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -90,7 +91,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Dashboard",
     routeObject: {
-      path: `${ROOT_PATH}/dashboard`,
+      path: `/dashboard`,
       element: <DashboardPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -98,7 +99,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Collections",
     routeObject: {
-      path: `${ROOT_PATH}/collections`,
+      path: `/collections`,
       element: <CollectionsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -106,7 +107,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Payments",
     routeObject: {
-      path: `${ROOT_PATH}/payments`,
+      path: `/payments`,
       element: <PaymentsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -114,7 +115,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Profitability",
     routeObject: {
-      path: `${ROOT_PATH}/profitability`,
+      path: `/profitability`,
       element: <ProfitabilityPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -122,7 +123,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Cash Flow",
     routeObject: {
-      path: `${ROOT_PATH}/cashflow`,
+      path: `/cashflow`,
       element: <CashFlowPage />,
       errorElement: <ErrorBoundaryPage />,
     },
@@ -130,23 +131,42 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
   {
     title: "Settings",
     routeObject: {
-      path: `${ROOT_PATH}/settings`,
+      path: `/settings`,
       element: <SettingsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
   },
 ];
 
+const normalizeSlashesAndConcatArray = (parts: string[]): string => {
+  return path.posix.join(...parts);
+};
+
+// Helper to produce a path under /app. Accepts leading/trailing slashes and
+// normalizes duplicates: appPath('/dashboard') -> '/app/dashboard'
+export const appPath = (route: string): string => {
+  const r = String(route || "");
+  const normalized = r.startsWith("/") ? r : "/" + r;
+  return `/app${normalized}`.replace(/\/+/g, "/");
+};
+
 // Compose the final routes list: utility routes first (so callback is mounted),
 // then the main app routes.
 export const routes: ExtendedRouteObject[] = [
-  ...authRoutes,
-  ...lameRoutes, // Hide lame routes from nav
+  ...authRoutes.map((r) => ({
+    ...r,
+    path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+  })),
+  ...lameRoutes.map((r) => ({
+    ...r,
+    path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+    logicType: undefined,
+  })),
   ...mainAppRoutes.map((r) => ({
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: "/app".concat(r.routeObject.path!),
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, "/app", r.routeObject.path!]),
     },
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
   })),
