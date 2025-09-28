@@ -141,12 +141,25 @@ const normalizeSlashesAndConcatArray = (parts: string[]): string => {
   return parts.join("/").replace(/\/+/g, "/");
 };
 
+const stripLeadingRoot = (p: string): string => {
+  if (!p) return p;
+  if (!ROOT_PATH) return p;
+  try {
+    if (p.startsWith(ROOT_PATH)) return p.slice(ROOT_PATH.length);
+    return p;
+  } catch {
+    return p;
+  }
+};
+
 // Helper to produce a path under /app. Accepts leading/trailing slashes and
 // normalizes duplicates: appPath('/dashboard') -> '/app/dashboard'
 export const appPath = (route: string): string => {
   const r = String(route || "");
   const normalized = r.startsWith("/") ? r : "/" + r;
-  return `/app${normalized}`.replace(/\/+/g, "/");
+  // Ensure we include the router's ROOT_PATH so navigation targets match
+  // the paths registered when we compose routes (which include ROOT_PATH).
+  return normalizeSlashesAndConcatArray([ROOT_PATH, "/app", normalized]);
 };
 
 // Compose the final routes list: utility routes first (so callback is mounted),
@@ -156,14 +169,14 @@ export const routes: ExtendedRouteObject[] = [
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, stripLeadingRoot(r.routeObject.path!)]),
     },
   })),
   ...lameRoutes.map((r) => ({
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, stripLeadingRoot(r.routeObject.path!)]),
     },
     logicType: undefined,
   })),
@@ -171,7 +184,7 @@ export const routes: ExtendedRouteObject[] = [
     ...r,
     routeObject: {
       ...r.routeObject,
-      path: normalizeSlashesAndConcatArray([ROOT_PATH, "/app", r.routeObject.path!]),
+      path: normalizeSlashesAndConcatArray([ROOT_PATH, "/app", stripLeadingRoot(r.routeObject.path!)]),
     },
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
   })),
