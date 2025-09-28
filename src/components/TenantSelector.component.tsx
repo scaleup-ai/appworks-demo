@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { selectTenant, AuthStorage, setSelectedOpenIdSub } from "../store/slices/auth.slice";
+import axiosClient from "../apis/axios-client";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { useTenants } from "../hooks/useTenants";
 import LoadingSpinner from "../components/ui/LoadingSpinner.component";
@@ -56,6 +57,15 @@ const TenantSelector: React.FC = () => {
     // Persist tenant id and openid subject separately
     AuthStorage.setSelectedTenantId(tenantId);
     AuthStorage.setSelectedOpenIdSub(openid);
+    try {
+      // Defensive: also set axios default header so the shared client sends
+      // the OpenID subject on any immediate requests (prevents first-request race).
+      if (openid && axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
+        axiosClient.defaults.headers.common["X-Openid-Sub"] = String(openid);
+      }
+    } catch {
+      // ignore
+    }
     try {
       dispatch(selectTenant(tenantId));
     } catch {}

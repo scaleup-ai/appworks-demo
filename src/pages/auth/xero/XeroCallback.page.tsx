@@ -96,7 +96,10 @@ const XeroCallback: React.FC = () => {
                   dispatch(setSelectedOpenIdSub(String(maybeOpenId)));
                 } catch {}
                 try {
-                  // Also set axios default header for early requests
+                  // Also set axios default header for early requests. This is
+                  // defensive: the redirect to /dashboard happens immediately
+                  // and we must ensure axios sends X-Openid-Sub on the first
+                  // API calls to avoid 401s.
                   if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
                     axiosClient.defaults.headers.common["X-Openid-Sub"] = String(maybeOpenId);
                   }
@@ -128,6 +131,7 @@ const XeroCallback: React.FC = () => {
               dispatch(setSelectedOpenIdSub(String(topOpenId)));
             } catch {}
             try {
+              // Ensure axios is seeded for early requests after redirect
               if (axiosClient && axiosClient.defaults && axiosClient.defaults.headers) {
                 axiosClient.defaults.headers.common["X-Openid-Sub"] = String(topOpenId);
               }
