@@ -16,6 +16,7 @@ import * as emailApi from "../../apis/email.api";
 import { formatCurrency } from "../../helpers/ui.helper";
 import { useApi } from "../../hooks/useApi";
 import { useNavigate } from "react-router-dom";
+import { ROOT_PATH } from "../../router/router";
 
 interface Invoice {
   invoiceId: string;
@@ -56,7 +57,7 @@ const CollectionsPage: React.FC = () => {
       const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
       const openidSub = selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub();
       if (!tenantId && !openidSub) {
-        navigate("/select-tenant");
+        navigate(`${ROOT_PATH}select-tenant`);
         return;
       }
 
@@ -202,7 +203,7 @@ const CollectionsPage: React.FC = () => {
               Connect your Xero account to access collections and invoice data.
             </p>
             <div className="mt-4">
-              <Button onClick={() => navigate("/auth")}>Connect Xero</Button>
+              <Button onClick={() => navigate(`${ROOT_PATH}auth`)}>Connect Xero</Button>
             </div>
           </div>
         </div>

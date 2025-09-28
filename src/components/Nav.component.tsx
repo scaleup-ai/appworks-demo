@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { ROOT_PATH } from "../router/router";
 import { useSelector, useDispatch } from "react-redux";
 import { setTenants, selectTenant, logout, AuthStorage } from "../store/slices/auth.slice";
 import { RootState } from "../store/store";
@@ -51,7 +52,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     }
     dispatch(logout());
     AuthStorage.setSelectedTenantId(null);
-    navigate("/");
+    navigate(`${ROOT_PATH}`);
   };
 
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -114,29 +115,29 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             })}
           </select>
         ) : visibleTenants.length === 1 ? (
-          <div className="px-2 py-1 text-sm bg-white border rounded text-gray-700">
+          <div className="px-2 py-1 text-sm text-gray-700 bg-white border rounded">
             {deriveTenantLabel(visibleTenants[0])}
           </div>
         ) : (
-          <div className="px-2 py-1 text-sm bg-white border rounded text-gray-500">No organisations</div>
+          <div className="px-2 py-1 text-sm text-gray-500 bg-white border rounded">No organisations</div>
         )}
       </div>
-      <Link to="/" onClick={handleLinkClick} className={linkClass}>
+      <Link to={`${ROOT_PATH}`} onClick={handleLinkClick} className={linkClass}>
         Home
       </Link>
-      <Link to="/dashboard" onClick={handleLinkClick} className={linkClass}>
+      <Link to={`${ROOT_PATH}dashboard`} onClick={handleLinkClick} className={linkClass}>
         Dashboard
       </Link>
-      <Link to="/collections" onClick={handleLinkClick} className={linkClass}>
+      <Link to={`${ROOT_PATH}collections`} onClick={handleLinkClick} className={linkClass}>
         Collections
       </Link>
-      <Link to="/payments" onClick={handleLinkClick} className={linkClass}>
+      <Link to={`${ROOT_PATH}payments`} onClick={handleLinkClick} className={linkClass}>
         Payments
       </Link>
-      <Link to="/profitability" onClick={handleLinkClick} className={linkClass}>
+      <Link to={`${ROOT_PATH}profitability`} onClick={handleLinkClick} className={linkClass}>
         Profitability
       </Link>
-      <Link to="/cashflow" onClick={handleLinkClick} className={linkClass}>
+      <Link to={`${ROOT_PATH}cashflow`} onClick={handleLinkClick} className={linkClass}>
         Cash Flow
       </Link>
 
@@ -168,7 +169,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  navigate("/settings");
+                  navigate(`${ROOT_PATH}settings`);
                   handleLinkClick();
                 }}
                 className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"

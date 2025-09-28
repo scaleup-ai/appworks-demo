@@ -18,6 +18,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import { copyToClipboard, downloadJson, formatCurrency, openExternal } from "../../helpers/ui.helper";
 import { useApi } from "../../hooks/useApi";
 import { useNavigate } from "react-router-dom";
+import { ROOT_PATH } from "../../router/router";
 import { listAgents } from "../../apis/agents.api";
 
 interface DashboardStats {
@@ -61,7 +62,7 @@ const DashboardPage: React.FC = () => {
       const openidSub = selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub();
       if (!tenantId && !openidSub) {
         // If we have no tenant selection and no user-scoped subject, ask user to select tenant
-        navigate("/select-tenant");
+        navigate(`${ROOT_PATH}select-tenant`);
         return;
       }
 
@@ -191,7 +192,7 @@ const DashboardPage: React.FC = () => {
         const { tenantId, openid } = await waitForPersistedIds();
         // If we still don't have any tenancy or user subject, redirect to tenant selection
         if (!tenantId && !openid) {
-          navigate("/select-tenant");
+          navigate(`${ROOT_PATH}select-tenant`);
           return;
         }
 
@@ -231,7 +232,7 @@ const DashboardPage: React.FC = () => {
             Refresh Data
           </Button>
           {!xeroConnected && (
-            <Button onClick={() => navigate("/auth")} size="sm">
+            <Button onClick={() => navigate(`${ROOT_PATH}auth`)} size="sm">
               Connect Xero
             </Button>
           )}

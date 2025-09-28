@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ROOT_PATH } from "../router/router";
 import { selectTenant, AuthStorage, setSelectedOpenIdSub } from "../store/slices/auth.slice";
 import axiosClient from "../apis/axios-client";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -72,7 +73,7 @@ const TenantSelector: React.FC = () => {
     try {
       dispatch(setSelectedOpenIdSub(openid));
     } catch {}
-    navigate("/dashboard");
+    navigate(`${ROOT_PATH}dashboard`);
   }
 
   if (isLoading) {

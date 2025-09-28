@@ -15,6 +15,7 @@ import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import { formatCurrency } from "../../helpers/ui.helper";
 import { useApi } from "../../hooks/useApi";
 import { useNavigate } from "react-router-dom";
+import { ROOT_PATH } from "../../router/router";
 
 interface PaymentReconciliationTest {
   id: string;
@@ -92,9 +93,7 @@ const PaymentsPage: React.FC = () => {
     const result = await reconcilePayment(request);
 
     setReconciliationTests((prev) =>
-      prev.map((test) =>
-        test.id === newTest.id ? { ...test, result, status: result ? "completed" : "failed" } : test
-      )
+      prev.map((test) => (test.id === newTest.id ? { ...test, result, status: result ? "completed" : "failed" } : test))
     );
 
     if (result) {
@@ -143,7 +142,7 @@ const PaymentsPage: React.FC = () => {
   useEffect(() => {
     const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
     if (!tenantId) {
-      navigate("/select-tenant");
+      navigate(`${ROOT_PATH}select-tenant`);
       return;
     }
     loadPaymentData();
@@ -155,9 +154,11 @@ const PaymentsPage: React.FC = () => {
         <div className="py-12">
           <div className="max-w-md mx-auto p-6 border rounded-lg bg-yellow-50 text-center">
             <h3 className="text-lg font-medium text-yellow-800">Xero Not Connected</h3>
-            <p className="mt-2 text-sm text-yellow-700">Connect your Xero account to access payment reconciliation features.</p>
+            <p className="mt-2 text-sm text-yellow-700">
+              Connect your Xero account to access payment reconciliation features.
+            </p>
             <div className="mt-4">
-              <Button onClick={() => navigate("/auth")}>Connect Xero</Button>
+              <Button onClick={() => navigate(`${ROOT_PATH}auth`)}>Connect Xero</Button>
             </div>
           </div>
         </div>
@@ -184,8 +185,16 @@ const PaymentsPage: React.FC = () => {
           items={[
             { title: "Total Processed", value: summary.totalProcessed, className: "border-l-4 border-l-blue-500" },
             { title: "Matched Payments", value: summary.matchedPayments, className: "border-l-4 border-l-green-500" },
-            { title: "Unmatched Payments", value: summary.unmatchedPayments, className: "border-l-4 border-l-yellow-500" },
-            { title: "Total Amount", value: formatCurrency(summary.totalAmount), className: "border-l-4 border-l-purple-500" },
+            {
+              title: "Unmatched Payments",
+              value: summary.unmatchedPayments,
+              className: "border-l-4 border-l-yellow-500",
+            },
+            {
+              title: "Total Amount",
+              value: formatCurrency(summary.totalAmount),
+              className: "border-l-4 border-l-purple-500",
+            },
           ]}
         />
 
@@ -193,15 +202,34 @@ const PaymentsPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Payment ID</label>
-              <input type="text" value={testPayment.paymentId} onChange={(e) => setTestPayment((prev) => ({ ...prev, paymentId: e.target.value }))} placeholder="PAY-001" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input
+                type="text"
+                value={testPayment.paymentId}
+                onChange={(e) => setTestPayment((prev) => ({ ...prev, paymentId: e.target.value }))}
+                placeholder="PAY-001"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-              <input type="number" value={testPayment.amount} onChange={(e) => setTestPayment((prev) => ({ ...prev, amount: e.target.value }))} placeholder="1500.00" step="0.01" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input
+                type="number"
+                value={testPayment.amount}
+                onChange={(e) => setTestPayment((prev) => ({ ...prev, amount: e.target.value }))}
+                placeholder="1500.00"
+                step="0.01"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Reference (Optional)</label>
-              <input type="text" value={testPayment.reference} onChange={(e) => setTestPayment((prev) => ({ ...prev, reference: e.target.value }))} placeholder="INV-001 or description" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input
+                type="text"
+                value={testPayment.reference}
+                onChange={(e) => setTestPayment((prev) => ({ ...prev, reference: e.target.value }))}
+                placeholder="INV-001 or description"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
             </div>
             <div className="flex items-end">
               <Button onClick={handleTestPaymentReconciliation} loading={testingPayment} className="w-full">
@@ -221,38 +249,78 @@ const PaymentsPage: React.FC = () => {
 
         <Card title="Reconciliation History" description="Recent payment reconciliation attempts">
           {loading ? (
-            <div className="flex items-center justify-center py-8"><LoadingSpinner /></div>
+            <div className="flex items-center justify-center py-8">
+              <LoadingSpinner />
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Matched Invoice</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Payment ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Reference
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Result
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Matched Invoice
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Timestamp
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {reconciliationTests.map((test) => (
                     <tr key={test.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm font-medium text-gray-900">{test.paymentId}</div></td>
-                      <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-900">{formatCurrency(test.amount)}</div></td>
-                      <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-900">{test.reference || "-"}</div></td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {test.result ? (<StatusBadge variant={test.result.matched ? "green" : "yellow"}>{test.result.matched ? "Matched" : "Unmatched"}</StatusBadge>) : (<span className="text-sm text-gray-500">-</span>)}
+                        <div className="text-sm font-medium text-gray-900">{test.paymentId}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-900">{test.result?.invoiceId || "-"}</div></td>
-                      <td className="px-6 py-4 whitespace-nowrap"><StatusBadge variant={test.status === "completed" ? "green" : test.status === "pending" ? "yellow" : "red"}>{test.status}</StatusBadge></td>
-                      <td className="px-6 py-4 whitespace-nowrap"><div className="text-sm text-gray-900">{new Date(test.timestamp).toLocaleString()}</div></td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{formatCurrency(test.amount)}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{test.reference || "-"}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {test.result ? (
+                          <StatusBadge variant={test.result.matched ? "green" : "yellow"}>
+                            {test.result.matched ? "Matched" : "Unmatched"}
+                          </StatusBadge>
+                        ) : (
+                          <span className="text-sm text-gray-500">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{test.result?.invoiceId || "-"}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge
+                          variant={test.status === "completed" ? "green" : test.status === "pending" ? "yellow" : "red"}
+                        >
+                          {test.status}
+                        </StatusBadge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{new Date(test.timestamp).toLocaleString()}</div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {reconciliationTests.length === 0 && (<div className="text-center py-8 text-gray-500">No reconciliation tests performed yet</div>)}
+              {reconciliationTests.length === 0 && (
+                <div className="text-center py-8 text-gray-500">No reconciliation tests performed yet</div>
+              )}
             </div>
           )}
         </Card>
@@ -261,11 +329,21 @@ const PaymentsPage: React.FC = () => {
           <div className="prose prose-sm max-w-none">
             <h4 className="font-semibold text-gray-900 mb-2">Reconciliation Process:</h4>
             <ol className="list-decimal list-inside space-y-2 text-gray-700">
-              <li><strong>Reference Matching:</strong> First attempts to match payment reference to invoice numbers</li>
-              <li><strong>Amount Matching:</strong> Looks for invoices with matching amounts</li>
-              <li><strong>Fuzzy Matching:</strong> Uses description keywords to find potential matches</li>
-              <li><strong>Partial Payments:</strong> Handles partial payments and suggests allocations</li>
-              <li><strong>Unmatched Handling:</strong> Creates cases for manual review when no match is found</li>
+              <li>
+                <strong>Reference Matching:</strong> First attempts to match payment reference to invoice numbers
+              </li>
+              <li>
+                <strong>Amount Matching:</strong> Looks for invoices with matching amounts
+              </li>
+              <li>
+                <strong>Fuzzy Matching:</strong> Uses description keywords to find potential matches
+              </li>
+              <li>
+                <strong>Partial Payments:</strong> Handles partial payments and suggests allocations
+              </li>
+              <li>
+                <strong>Unmatched Handling:</strong> Creates cases for manual review when no match is found
+              </li>
             </ol>
             <h4 className="font-semibold text-gray-900 mb-2 mt-4">Integration Points:</h4>
             <ul className="list-disc list-inside space-y-1 text-gray-700">

@@ -1,6 +1,7 @@
 import React, { ReactElement, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { ROOT_PATH } from "../../router/router";
 import { RootState } from "../../store/store";
 import { logout as logoutAction } from "../../store/slices/auth.slice";
 import { AuthStorage } from "../../store/slices/auth.slice";
@@ -18,7 +19,7 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
 
   useEffect(() => {
     if (!isAuthenticated) {
-      navigate("/auth");
+      navigate(`${ROOT_PATH}auth`);
       return;
     }
 
@@ -38,7 +39,7 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
       } catch (e) {
         // ignore
       }
-      navigate("/auth");
+      navigate(`${ROOT_PATH}auth`);
       return;
     }
   }, [isAuthenticated, xeroConnected, tenants, dispatch, navigate]);
