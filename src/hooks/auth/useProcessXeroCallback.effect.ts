@@ -187,7 +187,11 @@ export function useProcessXeroCallback(options?: {
           // Instrumentation: log before navigation
           console.log('useProcessXeroCallback: navigating to', appPath("/dashboard"));
           // update redux state and navigate
-          if (result.tenants) {
+          // Only set tenants when we actually have tenant entries. An empty
+          // array indicates "no tenant data" and will trigger the auth
+          // guard to logout the user (see AuthProtected.route-logic). Avoid
+          // setting an empty tenants array here.
+          if (result.tenants && Array.isArray(result.tenants) && result.tenants.length > 0) {
             dispatch(setTenants(result.tenants));
           }
           dispatch(setXeroConnected());
