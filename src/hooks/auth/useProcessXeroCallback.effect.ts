@@ -53,13 +53,13 @@ export async function processXeroCallback({ code, state, signal }: ProcessArgs):
     if (response.status === 200) {
       const payload = (response.data || null) as unknown;
       // safe-guard: check for tenants array
-      const maybeTenants =
-        payload && typeof payload === "object" && (payload as Record<string, unknown>)["tenants"]
-          ? (payload as Record<string, unknown>)["tenants"]
-          : undefined;
-      if (Array.isArray(maybeTenants) && maybeTenants.length > 0) {
-        if (maybeTenants.length === 1) {
-          const single = maybeTenants[0] as Record<string, unknown>;
+      const tenants =
+        payload && typeof payload === "object" && Array.isArray((payload as Record<string, unknown>)["tenants"])
+          ? ((payload as Record<string, unknown>)["tenants"] as Array<Record<string, unknown>>)
+          : [];
+      if (tenants.length > 0) {
+        if (tenants.length === 1) {
+          const single = tenants[0] as Record<string, unknown>;
           const tid =
             (typeof single["tenantId"] === "string" && (single["tenantId"] as string)) ||
             (typeof single["tenant_id"] === "string" && (single["tenant_id"] as string)) ||
@@ -102,10 +102,10 @@ export async function processXeroCallback({ code, state, signal }: ProcessArgs):
             } catch {
               // noop
             }
-            return { action: "dashboard", tenants: maybeTenants };
+            return { action: "dashboard", tenants: tenants };
           }
         }
-        return { action: "select-tenant", tenants: maybeTenants as Array<Record<string, unknown>> };
+        return { action: "select-tenant", tenants: tenants as Array<Record<string, unknown>> };
       }
 
       // fallback: maybe top-level openid_sub
@@ -131,7 +131,7 @@ export async function processXeroCallback({ code, state, signal }: ProcessArgs):
 
       // success and no tenant selection required
       // Ensure we return an array type for tenants to satisfy the ProcessCallbackResult
-      return { action: "dashboard", tenants: (Array.isArray(maybeTenants) ? (maybeTenants as Array<Record<string, unknown>>) : []) };
+      return { action: "dashboard", tenants: tenants };
     }
 
     if (response.status === 409) {
