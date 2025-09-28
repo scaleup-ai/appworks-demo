@@ -12,7 +12,7 @@ export const LandingPage: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate(`${(ROOT_PATH || "/").replace(/\/+$|\/$/g, "")}/dashboard`);
+      navigate(`${(ROOT_PATH || "/").replace(/\/+$\/$/g, "")}/app/dashboard`);
     } else {
       // Redirect to auth page if not authenticated
       navigate(`${(ROOT_PATH || "/").replace(/\/+$|\/$/g, "")}/auth`);

@@ -68,7 +68,7 @@ const XeroCallback: React.FC = () => {
               Return home
             </button>
             <button
-              onClick={() => navigate(`${ROOT_PATH}dashboard`, { replace: true })}
+              onClick={() => navigate(`${ROOT_PATH}app/dashboard`, { replace: true })}
               className="px-4 py-3 text-sm text-blue-600 border border-blue-300 rounded-md hover:bg-blue-50"
             >
               Proceed to Dashboard

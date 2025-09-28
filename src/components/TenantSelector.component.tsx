@@ -73,7 +73,7 @@ const TenantSelector: React.FC = () => {
     try {
       dispatch(setSelectedOpenIdSub(openid));
     } catch {}
-    navigate(`${ROOT_PATH}dashboard`);
+    navigate(`${ROOT_PATH}app/dashboard`);
   }
 
   if (isLoading) {

@@ -169,7 +169,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  navigate(`${ROOT_PATH}settings`);
+                  navigate(`${ROOT_PATH}app/settings`);
                   handleLinkClick();
                 }}
                 className="w-full px-4 py-2 text-sm text-left hover:bg-gray-100"

@@ -144,7 +144,10 @@ export const routes: ExtendedRouteObject[] = [
   ...lameRoutes, // Hide lame routes from nav
   ...mainAppRoutes.map((r) => ({
     ...r,
-    path: "/app".concat(`${r.routeObject.path}`),
+    routeObject: {
+      ...r.routeObject,
+      path: `${ROOT_PATH}app${r.routeObject.path.startsWith("/") ? "" : "/"}${r.routeObject.path}`,
+    },
     logicType: ROUTE_LOGIC_TYPE.AUTH_CHECK,
   })),
 ];

@@ -58,12 +58,12 @@ const GoogleCallback: React.FC = () => {
           } catch (e) {
             // ignore dispatch errors in rare cases
           }
-          navigate("/dashboard");
+          navigate("/app/dashboard");
           return;
         }
         if (response.status === 409) {
           showToast("Session already processed. Checking connection…", { type: "info" });
-          navigate("/dashboard");
+          navigate("/app/dashboard");
           return;
         }
         throw new Error(`OAuth callback failed with status ${response.status}`);

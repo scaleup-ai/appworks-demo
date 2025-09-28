@@ -184,10 +184,10 @@ export function useProcessXeroCallback(options?: {
       switch (result.action) {
         case "dashboard":
           // Instrumentation: log before navigation
-          console.log('useProcessXeroCallback: navigating to /dashboard');
+          console.log('useProcessXeroCallback: navigating to /app/dashboard');
           // update redux state and navigate
           dispatch(setXeroConnected());
-          navigate(`${ROOT_PATH}dashboard`);
+          navigate(`${ROOT_PATH}app/dashboard`);
           options?.onDashboard?.();
           break;
         case "select-tenant":

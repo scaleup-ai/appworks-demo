@@ -343,7 +343,7 @@ const DashboardPage: React.FC = () => {
               <div className="text-sm text-gray-500">Reconcile sample payment</div>
             </Button>
             <Button
-              onClick={() => openExternal("/collections", "_blank")}
+              onClick={() => openExternal("/app/collections", "_blank")}
               className="flex flex-col items-start h-auto p-4 text-left"
               variant="ghost"
             >
