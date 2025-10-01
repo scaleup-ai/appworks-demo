@@ -17,6 +17,24 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
   const dispatch = useDispatch();
 
   useEffect(() => {
+    // Debug: print auth guard state so we can trace why routes mount/redirect
+    // at runtime. Keep this quiet in production by gating on DEV flag if needed.
+    try {
+      // eslint-disable-next-line no-console
+      console.log("AuthGuard:", {
+        isAuthenticated,
+        xeroConnected,
+        tenantsCount: Array.isArray(tenants) ? tenants.length : 0,
+        persistedOpenId: (() => {
+          try {
+            return AuthStorage.getSelectedOpenIdSub();
+          } catch {
+            return null;
+          }
+        })(),
+      });
+    } catch {}
+
     if (!isAuthenticated) {
       navigate(`${ROOT_PATH}auth`);
       return;
