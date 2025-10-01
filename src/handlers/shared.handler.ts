@@ -92,18 +92,46 @@ export function safeLocalStorageRemove(key: string) {
 import type { ToastOptions } from "react-toastify";
 
 export function apiErrorToast(showToast: (msg: string, opts?: ToastOptions) => void, defaultMsg = "Request failed") {
+  // Simple dedupe map to avoid showing the same error toast repeatedly in a
+  // short window (e.g., when the client is rapidly retrying or the network
+  // is failing). Map key -> last shown timestamp (ms).
+  const lastShown = (apiErrorToast as unknown as { _lastShown?: Map<string, number> })._lastShown ?? new Map<string, number>();
+  // attach back so repeated imports share the same map
+  (apiErrorToast as unknown as { _lastShown?: Map<string, number> })._lastShown = lastShown;
+
+  const DEDUPE_MS = 5000;
+
   return (err: unknown) => {
     // Try to surface a useful message when available
     let msg = defaultMsg;
     try {
       if (err && typeof err === "object") {
         const anyErr = err as Record<string, unknown>;
+        // Axios timeout errors sometimes have code/property; prefer message first
         if (typeof anyErr.message === "string") msg = anyErr.message as string;
         else if (typeof anyErr.error === "string") msg = anyErr.error as string;
+        else if (typeof anyErr.code === "string") msg = String(anyErr.code);
       }
     } catch (err) {
-      console.warn("apiErrorToast failed to format error", err);
+      try {
+        console.warn("apiErrorToast failed to format error", err);
+      } catch {
+        /* ignore secondary formatting errors */
+      }
     }
+
+    try {
+      const now = Date.now();
+      const last = lastShown.get(msg) || 0;
+      if (now - last < DEDUPE_MS) {
+        // suppress repeated toast
+        return;
+      }
+      lastShown.set(msg, now);
+    } catch {
+      // ignore map failures
+    }
+
     showToast(msg, { type: "error" });
   };
 }

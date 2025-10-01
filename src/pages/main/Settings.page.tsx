@@ -25,17 +25,25 @@ const SettingsPage: React.FC = () => {
 
   const { loadTenants, isLoading: tenantsLoading } = useTenants();
   // Defensive: include X-Openid-Sub header from AuthStorage in case the
-  // axios interceptor ran before Redux/localStorage hydration.
-  const defaultHeaders: Record<string, string> = {};
-  try {
-    const selectedOpen = AuthStorage.getSelectedOpenIdSub();
-    if (selectedOpen) defaultHeaders["X-Openid-Sub"] = String(selectedOpen);
-  } catch {
-    // ignore
-  }
-  const { execute: fetchStatus, isLoading: statusLoading } = useApi(() =>
-    axiosClient.get("/api/v1/xero/integration/status", { headers: defaultHeaders })
-  );
+  // axios interceptor ran before Redux/localStorage hydration. Memoize the
+  // API function so `useApi` returns a stable `execute` and the effect
+  // below doesn't re-run on every render (which caused repeated requests
+  // and spammy toasts when the request timed out).
+  const selectedOpenLocal = (() => {
+    try {
+      return AuthStorage.getSelectedOpenIdSub();
+    } catch {
+      return null;
+    }
+  })();
+
+  const statusApiFunc = React.useCallback(() => {
+    const headers: Record<string, string> = {};
+    if (selectedOpenLocal) headers['X-Openid-Sub'] = String(selectedOpenLocal);
+    return axiosClient.get('/api/v1/xero/integration/status', { headers });
+  }, [selectedOpenLocal]);
+
+  const { execute: fetchStatus, isLoading: statusLoading } = useApi(statusApiFunc);
 
   const [status, setStatus] = useState<any>(null);
 
