@@ -8,9 +8,21 @@ import { useApi } from './useApi';
 export function useTenants() {
   const dispatch = useDispatch();
 
+  // Avoid duplicate concurrent fetches by keeping an in-flight promise.
+  const inFlight: { p?: Promise<unknown[]> } = {};
   const fetchTenants = useCallback(async () => {
-    const resp = await axiosClient.get("/api/v1/xero/organisations");
-    return parseAndDedupTenants(resp.data || []);
+    if (inFlight.p) return inFlight.p;
+    const p = (async () => {
+      const resp = await axiosClient.get("/api/v1/xero/organisations");
+      return parseAndDedupTenants(resp.data || []);
+    })();
+    inFlight.p = p;
+    try {
+      const r = await p;
+      return r;
+    } finally {
+      inFlight.p = undefined;
+    }
   }, []);
 
   const { execute: loadTenants, isLoading } = useApi(fetchTenants);
