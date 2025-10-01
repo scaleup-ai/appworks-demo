@@ -166,6 +166,7 @@ export const routes: ExtendedRouteObject[] = [
     routeObject: {
       ...r.routeObject,
       path: normalizeSlashesAndConcatArray([ROOT_PATH, r.routeObject.path!]),
+      LoggingTags: [ROUTE_LOGIC_TYPE.AUTH_CHECK],
     },
     logicType: undefined,
   })),
