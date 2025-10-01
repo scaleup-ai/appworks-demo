@@ -39,8 +39,8 @@ const SettingsPage: React.FC = () => {
 
   const statusApiFunc = React.useCallback(() => {
     const headers: Record<string, string> = {};
-    if (selectedOpenLocal) headers['X-Openid-Sub'] = String(selectedOpenLocal);
-    return axiosClient.get('/api/v1/xero/integration/status', { headers });
+    if (selectedOpenLocal) headers["X-Openid-Sub"] = String(selectedOpenLocal);
+    return axiosClient.get("/api/v1/xero/integration/status", { headers });
   }, [selectedOpenLocal]);
 
   const { execute: fetchStatus, isLoading: statusLoading } = useApi(statusApiFunc);
