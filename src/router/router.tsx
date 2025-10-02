@@ -5,6 +5,7 @@ import { LandingPage } from "../pages/lame/Landing.page";
 import XeroAuthPage from "../pages/auth/xero/XeroAuth.page";
 import XeroCallback from "../pages/auth/xero/XeroCallback.page";
 import GoogleCallback from "../pages/auth/google/GoogleCallback.page";
+import ServerDownPage from "../pages/error/ServerDown.page";
 import TenantSelector from "../components/TenantSelector.component";
 import DashboardPage from "../pages/main/Dashboard.page";
 import CollectionsPage from "../pages/main/Collections.page";
@@ -73,6 +74,14 @@ export const lameRoutes: ExtendedRouteObject[] = [
     routeObject: {
       path: `/auth`,
       element: <XeroAuthPage />,
+      errorElement: <ErrorBoundaryPage />,
+    },
+  },
+  {
+    title: "Maintenance",
+    routeObject: {
+      path: `/maintenance`,
+      element: <ServerDownPage />,
       errorElement: <ErrorBoundaryPage />,
     },
   },

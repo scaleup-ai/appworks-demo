@@ -15,6 +15,9 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
   const xeroConnected = useSelector((state: RootState) => state.auth.xeroConnected);
   const tenants = useSelector((state: RootState) => state.auth.tenants || []);
   const loading = useSelector((state: RootState) => state.auth.loading);
+  const serverAvailable = useSelector((state: RootState) =>
+    state.auth && typeof state.auth.serverAvailable !== "undefined" ? state.auth.serverAvailable : true
+  );
 
   useEffect(() => {
     // Debug: print auth guard state so we can trace why routes mount/redirect
@@ -38,6 +41,14 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
     // racing with async validation on app boot (validateTokens thunk etc.).
     if (loading) return;
 
+    // If server appears down, navigate to maintenance page and don't mount app
+    if (serverAvailable === false) {
+      try {
+        navigate(`${ROOT_PATH}maintenance`);
+      } catch {}
+      return;
+    }
+
     // If the user is not authenticated, go to auth flow.
     if (!isAuthenticated) {
       navigate(`${ROOT_PATH}auth`);
@@ -60,7 +71,7 @@ const AuthProtectedRouteLogic: React.FC<AuthProtectedRouteLogicProps> = ({ child
       }
       return;
     }
-  }, [isAuthenticated, xeroConnected, tenants, loading, navigate]);
+  }, [isAuthenticated, xeroConnected, tenants, loading, navigate, serverAvailable]);
 
   if (!isAuthenticated) {
     return null;

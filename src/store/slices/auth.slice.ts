@@ -4,9 +4,12 @@ export interface AuthState {
   isAuthenticated: boolean;
   xeroConnected: boolean;
   googleConnected: boolean;
-  serverAvailable?: boolean;
   loading: boolean;
   error: string | null;
+  // Whether the backend server is reachable / healthy. False when we detect
+  // persistent 5xx/503 responses so the app can display a single maintenance
+  // page instead of letting users interact with broken APIs.
+  serverAvailable: boolean;
   tenants: Array<{ openid_sub?: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
   selectedOpenIdSub?: string | null;
   selectedTenantId?: string | null;
@@ -130,7 +133,11 @@ const authSlice = createSlice({
       state.loading = action.payload;
     },
     setServerAvailable: (state, action) => {
-      state.serverAvailable = Boolean(action.payload);
+      try {
+        state.serverAvailable = Boolean(action.payload);
+      } catch {
+        state.serverAvailable = Boolean(action.payload);
+      }
     },
     // Explicitly set the OpenID subject (user identifier) in both Redux state
     // and localStorage. This is distinct from the selected tenant id.
@@ -167,7 +174,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setXeroConnected, setGoogleConnected, logout, setError, clearError, setLoading, setServerAvailable, setTenants, selectTenant, setSelectedOpenIdSub } = authSlice.actions;
+export const { setXeroConnected, setGoogleConnected, logout, setError, clearError, setLoading, setTenants, selectTenant, setSelectedOpenIdSub, setServerAvailable } = authSlice.actions;
 export default authSlice.reducer;
 
 export const AuthStorage = {
