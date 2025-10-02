@@ -4,6 +4,7 @@ export interface AuthState {
   isAuthenticated: boolean;
   xeroConnected: boolean;
   googleConnected: boolean;
+  serverAvailable?: boolean;
   loading: boolean;
   error: string | null;
   tenants: Array<{ openid_sub?: string; tenantName?: string; tenantType?: string; clientId?: string; organisationNumber?: string; displayLabel?: string }>;
@@ -15,6 +16,7 @@ const initialState: AuthState = {
   isAuthenticated: typeof window !== 'undefined' ? Boolean(localStorage.getItem('isAuthenticated')) : false,
   xeroConnected: false,
   googleConnected: false,
+  serverAvailable: true,
   loading: false,
   error: null,
   tenants: [],
@@ -127,6 +129,9 @@ const authSlice = createSlice({
     setLoading: (state, action) => {
       state.loading = action.payload;
     },
+    setServerAvailable: (state, action) => {
+      state.serverAvailable = Boolean(action.payload);
+    },
     // Explicitly set the OpenID subject (user identifier) in both Redux state
     // and localStorage. This is distinct from the selected tenant id.
     setSelectedOpenIdSub(state, action) {
@@ -162,7 +167,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setXeroConnected, setGoogleConnected, logout, setError, clearError, setLoading, setTenants, selectTenant, setSelectedOpenIdSub } = authSlice.actions;
+export const { setXeroConnected, setGoogleConnected, logout, setError, clearError, setLoading, setServerAvailable, setTenants, selectTenant, setSelectedOpenIdSub } = authSlice.actions;
 export default authSlice.reducer;
 
 export const AuthStorage = {

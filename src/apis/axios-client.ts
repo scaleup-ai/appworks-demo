@@ -1,6 +1,6 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse } from 'axios';
 import { store } from '../store/store';
-import { validateTokens, AuthStorage } from '../store/slices/auth.slice';
+import { validateTokens, AuthStorage, logout, setServerAvailable } from '../store/slices/auth.slice';
 
 // Modern, simplified axios client without complex refresh token logic
 // since most demo endpoints don't require authentication
@@ -82,18 +82,37 @@ axiosClient.interceptors.request.use(
 
 // Response interceptor - handle auth errors
 axiosClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    // Mark server available on successful responses
+    try { store.dispatch(setServerAvailable(true)); } catch { /* ignore */ }
+    return response;
+  },
   (error: AxiosError) => {
-    // Handle authentication errors
-    if (error.response?.status === 401) {
+    // Network or server errors (5xx) should mark server as unavailable and
+    // clear local auth so the frontend doesn't continue showing dashboard UI
+    // when the backend is unreachable after a restart.
+    const status = error.response?.status;
+    const isServerError = !status || (status >= 500 && status < 600);
+
+    if (isServerError) {
+      try {
+        store.dispatch(setServerAvailable(false));
+        // Force a logout so UI won't assume authenticated session while
+        // backend is down. This is safer than keeping stale UI that will
+        // surface many failing API calls.
+        store.dispatch(logout());
+      } catch {
+        // ignore dispatch errors
+      }
+    }
+
+    // Handle authentication errors (401) separately
+    if (status === 401) {
       // Clear invalid tokens
       clearAccessToken();
 
-      // Validate tokens in the store
+      // Validate tokens in the store (causes loading=false and unauth state)
       store.dispatch(validateTokens());
-
-      // Let the app-level auth logic handle navigation; do not force redirects here.
-      // This keeps auth navigation consistent (Redux is the single source of truth).
     }
 
     return Promise.reject(error);
