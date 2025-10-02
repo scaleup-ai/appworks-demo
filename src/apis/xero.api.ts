@@ -130,6 +130,10 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
         validateStatus: () => true,
         headers: { 'X-Openid-Sub': String(selected) },
       });
+      if (resp.status === 200) return resp.data;
+      if (AuthStorage && typeof AuthStorage.setIsAuthenticated === 'function') {
+        AuthStorage.setIsAuthenticated(false);
+      }
       return resp.data;
     }
   } catch {
