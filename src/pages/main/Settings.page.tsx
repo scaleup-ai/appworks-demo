@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import axiosClient from "../../apis/axios-client";
+import BACKEND_ROUTES from "../../router/backend.routes";
 import { selectTenant, AuthStorage } from "../../store/slices/auth.slice";
 import AppLayout from "../layouts/App.layout";
 import GoogleIntegrationCard from "../../components/ui/settings/GoogleIntegrationCard.component";
@@ -40,7 +41,8 @@ const SettingsPage: React.FC = () => {
   const statusApiFunc = React.useCallback(() => {
     const headers: Record<string, string> = {};
     if (selectedOpenLocal) headers["X-Openid-Sub"] = String(selectedOpenLocal);
-    return axiosClient.get("/api/v1/xero/integration/status", { headers });
+    const url = BACKEND_ROUTES?.xero?.integrationStatus || "/api/v1/xero/integration/status";
+    return axiosClient.get(url, { headers });
   }, [selectedOpenLocal]);
 
   const { execute: fetchStatus, isLoading: statusLoading } = useApi(statusApiFunc);

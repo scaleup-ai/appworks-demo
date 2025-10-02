@@ -1,5 +1,6 @@
 import axiosClient from './axios-client';
 import { AuthStorage } from '../store/slices/auth.slice';
+import BACKEND_ROUTES from '../router/backend.routes';
 
 export enum HealthApiRoutes {
   // Main healthcheck endpoints  
@@ -89,11 +90,13 @@ export async function healthCheckAllServices(): Promise<HealthCheckResult[]> {
 
   // Check collections endpoint (just test if endpoint exists)
   try {
-    await axiosClient.get('/api/v1/collections/scheduled');
-    results.push({ endpoint: '/api/v1/collections/scheduled', status: 'ok' });
+    const collectionsUrl = BACKEND_ROUTES?.accountsReceivables?.collectionsScheduled || '/api/v1/collections/scheduled';
+    await axiosClient.get(collectionsUrl);
+    results.push({ endpoint: collectionsUrl, status: 'ok' });
   } catch (error) {
+    const collectionsUrl = BACKEND_ROUTES?.accountsReceivables?.collectionsScheduled || '/api/v1/collections/scheduled';
     results.push({
-      endpoint: '/api/v1/collections/scheduled',
+      endpoint: collectionsUrl,
       status: 'error',
       message: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -103,17 +106,19 @@ export async function healthCheckAllServices(): Promise<HealthCheckResult[]> {
   try {
     // Defensive header in case localStorage/Redux is not hydrated yet.
     try {
+      const xeroUrl = BACKEND_ROUTES?.xero?.integrationStatus || '/api/v1/xero/integration/status';
       const selected = AuthStorage && typeof AuthStorage.getSelectedOpenIdSub === 'function' ? AuthStorage.getSelectedOpenIdSub() : null;
       if (selected) {
-        await axiosClient.get('/api/v1/xero/integration/status', { headers: { 'X-Openid-Sub': String(selected) } });
+        await axiosClient.get(xeroUrl, { headers: { 'X-Openid-Sub': String(selected) } });
       } else {
-        await axiosClient.get('/api/v1/xero/integration/status');
+        await axiosClient.get(xeroUrl);
       }
     } catch {
+      const xeroUrl = BACKEND_ROUTES?.xero?.integrationStatus || '/api/v1/xero/integration/status';
       // fallback to plain request
-      await axiosClient.get('/api/v1/xero/integration/status');
+      await axiosClient.get(xeroUrl);
     }
-    results.push({ endpoint: '/api/v1/xero/integration/status', status: 'ok' });
+    results.push({ endpoint: BACKEND_ROUTES?.xero?.integrationStatus || '/api/v1/xero/integration/status', status: 'ok' });
   } catch (error) {
     results.push({
       endpoint: '/api/v1/xero/integration/status',

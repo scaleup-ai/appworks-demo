@@ -142,8 +142,10 @@ const PaymentsPage: React.FC = () => {
   useEffect(() => {
     const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
     if (!tenantId) {
-      navigate(`${ROOT_PATH}select-tenant`);
-      return;
+      // Do not auto-redirect to select-tenant. Allow the page to render and
+      // show guidance to the user instead.
+      // eslint-disable-next-line no-console
+      console.warn("Payments: no tenantId available — skipping redirect to select-tenant.");
     }
     loadPaymentData();
   }, [selectedTenantId, loadPaymentData, navigate]);

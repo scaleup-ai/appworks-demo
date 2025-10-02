@@ -199,9 +199,23 @@ export function useProcessXeroCallback(options?: {
           options?.onDashboard?.();
           break;
         case "select-tenant":
-          console.log('useProcessXeroCallback: navigating to /select-tenant');
+          // Multiple tenants returned. Do not force the tenant selection route.
+          // Persist the tenant list into Redux and continue to the dashboard so
+          // the app can render and present selection UI inline if desired.
+          console.warn('useProcessXeroCallback: multiple tenants returned — not navigating to /select-tenant');
+          try {
+            if (result.tenants && Array.isArray(result.tenants) && result.tenants.length > 0) {
+              dispatch(setTenants(result.tenants));
+            }
+          } catch (e) {
+            // log and continue — failing to persist tenants is non-fatal
+            console.error('Failed to persist tenants from Xero callback', e);
+          }
+          dispatch(setXeroConnected());
+          // Optionally notify caller
           options?.onSelectTenant?.(result.tenants);
-          navigate(appPath("/select-tenant"), { state: { tenants: result.tenants } });
+          // Navigate to dashboard so the app can load with tenant data available.
+          navigate(appPath("/dashboard"));
           break;
         case "restart-auth": {
           console.log('useProcessXeroCallback: restarting auth');

@@ -18,12 +18,12 @@ const GoogleCallback: React.FC = () => {
   useEffect(() => {
     let mounted = true;
     const processCallback = async () => {
-  const code = searchParams.get("code") || undefined;
-  const ok = searchParams.get("ok") || undefined; // server-side callback may redirect with ok=1 or ok=0
-  const stateFromQuery = searchParams.get("state") || undefined;
-  const stateFromPath = params.state || undefined;
-  const state = stateFromQuery || stateFromPath;
-  const error = searchParams.get("error");
+      const code = searchParams.get("code") || undefined;
+      const ok = searchParams.get("ok") || undefined; // server-side callback may redirect with ok=1 or ok=0
+      const stateFromQuery = searchParams.get("state") || undefined;
+      const stateFromPath = params.state || undefined;
+      const state = stateFromQuery || stateFromPath;
+      const error = searchParams.get("error");
 
       if (error) {
         showToast(`Google OAuth error: ${error}`, { type: "error" });
@@ -34,15 +34,17 @@ const GoogleCallback: React.FC = () => {
 
       // Handle server-side callback redirect which doesn't include a code but instead sends ok=1/0
       if (!code && ok) {
-        if (ok === '1') {
-          showToast('Successfully connected to Google!', { type: 'success' });
-          try { dispatch(setGoogleConnected()); } catch {};
-          navigate(appPath('/dashboard'));
+        if (ok === "1") {
+          showToast("Successfully connected to Google!", { type: "success" });
+          try {
+            dispatch(setGoogleConnected());
+          } catch {}
+          navigate(appPath("/dashboard"));
           return;
         }
         // ok === '0'
-        const serverErr = error || 'Google authentication failed on server';
-        showToast(`Google OAuth error: ${serverErr}`, { type: 'error' });
+        const serverErr = error || "Google authentication failed on server";
+        showToast(`Google OAuth error: ${serverErr}`, { type: "error" });
         setErrorMessage(`Google OAuth error: ${serverErr}`);
         setProcessing(false);
         return;
@@ -68,7 +70,9 @@ const GoogleCallback: React.FC = () => {
       }
 
       try {
-        const response = await handleGoogleOAuthRedirect({ code, state: state || "" });
+        // Include the actual redirectUri we used so backend can validate/exchange correctly
+        const redirectUri = window.location.origin + window.location.pathname;
+        const response = await handleGoogleOAuthRedirect({ code, state: state || "", redirectUri });
         if (response.status === 200) {
           showToast("Successfully connected to Google!", { type: "success" });
           try {

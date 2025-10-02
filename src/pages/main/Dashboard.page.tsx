@@ -61,9 +61,12 @@ const DashboardPage: React.FC = () => {
       const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
       const openidSub = selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub();
       if (!tenantId && !openidSub) {
-        // If we have no tenant selection and no user-scoped subject, ask user to select tenant
-        navigate(`${ROOT_PATH}select-tenant`);
-        return;
+        // Previously we redirected to tenant selection here. Stop auto-redirecting
+        // and allow the dashboard to render. Downstream UI will show a helpful
+        // notice and actions to connect/select a tenant.
+        // eslint-disable-next-line no-console
+        console.warn("Dashboard: no tenantId or openid available — skipping redirect to select-tenant.");
+        // continue without returning so the page can render and show guidance
       }
 
       const [invoices, scheduledReminders, events, agentList] = await Promise.all([
@@ -191,9 +194,12 @@ const DashboardPage: React.FC = () => {
       try {
         const { tenantId, openid } = await waitForPersistedIds();
         // If we still don't have any tenancy or user subject, redirect to tenant selection
+        // If we still don't have any tenancy or user subject, do not auto-redirect.
+        // Log and allow UI to handle empty tenant state.
         if (!tenantId && !openid) {
-          navigate(`${ROOT_PATH}select-tenant`);
-          return;
+          // eslint-disable-next-line no-console
+          console.warn("Dashboard (guarded): no tenantId or openid after wait — not redirecting to select-tenant.");
+          // do not return; allow refreshData to run which will surface empty-state UI
         }
 
         if (!cancelled) {

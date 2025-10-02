@@ -16,7 +16,9 @@ export interface AuthState {
 }
 
 const initialState: AuthState = {
-  isAuthenticated: typeof window !== 'undefined' ? Boolean(localStorage.getItem('isAuthenticated')) : false,
+  // Do not trust localStorage for authentication state on startup. We'll
+  // validate with the backend on app boot via `validateTokens`.
+  isAuthenticated: false,
   xeroConnected: false,
   googleConnected: false,
   serverAvailable: true,
@@ -27,13 +29,20 @@ const initialState: AuthState = {
   selectedTenantId: typeof window !== 'undefined' ? (localStorage.getItem('selectedTenantId') || null) : null,
 };
 
+// Validate session by asking the backend for integration/session status.
+// Avoid importing axios-client to prevent circular dependencies with
+// axios-client -> auth.slice -> axios-client. Use fetch with credentials
+// directly and treat 200 as authenticated.
 export const validateTokens = createAsyncThunk('auth/validateTokens', async () => {
-  try {
-    const v = localStorage.getItem('isAuthenticated');
-    return v === '1' || v === 'true';
-  } catch {
-    return false;
-  }
+  // Detect base API URL from Vite env similar to axios-client
+  const API_SERVICE_BASE_URL = ((import.meta as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) || 'http://localhost:8098';
+  const resp = await fetch(`${API_SERVICE_BASE_URL.replace(/\/$/, '')}/api/v1/xero/integration/status`, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  });
+
+  return resp.status === 200;
 });
 
 const authSlice = createSlice({

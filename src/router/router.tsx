@@ -6,7 +6,6 @@ import XeroAuthPage from "../pages/auth/xero/XeroAuth.page";
 import XeroCallback from "../pages/auth/xero/XeroCallback.page";
 import GoogleCallback from "../pages/auth/google/GoogleCallback.page";
 import ServerDownPage from "../pages/error/ServerDown.page";
-import TenantSelector from "../components/TenantSelector.component";
 import DashboardPage from "../pages/main/Dashboard.page";
 import CollectionsPage from "../pages/main/Collections.page";
 import PaymentsPage from "../pages/main/Payments.page";
@@ -28,6 +27,10 @@ export interface ExtendedRouteObject {
   hidden?: boolean;
   title: string;
   logicType?: ROUTE_LOGIC_TYPE;
+  // Optional known backend API endpoint that this page depends on. This is
+  // informational only and helps keep frontend writers in sync with server
+  // routes. Use absolute paths (starting with '/') relative to the API host.
+  apiEndpoint?: string;
   // Optional per-route wrappers applied after GLOBAL_ROUTE_WRAPPERS.
   wrappers?: Array<ComponentType<{ children: ReactElement }>>;
   routeObject: RouteObject;
@@ -85,14 +88,6 @@ export const lameRoutes: ExtendedRouteObject[] = [
       errorElement: <ErrorBoundaryPage />,
     },
   },
-  {
-    title: "Select Tenant",
-    routeObject: {
-      path: `/select-tenant`,
-      element: <TenantSelector />,
-      errorElement: <ErrorBoundaryPage />,
-    },
-  },
 ];
 
 export const mainAppRoutes: ExtendedRouteObject[] = [
@@ -103,6 +98,8 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
       element: <DashboardPage />,
       errorElement: <ErrorBoundaryPage />,
     },
+    // dashboard page shows a status summary used by UI badges
+    apiEndpoint: "/api/v1/accounts-receivables/status",
   },
   {
     title: "Collections",
@@ -111,6 +108,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
       element: <CollectionsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
+    apiEndpoint: "/api/v1/accounts-receivables/collections/scheduled",
   },
   {
     title: "Payments",
@@ -119,6 +117,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
       element: <PaymentsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
+    apiEndpoint: "/api/v1/payment-reconciliation/payments/reconcile",
   },
   {
     title: "Profitability",
@@ -127,6 +126,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
       element: <ProfitabilityPage />,
       errorElement: <ErrorBoundaryPage />,
     },
+    apiEndpoint: "/api/v1/profitability",
   },
   {
     title: "Cash Flow",
@@ -135,6 +135,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
       element: <CashFlowPage />,
       errorElement: <ErrorBoundaryPage />,
     },
+    apiEndpoint: "/api/v1/cashflow",
   },
   {
     title: "Settings",
@@ -143,6 +144,7 @@ export const mainAppRoutes: ExtendedRouteObject[] = [
       element: <SettingsPage />,
       errorElement: <ErrorBoundaryPage />,
     },
+    apiEndpoint: "/api/v1/admin/tools",
   },
 ];
 

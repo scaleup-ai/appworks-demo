@@ -13,6 +13,7 @@ import showToast from "../../utils/toast";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
+import BACKEND_ROUTES from "../../router/backend.routes";
 import { formatCurrency } from "../../helpers/ui.helper";
 import { useApi } from "../../hooks/useApi";
 import { useNavigate } from "react-router-dom";
@@ -57,13 +58,17 @@ const CollectionsPage: React.FC = () => {
       const tenantId = selectedTenantId ?? AuthStorage.getSelectedTenantId();
       const openidSub = selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub();
       if (!tenantId && !openidSub) {
-        navigate(`${ROOT_PATH}select-tenant`);
-        return;
+        // Do not auto-redirect to tenant selection here. Allow page to render and
+        // show a helpful empty state. Log for diagnostics.
+        // eslint-disable-next-line no-console
+        console.warn("Collections: no tenantId or openid available — skipping redirect to select-tenant.");
+        // continue so the UI can render an empty state instead of redirecting
       }
 
+      // Use the accounts receivables API for invoices and scheduled collections.
       const [invoiceData, scheduledReminders] = await Promise.all([
         accountsReceivablesApi.listInvoices({ limit: 100, tenantId: tenantId || undefined }),
-        collectionsApi.getScheduledReminders(),
+        accountsReceivablesApi.listScheduledCollections(),
       ]);
 
       const now = new Date();
@@ -107,6 +112,8 @@ const CollectionsPage: React.FC = () => {
       showToast("Failed to load collections data", { type: "error" });
     }
   }, [selectedOpenIdSub, navigate]);
+  // Note: `navigate` removed from the dependency list as this function no
+  // longer navigates; keep selectedOpenIdSub so re-fetch occurs when it changes.
 
   const { execute: refreshData, isLoading: isRefreshing } = useApi(loadCollectionsData, {
     successMessage: "Collections data refreshed",

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axiosClient, { API_SERVICE_BASE_URL } from "../../../apis/axios-client";
+import BACKEND_ROUTES from "../../../router/backend.routes";
 import { AuthStorage } from "../../../store/slices/auth.slice";
 import StatusBadge from "../StatusBadge.component";
 
@@ -22,7 +23,9 @@ const GoogleIntegrationCard: React.FC = () => {
     const probe = async () => {
       setLoading(true);
       try {
-        const resp = await axiosClient.get("/api/v1/google/status");
+        const url =
+          BACKEND_ROUTES?.google?.status || (API_SERVICE_BASE_URL || "").replace(/\/$/, "") + "/api/v1/google/status";
+        const resp = await axiosClient.get(url);
         if (!mounted) return;
         setConnected(Boolean(resp.data && resp.data.connected));
         setPayload(resp.data ?? null);
@@ -78,7 +81,9 @@ const GoogleIntegrationCard: React.FC = () => {
                     if (connecting) return;
                     try {
                       setConnecting(true);
-                      const url = (API_SERVICE_BASE_URL || "").replace(/\/$/, "") + "/api/v1/google/auth/start";
+                      const url =
+                        BACKEND_ROUTES?.google?.authStart ||
+                        (API_SERVICE_BASE_URL || "").replace(/\/$/, "") + "/api/v1/google/auth/start";
                       const headers: Record<string, string> = {
                         "Content-Type": "application/json",
                         Accept: "application/json",
@@ -91,11 +96,13 @@ const GoogleIntegrationCard: React.FC = () => {
                         if (sel) headers["X-Openid-Sub"] = String(sel);
                       } catch {}
                       if (persistSession) headers["X-Remember-Me"] = "1";
+                      // Provide redirectUri so server can build the correct consent URL
+                      const redirectUri = window.location.origin + "/google/oauth2/redirect";
                       const resp = await fetch(url, {
                         method: "POST",
                         credentials: "include",
                         headers,
-                        body: JSON.stringify({ format: "json" }),
+                        body: JSON.stringify({ format: "json", redirectUri }),
                       });
                       if (!resp.ok) throw new Error(`Auth start failed: ${resp.status}`);
                       const data = await resp.json();
@@ -128,7 +135,10 @@ const GoogleIntegrationCard: React.FC = () => {
             {connected === false && (
               <div className="p-3 mt-3 text-sm text-yellow-800 border-l-4 border-yellow-400 rounded bg-yellow-50">
                 Google is not connected. Click{" "}
-                <button onClick={() => window.open("/api/v1/google/connect", "_blank")} className="underline">
+                <button
+                  onClick={() => window.open(BACKEND_ROUTES?.google?.connect || "/api/v1/google/connect", "_blank")}
+                  className="underline"
+                >
                   Connect Google
                 </button>{" "}
                 to enable features.

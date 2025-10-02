@@ -14,6 +14,7 @@ import { ROOT_PATH } from "../../router/router";
 import { downloadJson, formatCurrency } from "../../helpers/ui.helper";
 import { useApi } from "../../hooks/useApi";
 import axiosClient from "../../apis/axios-client";
+import BACKEND_ROUTES from "../../router/backend.routes";
 
 // Interfaces are defined in-file as this page is a self-contained demo
 interface CashFlowForecast {
@@ -74,7 +75,8 @@ const CashFlowPage: React.FC = () => {
   const [selectedScenario, setSelectedScenario] = useState<string>("base");
 
   const fetchCashFlowData = useCallback(async () => {
-    const response = await axiosClient.get<CashFlowData>("/api/v1/cashflow");
+    const url = BACKEND_ROUTES?.cashflow || "/api/v1/cashflow";
+    const response = await axiosClient.get<CashFlowData>(url);
     return response.data;
   }, []);
 

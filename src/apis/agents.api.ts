@@ -1,4 +1,5 @@
 import axiosClient from "./axios-client";
+import BACKEND_ROUTES from '../router/backend.routes';
 
 export interface AgentStatus {
   name: string;
@@ -9,6 +10,7 @@ export interface AgentStatus {
 
 export async function listAgents(): Promise<AgentStatus[]> {
   // Replace with your backend endpoint
-  const resp = await axiosClient.get<AgentStatus[]>("/api/v1/agents/status");
+  const url = BACKEND_ROUTES?.agents?.status || "/api/v1/agents/status";
+  const resp = await axiosClient.get<AgentStatus[]>(url);
   return resp.data;
 }
