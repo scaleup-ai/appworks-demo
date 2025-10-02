@@ -133,19 +133,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
       return resp.data;
     }
   } catch {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      try {
-        // If the previous request failed with 401, mark as not authenticated
-        const lastStatus = window.localStorage.getItem('xero_last_integration_status');
-        if (lastStatus === '401') {
-          if (typeof AuthStorage.setIsAuthenticated === 'function') {
-            AuthStorage.setIsAuthenticated(false);
-          }
-        }
-      } catch {
-        // ignore localStorage errors
-      }
-    }
+
     // ignore storage read errors and fall through to default request
 
   }
