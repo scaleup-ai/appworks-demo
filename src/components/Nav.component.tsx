@@ -1,18 +1,29 @@
-import React, { useEffect, useCallback } from "react";
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { ROOT_PATH, appPath } from "../router/router";
-import { useSelector, useDispatch } from "react-redux";
-import { setTenants, selectTenant, logout, AuthStorage } from "../store/slices/auth.slice";
-import { RootState } from "../store/store";
-import { useTenants } from "../hooks/useTenants";
-import { capturePostAuthRedirect, startXeroAuth, getXeroAuthUrl, logoutXero } from "../apis/xero.api";
-import showToast from "../utils/toast";
+import { capturePostAuthRedirect, getXeroAuthUrl, logoutXero, startXeroAuth } from "../apis/xero.api";
 import { apiErrorToast } from "../handlers/shared.handler";
+import { useTenants } from "../hooks/useTenants";
+import { ROOT_PATH, appPath } from "../router/router";
+import { AuthStorage, logout, selectTenant } from "../store/slices/auth.slice";
+import { RootState } from "../store/store";
+import showToast from "../utils/toast";
 
 interface NavProps {
   className?: string;
   mobile?: boolean;
   onLinkClick?: () => void;
+}
+
+interface Tenant {
+  tenantId?: string;
+  tenant_id?: string;
+  id?: string;
+  openid_sub?: string;
+  organisationNumber?: string;
+  tenantName?: string;
+  displayLabel?: string;
+  clientId?: string;
 }
 
 const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }) => {
@@ -59,7 +70,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
   const [persistSession, setPersistSession] = React.useState(false);
 
   const selectedTenantId = useSelector((s: RootState) => s.auth.selectedTenantId);
-  const tenants = useSelector((s: RootState) => s.auth.tenants || []);
+  const tenants: Tenant[] = useSelector((s: RootState) => s.auth.tenants || []);
   const xeroConnected = useSelector((s: RootState) => s.auth.xeroConnected);
   const currentOpenIdSub = useSelector((s: RootState) => s.xero.currentOpenIdSub);
 
@@ -78,7 +89,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
   };
 
   // Derive a display label for a tenant object
-  const deriveTenantLabel = (ta: any) => {
+  const deriveTenantLabel = (ta: Tenant) => {
     const tenantId =
       ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
     const orgNo = ta.organisationNumber ? ` • Org#: ${ta.organisationNumber}` : "";
@@ -87,7 +98,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
     return `${labelBase}${orgNo}`;
   };
 
-  const visibleTenants = ((tenants || []) as any[]).filter(
+  const visibleTenants = tenants.filter(
     (t) => !currentOpenIdSub || String(t.openid_sub || "") === String(currentOpenIdSub)
   );
 
@@ -103,8 +114,7 @@ const Nav: React.FC<NavProps> = ({ className = "", mobile = false, onLinkClick }
             aria-label="Select organization"
           >
             {visibleTenants.length === 0 && <option value="">Select org</option>}
-            {visibleTenants.map((t) => {
-              const ta: any = t;
+            {visibleTenants.map((ta) => {
               const tenantId =
                 ta.tenantId || ta.tenant_id || (ta.id ? String(ta.id).split(":")[1] : undefined) || ta.openid_sub || "";
               return (

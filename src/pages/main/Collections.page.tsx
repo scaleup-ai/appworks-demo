@@ -1,23 +1,22 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { RootState } from "../../store/store";
-import { AuthStorage } from "../../store/slices/auth.slice";
-import DashboardLayout from "../layouts/DashboardLayout";
-import Card from "../../components/ui/Card.component";
-import Button from "../../components/ui/Button.component";
-import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
-import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
-import ActionBar from "../../components/ui/ActionBar.component";
-import StatusBadge from "../../components/ui/StatusBadge.component";
-import showToast from "../../utils/toast";
+import { useNavigate } from "react-router-dom";
 import * as accountsReceivablesApi from "../../apis/accounts-receivables.api";
 import * as collectionsApi from "../../apis/collections.api";
 import * as emailApi from "../../apis/email.api";
-import BACKEND_ROUTES from "../../router/backend.routes";
+import ActionBar from "../../components/ui/ActionBar.component";
+import Button from "../../components/ui/Button.component";
+import Card from "../../components/ui/Card.component";
+import LoadingSpinner from "../../components/ui/LoadingSpinner.component";
+import StatusBadge from "../../components/ui/StatusBadge.component";
+import SummaryCardGrid from "../../components/ui/SummaryCardGrid.component";
 import { formatCurrency } from "../../helpers/ui.helper";
 import { useApi } from "../../hooks/useApi";
-import { useNavigate } from "react-router-dom";
 import { ROOT_PATH } from "../../router/router";
+import { AuthStorage } from "../../store/slices/auth.slice";
+import { RootState } from "../../store/store";
+import showToast from "../../utils/toast";
+import DashboardLayout from "../layouts/DashboardLayout";
 
 interface Invoice {
   invoiceId: string;
@@ -204,7 +203,7 @@ const CollectionsPage: React.FC = () => {
     return (
       <DashboardLayout title="Collections">
         <div className="py-12">
-          <div className="max-w-md mx-auto p-6 border rounded-lg bg-yellow-50 text-center">
+          <div className="max-w-md p-6 mx-auto text-center border rounded-lg bg-yellow-50">
             <h3 className="text-lg font-medium text-yellow-800">Xero Not Connected</h3>
             <p className="mt-2 text-sm text-yellow-700">
               Connect your Xero account to access collections and invoice data.
