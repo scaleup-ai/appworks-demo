@@ -10,7 +10,16 @@ export async function handleGoogleOAuthRedirect(payload: { code: string; state?:
 export async function startGoogleAuth(format: 'json' | 'redirect' = 'json', redirectUri?: string) {
   // POST to the canonical backend route for starting Google OAuth
   const url = (BACKEND_ROUTES && BACKEND_ROUTES.google && BACKEND_ROUTES.google.authStart) || '/api/v1/google/auth/start';
-  return axiosClient.post(url, { format, redirectUri });
+  return axiosClient.post(
+    url,
+    { format, redirectUri },
+    {
+      // Always request server-side persistence for Google tokens when starting auth
+      headers: { 'X-Google-Persist': '1' },
+      // Include credentials so the browser will accept any Set-Cookie the server returns
+      withCredentials: true,
+    }
+  );
 }
 
 export default { handleGoogleOAuthRedirect, startGoogleAuth };

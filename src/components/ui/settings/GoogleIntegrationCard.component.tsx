@@ -10,13 +10,9 @@ const GoogleIntegrationCard: React.FC = () => {
   const [showRaw, setShowRaw] = useState(false);
   const [payload, setPayload] = useState<Record<string, unknown> | null>(null);
   const [connecting, setConnecting] = useState(false);
-  const [persistSession, setPersistSession] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("remember_me") === "1";
-    } catch {
-      return false;
-    }
-  });
+  // Google token persistence should not be tied to the Xero "remember_me" flag.
+  // We remove the local checkbox and localStorage usage and instead always
+  // request server-side persistence for Google tokens using a Google-specific header.
 
   useEffect(() => {
     let mounted = true;
@@ -30,6 +26,7 @@ const GoogleIntegrationCard: React.FC = () => {
         setConnected(Boolean(resp.data && resp.data.connected));
         setPayload(resp.data ?? null);
       } catch (err) {
+        console.warn("Failed to fetch Google status", err);
         if (!mounted) return;
         setConnected(false);
         setPayload(null);
@@ -68,14 +65,9 @@ const GoogleIntegrationCard: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-2 text-sm mr-2">
-                  <input
-                    type="checkbox"
-                    checked={persistSession}
-                    onChange={(e) => setPersistSession(e.target.checked)}
-                  />
-                  Keep me signed in
-                </label>
+                {/* Removed user-facing "Keep me signed in" checkbox. Google token
+          persistence is requested explicitly when starting auth, and
+          is handled separately from Xero's remember-me behavior. */}
                 <button
                   onClick={async () => {
                     if (connecting) return;
@@ -94,8 +86,13 @@ const GoogleIntegrationCard: React.FC = () => {
                             ? AuthStorage.getSelectedOpenIdSub()
                             : null;
                         if (sel) headers["X-Openid-Sub"] = String(sel);
-                      } catch {}
-                      if (persistSession) headers["X-Remember-Me"] = "1";
+                      } catch {
+                        // ignore errors when reading AuthStorage
+                      }
+
+                      // Always request server-side persistence for Google tokens using
+                      // a Google-specific header to avoid mixing with Xero's remember_me.
+                      headers["X-Google-Persist"] = "1";
                       // Provide redirectUri so server can build the correct consent URL
                       const redirectUri = window.location.origin + "/google/oauth2/redirect";
                       const resp = await fetch(url, {

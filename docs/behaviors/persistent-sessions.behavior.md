@@ -6,8 +6,8 @@ This document explains how the "Keep me signed in" persistent session feature wo
 
 ## High-level overview
 
-- User checks a "Keep me signed in" UI control in the SPA before starting an OAuth flow (Google / Xero).
-- The SPA sends the OAuth-start request with credentials included and with a header to request persistence (X-Remember-Me: 1).
+- User checks a "Keep me signed in" UI control in the SPA before starting an OAuth flow (Xero only). Google refresh-token persistence is always handled server-side and is not controlled by the SPA "Keep me signed in" checkbox.
+- The SPA sends the OAuth-start request with credentials included when it expects the server to set cookies. For Xero the SPA may request the "remember me" behavior by sending `X-Remember-Me: 1`. For Google the SPA requests server-side persistence of the Google refresh token via a Google-specific header: `X-Google-Persist: 1` — Google tokens are stored in the `google_tokens` table and are independent of the `remember_token` cookie flow.
 - The server generates a cryptographically-random raw token, stores only its SHA-256 hash in the `remember_tokens` table, and sets an httpOnly cookie named `remember_token` containing the raw token.
 - On subsequent requests the Fastify plugin inspects the cookie, validates the hash in the database, decorates the request with the remembered user id, and performs a sliding-window extension (extend expiry by 60 days on use).
 - A daily cron job deletes expired tokens from the DB.
@@ -21,19 +21,19 @@ This document explains how the "Keep me signed in" persistent session feature wo
 ## Where to look (code map)
 
 - Frontend (SPA)
-  - "Keep me signed in" UI: 
+  - "Keep me signed in" UI:
     - `appworks-demo/src/components/Nav.component.tsx`
     - `appworks-demo/src/pages/auth/xero/XeroAuth.page.tsx`
     - `appworks-demo/src/components/ui/settings/GoogleIntegrationCard.component.tsx`
     - The checkbox state is managed within the component and passed to the auth handler.
-  - Google connect: `appworks-demo/src/components/ui/settings/GoogleIntegrationCard.component.tsx` (uses fetch POST with `credentials: 'include'` and will include `X-Remember-Me` when the checkbox is checked).
+  - Google connect: `appworks-demo/src/components/ui/settings/GoogleIntegrationCard.component.tsx` — Google refresh tokens are always persisted server-side (see `src/repository/google-token.repo.ts`) and are not part of the `remember_token` cookie flow. The frontend requests server-side persistence for Google tokens by sending a Google-specific header (`X-Google-Persist: 1`) when starting the auth flow; the backend stores tokens in `google_tokens` via `GoogleTokenRepository`.
   - Xero start helper: `appworks-demo/src/apis/xero.api.ts`
     - `startXeroAuth(mode, opts?)` — when `mode === 'json'` this uses `fetch(..., { credentials: 'include' })` and will send `X-Remember-Me: 1` if `opts.remember` is true.
   - SPA handler that starts Xero auth: `appworks-demo/src/handlers/auth.handler.ts` — it now calls `startXeroAuth('json', { remember: persist })` where `persist` is a boolean passed from the UI component.
 
 - Backend (Fastify)
   - OAuth start controllers (they create the remember token when asked):
-    - Google: `src/controllers/google-auth.controller.ts` — on start, if `x-remember-me: 1` header is present the controller generates the token, persists it, and sets the cookie.
+  - Google: `src/controllers/google-auth.controller.ts` — Google token handlers persist refresh tokens into `google_tokens` (via `googleTokenRepo.upsertToken`) and do not create `remember_token` cookies; they are independent from Xero's remember-me behavior.
     - Xero: `src/controllers/xero.controller.ts` — same behavior in the JSON-start branch.
   - Remember token persistence: `src/repository/remember-token.repo.ts`
     - createToken(raw, userId, provider, expiresAt)
@@ -66,7 +66,9 @@ This document explains how the "Keep me signed in" persistent session feature wo
   4.  Make another request to any API route; the plugin should detect the cookie, and `request.rememberUserId` will be available to route handlers. DB `remember_tokens.expires_at` should be extended.
 
 - Automated tests to add (recommended):
-  - Controller test: simulate OAuth-start with `X-Remember-Me: 1` header; assert repository created a new hashed record and response includes Set-Cookie with `remember_token`.
+  - Controller test:
+    - Xero: simulate OAuth-start with `X-Remember-Me: 1` header; assert `remember_token` repository created a new hashed record and response includes Set-Cookie with `remember_token`.
+    - Google: simulate OAuth-start with `X-Google-Persist: 1` header (or exercise the connect redirect path); assert `google_tokens` contains the persisted refresh token for the client/user and no `remember_token` cookie is created.
   - Plugin test: create a test DB row with a known raw token, send a request with cookie set; assert the request is decorated and the DB `expires_at` was extended.
 
 ## Notes for maintainers
