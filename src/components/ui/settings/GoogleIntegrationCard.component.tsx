@@ -73,9 +73,9 @@ const GoogleIntegrationCard: React.FC = () => {
                     if (connecting) return;
                     try {
                       setConnecting(true);
-                      const url =
-                        BACKEND_ROUTES?.google?.authStart ||
-                        (API_SERVICE_BASE_URL || "").replace(/\/$/, "") + "/api/v1/google/auth/start";
+                      const url = BACKEND_ROUTES?.google?.authStart;
+                      if (!url) throw new Error("Google Auth Start route is not defined in BACKEND_ROUTES");
+
                       const headers: Record<string, string> = {
                         "Content-Type": "application/json",
                         Accept: "application/json",
@@ -90,19 +90,10 @@ const GoogleIntegrationCard: React.FC = () => {
                         // ignore errors when reading AuthStorage
                       }
 
-                      // Always request server-side persistence for Google tokens using
-                      // a Google-specific header to avoid mixing with Xero's remember_me.
                       headers["X-Google-Persist"] = "1";
-                      // Provide redirectUri so server can build the correct consent URL
                       const redirectUri = window.location.origin + "/google/oauth2/redirect";
-                      const resp = await fetch(url, {
-                        method: "POST",
-                        credentials: "include",
-                        headers,
-                        body: JSON.stringify({ format: "json", redirectUri }),
-                      });
-                      if (!resp.ok) throw new Error(`Auth start failed: ${resp.status}`);
-                      const data = await resp.json();
+                      const resp = await axiosClient.post(url, { format: "json", redirectUri }, { headers });
+                      const data = resp.data;
                       const redirectUrl = data?.url;
                       if (redirectUrl) {
                         window.location.href = redirectUrl;

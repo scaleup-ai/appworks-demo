@@ -38,7 +38,9 @@ const GoogleCallback: React.FC = () => {
           showToast("Successfully connected to Google!", { type: "success" });
           try {
             dispatch(setGoogleConnected());
-          } catch {}
+          } catch (e) {
+            console.info("Ignoring dispatch error:", e);
+          }
           navigate(appPath("/dashboard"));
           return;
         }
@@ -78,7 +80,7 @@ const GoogleCallback: React.FC = () => {
           try {
             dispatch(setGoogleConnected());
           } catch (e) {
-            // ignore dispatch errors in rare cases
+            console.info("Ignoring dispatch error:", e);
           }
           navigate(appPath("/dashboard"));
           return;
@@ -131,14 +133,15 @@ const GoogleCallback: React.FC = () => {
             <button
               onClick={async () => {
                 try {
-                  const data = (await startGoogleAuth("json")) as any;
-                  if (data && data.data && data.data.url) {
+                  const data = await startGoogleAuth("json");
+                  if (!data) return;
+                  if (data.data?.url) {
                     window.location.href = data.data.url;
-                  } else if (data && data.url) {
-                    window.location.href = data.url;
+                    return;
                   }
-                } catch {
-                  // noop
+                } catch (err) {
+                  console.error("Error initiating Google authentication:", err);
+                  showToast("Failed to initiate Google authentication. Please try again.", { type: "error" });
                 }
               }}
               className="px-5 py-3 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"

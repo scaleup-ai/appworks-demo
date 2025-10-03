@@ -210,7 +210,6 @@ const applyLogicWrapper = (route: ExtendedRouteObject): RouteObject => {
 try {
   if (import.meta.env && (import.meta.env.DEV as boolean)) {
     // map to the final RouteObject paths
-    // eslint-disable-next-line no-console
     console.log(
       "registered routes:",
       routes.map((r) => {
@@ -222,6 +221,8 @@ try {
       })
     );
   }
-} catch {}
+} catch (e) {
+  console.error("Error logging registered routes:", e);
+}
 
 export const browserRouter = createBrowserRouter(routes.map(applyLogicWrapper));
