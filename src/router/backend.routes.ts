@@ -20,6 +20,7 @@ const BACKEND_ROUTES = {
     status: '/api/v1/google/status',
     authStart: '/api/v1/google/auth/start',
     connect: '/api/v1/google/connect',
+    callback: '/api/v1/google/callback',
     authComplete: '/api/v1/google/auth/complete',
   },
   agents: {
