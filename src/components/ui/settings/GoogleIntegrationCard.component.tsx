@@ -16,6 +16,9 @@ const GoogleIntegrationCard: React.FC = () => {
 
   useEffect(() => {
     let mounted = true;
+    const MAX_RETRIES = 3;
+    let retryCount = 0;
+
     const probe = async () => {
       setLoading(true);
       try {
@@ -28,12 +31,19 @@ const GoogleIntegrationCard: React.FC = () => {
       } catch (err) {
         console.warn("Failed to fetch Google status", err);
         if (!mounted) return;
-        setConnected(false);
-        setPayload(null);
+        retryCount++;
+        if (retryCount <= MAX_RETRIES) {
+          console.info(`Retrying Google status fetch (${retryCount}/${MAX_RETRIES})`);
+          setTimeout(probe, 2000); // Retry after 2 seconds
+        } else {
+          setConnected(false);
+          setPayload(null);
+        }
       } finally {
         if (mounted) setLoading(false);
       }
     };
+
     void probe();
     return () => {
       mounted = false;
