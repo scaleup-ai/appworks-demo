@@ -103,7 +103,9 @@ const DashboardPage: React.FC = () => {
             else if (e.payload.action) msg = `${e.event_type}: ${String(e.payload.action)}`;
             else if (e.payload.tool) msg = `${e.event_type}: ${String(e.payload.tool)}`;
           }
-        } catch {}
+        } catch (e) {
+          console.warn("Failed to parse audit event payload", e);
+        }
         return {
           id: e.id || `${e.event_type}_${e.created_at || ""}_${Math.random()}`,
           message: msg,
@@ -175,7 +177,6 @@ const DashboardPage: React.FC = () => {
         const openidNow = selectedOpenIdSub ?? AuthStorage.getSelectedOpenIdSub();
         if (tenantIdNow || openidNow) return { tenantId: tenantIdNow, openid: openidNow };
         // pause briefly to allow callback/selector to persist values
-        // eslint-disable-next-line no-await-in-loop
         await new Promise((r) => setTimeout(r, pollInterval));
       }
       return {
@@ -197,7 +198,6 @@ const DashboardPage: React.FC = () => {
         // If we still don't have any tenancy or user subject, do not auto-redirect.
         // Log and allow UI to handle empty tenant state.
         if (!tenantId && !openid) {
-          // eslint-disable-next-line no-console
           console.warn("Dashboard (guarded): no tenantId or openid after wait — not redirecting to select-tenant.");
           // do not return; allow refreshData to run which will surface empty-state UI
         }
