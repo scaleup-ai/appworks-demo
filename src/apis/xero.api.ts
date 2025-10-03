@@ -49,6 +49,7 @@ export async function startXeroAuth(mode: 'redirect' | 'json' = 'redirect', opts
     } catch {
       // ignore
     }
+    console.log('Sending headers:', headers);
     const resp = await fetch(url, { method: 'GET', credentials: 'include', headers });
     if (!resp.ok) throw new Error(`startXeroAuth json failed: ${resp.status}`);
     const data = (await resp.json()) as ConsentUrlResponse;
