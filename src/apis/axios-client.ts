@@ -6,7 +6,7 @@ import { validateTokens, AuthStorage, setServerAvailable } from '../store/slices
 // since most demo endpoints don't require authentication
 
 // Prefer Vite env; fall back to the local backend running on port 8098
-export const API_SERVICE_BASE_URL = ((import.meta as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL) || 'http://localhost:8098';
+export const API_SERVICE_BASE_URL = (import.meta as { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL;
 
 const axiosClient: AxiosInstance = axios.create({
   baseURL: API_SERVICE_BASE_URL,
